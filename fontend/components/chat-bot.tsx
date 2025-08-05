@@ -90,12 +90,13 @@ export default function ChatBot({ initialMessages = [] }: ChatBotProps) {
     setInputMessage("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    // Simulate AI response with async/await
+    setTimeout(async () => {
+      const aiReply = await generateAIResponse(inputMessage)
       const aiResponse: Message = {
         id: messages.length + 2,
         type: "bot",
-        content: generateAIResponse(inputMessage),
+        content: aiReply,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, aiResponse])
@@ -103,56 +104,73 @@ export default function ChatBot({ initialMessages = [] }: ChatBotProps) {
     }, 1500)
   }
 
-  const generateAIResponse = (userMessage: string) => {
-    const lowerMessage = userMessage.toLowerCase()
+//   const generateAIResponse = (userMessage: string) => {
+//     const lowerMessage = userMessage.toLowerCase()
 
-    if (lowerMessage.includes("gia đình")) {
-      return `Tuyệt vời! Dựa trên nhu cầu cắm trại gia đình của bạn, tôi khuyên bạn nên xem xét:
+//     if (lowerMessage.includes("gia đình")) {
+//       return `Tuyệt vời! Dựa trên nhu cầu cắm trại gia đình của bạn, tôi khuyên bạn nên xem xét:
 
-🏕️ **Gói Cắm trại gia đình Đà Lạt** - 3.200.000đ
-• Thời gian: 2-4 ngày
-• Phù hợp: 6-10 người
-• Bao gồm: Lều lớn, hoạt động trẻ em, BBQ
-• Đánh giá: 4.7/5 ⭐
+// 🏕️ **Gói Cắm trại gia đình Đà Lạt** - 3.200.000đ
+// • Thời gian: 2-4 ngày
+// • Phù hợp: 6-10 người
+// • Bao gồm: Lều lớn, hoạt động trẻ em, BBQ
+// • Đánh giá: 4.7/5 ⭐
 
-Gói này có nhiều hoạt động an toàn cho trẻ em và không gian rộng rãi. Bạn có muốn tôi tư vấn thêm về chi tiết không?`
-    }
+// Gói này có nhiều hoạt động an toàn cho trẻ em và không gian rộng rãi. Bạn có muốn tôi tư vấn thêm về chi tiết không?`
+//     }
 
-    if (lowerMessage.includes("thiết bị")) {
-      return `Dựa trên loại hình cắm trại bạn quan tâm, tôi gợi ý những thiết bị cần thiết:
+//     if (lowerMessage.includes("thiết bị")) {
+//       return `Dựa trên loại hình cắm trại bạn quan tâm, tôi gợi ý những thiết bị cần thiết:
 
-🎒 **Thiết bị cơ bản:**
-• Lều cắm trại 4 người - 150.000đ/ngày
-• Túi ngủ cao cấp - 120.000đ/ngày  
-• Đèn pin LED siêu sáng - 50.000đ/ngày
-• Bếp gas mini - 80.000đ/ngày
+// 🎒 **Thiết bị cơ bản:**
+// • Lều cắm trại 4 người - 150.000đ/ngày
+// • Túi ngủ cao cấp - 120.000đ/ngày  
+// • Đèn pin LED siêu sáng - 50.000đ/ngày
+// • Bếp gas mini - 80.000đ/ngày
 
-💡 **Gợi ý:** Nếu đi cắm trại núi, nên thuê thêm áo ấm và giày trekking. Bạn có muốn tôi tư vấn gói thiết bị phù hợp không?`
-    }
+// 💡 **Gợi ý:** Nếu đi cắm trại núi, nên thuê thêm áo ấm và giày trekking. Bạn có muốn tôi tư vấn gói thiết bị phù hợp không?`
+//     }
 
-    if (lowerMessage.includes("giá") || lowerMessage.includes("so sánh")) {
-      return `Tôi hiểu bạn quan tâm đến giá cả. Dưới đây là các gói theo mức giá:
+//     if (lowerMessage.includes("giá") || lowerMessage.includes("so sánh")) {
+//       return `Tôi hiểu bạn quan tâm đến giá cả. Dưới đây là các gói theo mức giá:
 
-💰 **Dưới 2 triệu:**
-• Cắm trại biển Phú Quốc - 1.800.000đ
-• Cắm trại sa mạc Mũi Né - 1.500.000đ
+// 💰 **Dưới 2 triệu:**
+// • Cắm trại biển Phú Quốc - 1.800.000đ
+// • Cắm trại sa mạc Mũi Né - 1.500.000đ
 
-💰 **2-3 triệu:**
-• Cắm trại núi Sapa - 2.500.000đ
-• Cắm trại rừng Cát Tiên - 2.800.000đ
+// 💰 **2-3 triệu:**
+// • Cắm trại núi Sapa - 2.500.000đ
+// • Cắm trại rừng Cát Tiên - 2.800.000đ
 
-💰 **Trên 3 triệu:**
-• Cắm trại gia đình Đà Lạt - 3.200.000đ
+// 💰 **Trên 3 triệu:**
+// • Cắm trại gia đình Đà Lạt - 3.200.000đ
 
-Bạn có ngân sách dự kiến bao nhiêu để tôi tư vấn chính xác hơn?`
-    }
+// Bạn có ngân sách dự kiến bao nhiêu để tôi tư vấn chính xác hơn?`
+//     }
 
-    return `Cảm ơn bạn đã chia sẻ! Để tư vấn chính xác nhất, bạn có thể cho tôi biết thêm về:
-• Số người tham gia?
-• Thời gian dự kiến (bao nhiêu ngày)?
-• Ngân sách dự tính?
-• Loại địa điểm yêu thích (núi, biển, rừng...)?`
+//     return `Cảm ơn bạn đã chia sẻ! Để tư vấn chính xác nhất, bạn có thể cho tôi biết thêm về:
+// • Số người tham gia?
+// • Thời gian dự kiến (bao nhiêu ngày)?
+// • Ngân sách dự tính?
+// • Loại địa điểm yêu thích (núi, biển, rừng...)?`
+//   }
+const generateAIResponse = async (userMessage: string): Promise<string> => {
+  try {
+    const res = await fetch('/api/ai-chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: userMessage }),
+    })
+
+    const data = await res.json()
+    return data.reply
+  } catch (error) {
+    console.error('Lỗi khi gọi OpenAI:', error)
+    return 'Xin lỗi, có lỗi xảy ra khi kết nối AI.'
   }
+}
 
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question)
