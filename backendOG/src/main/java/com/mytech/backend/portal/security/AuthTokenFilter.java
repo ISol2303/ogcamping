@@ -31,12 +31,22 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-      String path = request.getServletPath();
-      System.out.println("------------shouldNotFilter------------" + path);
-      return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
-    }
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+//      String path = request.getServletPath();
+//      System.out.println("------------shouldNotFilter------------" + path);
+//      return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
+//    }
+@Override
+protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    String path = request.getServletPath();
+    System.out.println("------------shouldNotFilter------------" + path);
+
+    return path.startsWith("/apis/v1/login")
+            || path.startsWith("/apis/v1/register")
+            || path.startsWith("/oauth2")
+            || path.startsWith("/login");
+}
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

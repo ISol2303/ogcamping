@@ -104,7 +104,7 @@ export default function ServiceDetailPage() {
       },
     ],
   }
-
+const today = new Date().toISOString().split("T")[0];
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -338,6 +338,7 @@ export default function ServiceDetailPage() {
                     className="w-full p-2 border rounded-lg"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
+                     min={today}
                   />
                 </div>
 

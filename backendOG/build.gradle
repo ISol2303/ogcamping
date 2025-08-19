@@ -37,7 +37,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
-
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	// JavaFaker, exclude snakeyaml Android
 	implementation('com.github.javafaker:javafaker:1.0.2') {
 		exclude group: 'org.yaml', module: 'snakeyaml'

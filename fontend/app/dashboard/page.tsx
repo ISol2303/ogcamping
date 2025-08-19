@@ -22,8 +22,8 @@ import {
   MessageCircle,
   Star,
 } from 'lucide-react';
+import jwt_decode from 'jwt-decode';
 import Link from 'next/link';
-
 interface Booking {
   _id: string;
   service: string;
@@ -41,7 +41,19 @@ interface Stat {
   icon: string;
   color: string;
 }
-
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  avatar?: string;
+}
+interface JwtPayload {
+  email: string;
+  role?: string;
+  sub?: string;
+}
 export default function DashboardPage() {
   const [user, setUser] = useState<{ name: string; email: string; phone?: string; role: string; avatar?: string } | null>(null);
   const [stats, setStats] = useState<Stat[]>([]);
@@ -50,43 +62,107 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       setIsLoading(true);
+  //       setError(null);
+
+  //       // Get token from storage
+  //       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  //       if (!token) {
+  //         router.push('/login');
+  //         return;
+  //       }
+
+  //       // Set axios default headers
+  //       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+  //       // Fetch user data
+  //       const userResponse = await axios.get('http://localhost:8080/apis/v1/users');
+  //       setUser(userResponse.data);
+  //        console.log(userResponse);
+
+  //       // Fetch stats
+  //       const statsResponse = await axios.get('http://localhost:8080/stats');
+  //       setStats(statsResponse.data.stats);
+
+  //       // Fetch bookings based on role
+  //       const bookingsEndpoint = userResponse.data.role === 'admin' ? '/bookings' : '/bookings/user';
+  //       const bookingsResponse = await axios.get(`http://localhost:8080${bookingsEndpoint}`);
+  //       setBookings(bookingsResponse.data);
+  //     } catch (error: any) {
+  //       if (error.response?.status === 401 || error.response?.status === 403) {
+  //         localStorage.removeItem('authToken');
+  //         localStorage.removeItem('user');
+  //         sessionStorage.removeItem('authToken');
+  //         sessionStorage.removeItem('user');
+  //         router.push('/login');
+  //       } else {
+  //         setError(error.response?.data?.error || 'Failed to fetch data');
+  //       }
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, [router]);
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Get token from storage
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const token =
+          localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         if (!token) {
           router.push('/login');
           return;
         }
 
-        // Set axios default headers
+        // Decode JWT để lấy email
+        const decoded: JwtPayload = jwt_decode(token);
+        console.log(decoded);
+        if (!decoded.sub) {
+          throw new Error('Email không hợp lệ trong token');
+        }
+
+        // Set Authorization header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        // Fetch user data
-        const userResponse = await axios.get('http://localhost:8080/apis/v1/users');
+        // Fetch user theo email
+        const userResponse = await axios.get<User>(
+          `http://localhost:8080/apis/v1/users/by-email?email=${decoded.sub}`
+        );
         setUser(userResponse.data);
+        localStorage.setItem('user', JSON.stringify(userResponse.data));
 
         // Fetch stats
-        const statsResponse = await axios.get('http://localhost:8080/stats');
+        const statsResponse = await axios.get<{ stats: Stat[] }>(
+          'http://localhost:8080/apis/v1/stats'
+        );
         setStats(statsResponse.data.stats);
 
-        // Fetch bookings based on role
-        const bookingsEndpoint = userResponse.data.role === 'admin' ? '/bookings' : '/bookings/user';
-        const bookingsResponse = await axios.get(`http://localhost:8080${bookingsEndpoint}`);
+        // Fetch bookings dựa theo role
+        const bookingsEndpoint =
+          userResponse.data.role.toUpperCase() === 'ADMIN'
+            ? '/bookings'
+            : '/bookings/user';
+        const bookingsResponse = await axios.get<Booking[]>(
+          `http://localhost:8080${bookingsEndpoint}`
+        );
         setBookings(bookingsResponse.data);
-      } catch (error: any) {
-        if (error.response?.status === 401 || error.response?.status === 403) {
+      } catch (err: any) {
+        console.error(err);
+        if (err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
           sessionStorage.removeItem('authToken');
           sessionStorage.removeItem('user');
           router.push('/login');
         } else {
-          setError(error.response?.data?.error || 'Failed to fetch data');
+          setError(err.message || 'Failed to fetch data');
         }
       } finally {
         setIsLoading(false);
@@ -95,7 +171,6 @@ export default function DashboardPage() {
 
     fetchData();
   }, [router]);
-
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
@@ -162,11 +237,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded">
-            Error: {error}
-          </div>
-        )}
+
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Chào mừng trở lại, {user.name}!</h1>

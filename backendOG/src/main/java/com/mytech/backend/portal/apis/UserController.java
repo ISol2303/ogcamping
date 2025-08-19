@@ -3,7 +3,6 @@ package com.mytech.backend.portal.apis;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.services.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,11 +12,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/apis/v1/users", "/apis/test/users"})
+@RequestMapping("/apis/v1/users")
 @RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
+
+    private final UserService userService; // dùng final + @RequiredArgsConstructor, không cần @Autowired nữa
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -32,15 +31,11 @@ public class UserController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #id")
     public ResponseEntity<UserDTO> getUser(@PathVariable("id") Long id) {
-        try {
-            UserDTO user = userService.getUserById(id);
-            if (user == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-            }
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch user: " + e.getMessage());
+        UserDTO user = userService.getUserById(id);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
+        return ResponseEntity.ok(user);
     }
 
     @PutMapping("/{id}")
@@ -67,10 +62,13 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
-        try {
-            return ResponseEntity.ok(userService.getAllUsers());
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to fetch users: " + e.getMessage());
-        }
+        return ResponseEntity.ok(userService.getAllUsers());
     }
+
+    @GetMapping("/by-email")
+    public ResponseEntity<UserDTO> getUserByEmail(@RequestParam(name = "email") String email) {
+        UserDTO userDTO = userService.getUserByEmail(email);
+        return ResponseEntity.ok(userDTO);
+    }
+
 }

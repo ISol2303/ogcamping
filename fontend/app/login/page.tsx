@@ -20,8 +20,8 @@ export default function LoginPage() {
     password: '',
     remember: false,
   });
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [error, setError] = useState<string | null>(null);
+  // const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,56 +59,33 @@ export default function LoginPage() {
       console.error('Lỗi đăng nhập:', err);
       setError(
         err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          'Đăng nhập thất bại. Vui lòng thử lại.'
+        err.response?.data?.message ||
+        err.message ||
+        'Đăng nhập thất bại. Vui lòng thử lại.'
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
-    setError(null);
-    setIsLoading(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const handleGoogleLogin = async () => {
     try {
-      const idToken = await result.user.getIdToken();
+      setError(null);
+      setIsLoading(true);
 
-      // Gửi token Firebase đến backend để xác thực
-      const response = await fetch('/api/auth/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, provider }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại.');
-      }
-
-      const { token, user } = data;
-      const role = (user.role || 'CUSTOMER').toString().toUpperCase();
-      const fullUser = { ...user, role };
-      const storage = formData.remember ? localStorage : sessionStorage;
-
-      storage.setItem('authToken', token);
-      storage.setItem('user', JSON.stringify(fullUser));
-
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else if (role === 'STAFF') {
-        router.push('/staff');
-      } else {
-        router.push('/dashboard');
-      }
+      // Điều hướng sang backend Spring Boot OAuth2
+      window.location.href = "http://localhost:8080/oauth2/authorization/google";
     } catch (err: any) {
-      console.error(`Lỗi đăng nhập ${provider}:`, err);
-      setError(err.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`);
+      console.error("Lỗi đăng nhập Google:", err);
+      setError("Đăng nhập bằng Google thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -235,7 +212,9 @@ export default function LoginPage() {
               <Button
                 variant="outline"
                 className="h-12 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                onClick={() => handleSocialLogin('google')}
+                onClick={() => {
+                  window.location.href = "http://localhost:8080/oauth2/authorization/google";
+                }}
                 disabled={isLoading}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">

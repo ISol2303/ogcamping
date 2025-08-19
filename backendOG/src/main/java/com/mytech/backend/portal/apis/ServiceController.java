@@ -1,5 +1,6 @@
 package com.mytech.backend.portal.apis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mytech.backend.portal.dto.Service.ServiceRequestDTO;
 import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
 import com.mytech.backend.portal.services.Service.ServiceService;
@@ -41,14 +42,17 @@ public class ServiceController {
 //        return ResponseEntity.ok(service);
 //    }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping
     public ResponseEntity<ServiceResponseDTO> createService(
-            @RequestPart("service") ServiceRequestDTO serviceDto,
-            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) throws IOException {
-
-        ServiceResponseDTO result = serviceService.createService(serviceDto, imageFile);
-        return ResponseEntity.ok(result);
+            @RequestPart("service") String serviceJson,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+    ) throws IOException {
+        // Chuyển JSON string thành DTO
+        ServiceRequestDTO dto = new ObjectMapper().readValue(serviceJson, ServiceRequestDTO.class);
+        ServiceResponseDTO response = serviceService.createService(dto, imageFile);
+        return ResponseEntity.ok(response);
     }
+
 
     // PUT /services/{id} → cập nhật
     @PutMapping("/{id}")

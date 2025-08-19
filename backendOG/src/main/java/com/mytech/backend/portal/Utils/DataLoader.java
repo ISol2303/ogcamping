@@ -7,10 +7,8 @@ import com.mytech.backend.portal.models.Combo.ComboItem;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.Service.ServiceTag;
-import com.mytech.backend.portal.repositories.BookingRepository;
-import com.mytech.backend.portal.repositories.ComboRepository;
-import com.mytech.backend.portal.repositories.CustomerRepository;
-import com.mytech.backend.portal.repositories.ServiceRepository;
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -29,46 +27,88 @@ public class DataLoader {
     private final ComboRepository comboRepo;
 
     @Bean
-    CommandLineRunner seed() {
+    CommandLineRunner seed(UserRepository userRepository) {
         return args -> {
             if (serviceRepo.count() > 0 || customerRepo.count() > 0 || comboRepo.count() > 0) return;
 
-            // --- 1. Tạo Customer ---
-            Customer c1 = customerRepo.save(Customer.builder()
-                    .firstName("Nguyen").lastName("An")
-                    .email("an@example.com").phone("0909123456")
-                    .address("Ha Noi").build());
+            // --- 1. Tạo User + Customer ---
+            User u1 = userRepository.save(User.builder()
+                    .name("Nguyen An")
+                    .email("an@example.com")
+                    .password("123456")
+                    .phone("0909123456")
+                    .role(User.Role.CUSTOMER)
+                    .status(User.Status.ACTIVE)
+                    .build());
 
-            Customer c2 = customerRepo.save(Customer.builder()
-                    .firstName("Tran").lastName("Binh")
-                    .email("binh@example.com").phone("0909988776")
-                    .address("Da Nang").build());
+            Customer c1 = Customer.builder()
+                    .firstName("Nguyen")
+                    .lastName("An")
+                    .email("an@example.com")
+                    .phone("0909123456")
+                    .address("Ha Noi")
+                    .user(u1)   // 🔗 liên kết User
+                    .build();
+            customerRepo.save(c1);
+
+            // --- 2. User + Customer khác ---
+            User u2 = userRepository.save(User.builder()
+                    .name("Tran Binh")
+                    .email("binh@example.com")
+                    .password("123456")
+                    .phone("0909988776")
+                    .role(User.Role.CUSTOMER)
+                    .status(User.Status.ACTIVE)
+                    .build());
+
+            Customer c2 = Customer.builder()
+                    .firstName("Tran")
+                    .lastName("Binh")
+                    .email("binh@example.com")
+                    .phone("0909988776")
+                    .address("Da Nang")
+                    .user(u2)
+                    .build();
+            customerRepo.save(c2);
 
             // --- Additional Customers ---
-            Customer c3 = customerRepo.save(Customer.builder()
-                    .firstName("Le").lastName("Cuong")
-                    .email("cuong@example.com").phone("0912345678")
-                    .address("Ho Chi Minh").build());
+            User u3 = userRepository.save(User.builder()
+                    .name("Le Cuong")
+                    .email("cuong@example.com")
+                    .password("123456")
+                    .phone("0912345678")
+                    .role(User.Role.CUSTOMER)
+                    .status(User.Status.ACTIVE)
+                    .build());
 
-            Customer c4 = customerRepo.save(Customer.builder()
-                    .firstName("Pham").lastName("Dung")
-                    .email("dung@example.com").phone("0933445566")
-                    .address("Hai Phong").build());
+            Customer c3 = Customer.builder()
+                    .firstName("Le")
+                    .lastName("Cuong")
+                    .email("cuong@example.com")
+                    .phone("0912345678")
+                    .address("Ho Chi Minh")
+                    .user(u3)
+                    .build();
+            customerRepo.save(c3);
 
-            Customer c5 = customerRepo.save(Customer.builder()
-                    .firstName("Hoang").lastName("Em")
-                    .email("em@example.com").phone("0988776655")
-                    .address("Can Tho").build());
+            User u4 = userRepository.save(User.builder()
+                    .name("Pham Dung")
+                    .email("dung@example.com")
+                    .password("123456")
+                    .phone("0933445566")
+                    .role(User.Role.CUSTOMER)
+                    .status(User.Status.ACTIVE)
+                    .build());
 
-            Customer c6 = customerRepo.save(Customer.builder()
-                    .firstName("Vu").lastName("Phong")
-                    .email("phong@example.com").phone("0977112233")
-                    .address("Hue").build());
-
-            Customer c7 = customerRepo.save(Customer.builder()
-                    .firstName("Do").lastName("Hanh")
-                    .email("hanh@example.com").phone("0944556677")
-                    .address("Nha Trang").build());
+            Customer c4 = Customer.builder()
+                    .firstName("Pham")
+                    .lastName("Dung")
+                    .email("dung@example.com")
+                    .phone("0933445566")
+                    .address("Hai Phong")
+                    .user(u4)
+                    .build();
+            customerRepo.save(c4);
 
             // --- 2. Tạo Service ---
             Service s1 = serviceRepo.save(Service.builder()
@@ -266,7 +306,7 @@ public class DataLoader {
                     .build());
 
             bookingRepo.save(Booking.builder()
-                    .customer(c5)
+                    .customer(c4)
                     .service(s7)
                     .checkInDate(LocalDate.now().plusDays(3))
                     .checkOutDate(LocalDate.now().plusDays(3))
@@ -276,7 +316,7 @@ public class DataLoader {
                     .build());
 
             bookingRepo.save(Booking.builder()
-                    .customer(c6)
+                    .customer(c1)
                     .service(s8)
                     .checkInDate(LocalDate.now().plusDays(20))
                     .checkOutDate(LocalDate.now().plusDays(20))
@@ -286,7 +326,7 @@ public class DataLoader {
                     .build());
 
             bookingRepo.save(Booking.builder()
-                    .customer(c7)
+                    .customer(c3)
                     .service(s9)
                     .checkInDate(LocalDate.now().plusDays(12))
                     .checkOutDate(LocalDate.now().plusDays(14))
@@ -336,7 +376,7 @@ public class DataLoader {
                     .build());
 
             bookingRepo.save(Booking.builder()
-                    .customer(c5)
+                    .customer(c2)
                     .service(s14)
                     .checkInDate(LocalDate.now().plusDays(5))
                     .checkOutDate(LocalDate.now().plusDays(5))
