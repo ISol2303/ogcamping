@@ -209,12 +209,14 @@ export default function CustomServicePage() {
     }))
   }
 
-const handleMealToggle = (meal: string) => {
-    setServiceData((prev) => ({
-      ...prev,
-      meals: prev.meals.includes(meal.value) ? prev.meals.filter((m) => m !== meal.value) : [...prev.meals, meal.value],
-    }))
-  }
+const handleMealToggle = (meal: { value: string }) => {
+  setServiceData((prev) => ({
+    ...prev,
+    meals: prev.meals.includes(meal.value)
+      ? prev.meals.filter((m) => m !== meal.value)
+      : [...prev.meals, meal.value],
+  }))
+
 
 
   const handleSubmit = () => {
@@ -229,7 +231,7 @@ const handleMealToggle = (meal: string) => {
     setCurrentStep(4) // Success step
   }
 
-  const categories = [...new Set(equipment.map((item) => item.category))]
+  const categories = Array.from(new Set(equipment.map((item) => item.category)))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -789,4 +791,5 @@ const handleMealToggle = (meal: string) => {
       </div>
     </div>
   )
+}
 }

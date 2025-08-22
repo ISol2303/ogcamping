@@ -24,7 +24,7 @@ export default function ServiceDetailPage() {
     capacity: "4-6 người",
     price: 2500000,
     rating: 4.8,
-    reviews: 124,
+    reviewsCount: 124,
     availability: "Còn 3 slot",
     description:
       "Trải nghiệm cắm trại trên núi cao với view tuyệt đẹp, bao gồm lều, thực phẩm và hướng dẫn viên chuyên nghiệp. Khám phá vẻ đẹp hoang sơ của núi rừng Tây Bắc.",
