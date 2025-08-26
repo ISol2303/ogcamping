@@ -17,36 +17,22 @@ interface User {
   role: string | string[];
 }
 
-export interface Equipment {
-  _id: string;
-  name: string;
-  category: string;
-  area: string;
-  description: string;
-  quantity_in_stock: number;
-  available: number;
-  price_per_day: number;
-  status: string;
-  image_url?: string;
-}
-
 export const submitEquipment = async (token: string, data: SubmitEquipmentRequest): Promise<void> => {
   try {
     const formData = new FormData();
     formData.append('name', data.name);
-    formData.append('category', data.category.toUpperCase());
-    formData.append('area', data.area.toUpperCase());
+    formData.append('category', data.category);
+    formData.append('area', data.area);
     formData.append('description', data.description);
     formData.append('quantity_in_stock', data.quantity_in_stock.toString());
     formData.append('available', data.available.toString());
     formData.append('price_per_day', data.price_per_day.toString());
-    formData.append('status', data.status.toUpperCase());
+    formData.append('status', data.status);
     if (data.image) {
       formData.append('image', data.image);
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    await axios.post(`${API_URL}/apis/v1/gears`, formData, {
+    await axios.post('http://localhost:8080/apis/v1/gears', formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
@@ -56,43 +42,16 @@ export const submitEquipment = async (token: string, data: SubmitEquipmentReques
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to submit equipment';
+
     console.error('Error submitting equipment:', { status, message, data });
-    throw { status, data, message };
-  }
-};
 
-export const fetchEquipment = async (): Promise<Equipment[]> => {
-  try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await axios.get(`${API_URL}/apis/v1/gears`);
-
-    return response.data.map((item: any) => ({
-      _id: item._id ?? item.id ?? '',
-      name: item.name ?? '',
-      category: item.category ?? '',
-      area: item.area ?? '',
-      description: item.description ?? '',
-      quantity_in_stock: Number(item.quantityInStock ?? item.quantity_in_stock ?? 0),
-      available: Number(item.available ?? 0),
-      price_per_day: Number(item.pricePerDay ?? item.price_per_day ?? 0),
-      status: (item.status ?? '').toString().toLowerCase(),
-      image_url: item.image && !item.image.includes('lorempixel.com')
-        ? item.image
-        : '/placeholder.jpg', // Fallback for invalid or lorempixel URLs
-    }));
-  } catch (error: any) {
-    const status = error.response?.status || 500;
-    const data = error.response?.data || {};
-    const message = data.error || error.message || 'Failed to fetch equipment';
-    console.error('Error fetching equipment:', { status, message, data });
     throw { status, data, message };
   }
 };
 
 export const fetchUser = async (token: string, id: number): Promise<User> => {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await axios.get(`${API_URL}/apis/v1/users/${id}`, {
+    const response = await axios.get(`http://localhost:8080/apis/v1/users/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -103,7 +62,9 @@ export const fetchUser = async (token: string, id: number): Promise<User> => {
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to fetch user';
+
     console.error('Error fetching user:', { status, message, data });
+
     throw { status, data, message };
   }
 };

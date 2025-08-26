@@ -16,14 +16,14 @@ export default function HomePage() {
   const router = useRouter()
 
   // Check login status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
+    useEffect(() => {
+      const token = localStorage.getItem('authToken')
+      const userData = localStorage.getItem('user')
+      if (token && userData) {
+        setIsLoggedIn(true)
+        setUser(JSON.parse(userData))
+      }
+    }, [])
 
   // Handle logout
   const handleLogout = () => {
@@ -34,15 +34,18 @@ export default function HomePage() {
   }
 
   // Handle dashboard navigation based on role
-  const handleDashboardNavigation = () => {
+    const handleDashboardNavigation = () => {
     if (user?.role === 'ADMIN') {
       router.push('/admin')
     } else if (user?.role === 'STAFF') {
       router.push('/staff')
-    } else {
+    } else if (user?.role === 'CUSTOMER') {
       router.push('/dashboard')
+    } else if (user?.role === 'GUEST') {
+      router.push('/dashboard')  // về HomePage
     }
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">

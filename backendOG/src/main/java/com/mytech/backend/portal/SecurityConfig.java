@@ -44,7 +44,6 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.authorizeHttpRequests((authorite) -> authorite
-				.requestMatchers("/uploads/**").permitAll()
 				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
 		
 		http.formLogin((form) -> form.defaultSuccessUrl("/"));

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { PackageFormData } from './package';
 
-
 // Define interfaces for request and response data
 interface Stat {
   title: string;
@@ -58,7 +57,7 @@ interface Customer {
   phone: string;
   bookings: number;
   spent: number;
-  joinDate: string;
+  created_at: string;
 }
 
 interface User {
@@ -116,59 +115,51 @@ export const fetchUser = async (token: string, id: number): Promise<User> => {
     throw { status, data, message };
   }
 };
-export async function submitEquipment(token: string, formData: FormData) {
+export async function submitEquipment(token: string, data: any) {
   try {
-    const normalizedFormData = new FormData();
-
-    // Ép các field enum sang uppercase
-    formData.forEach((value, key) => {
-      if (['status', 'category', 'area'].includes(key) && typeof value === 'string') {
-        normalizedFormData.append(key, value.toUpperCase());
-      } else {
-        normalizedFormData.append(key, value);
-      }
-    });
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('category', data.category);
+    formData.append('area', data.area);
+    formData.append('description', data.description);
+    formData.append('quantity_in_stock', String(data.quantity_in_stock));
+    formData.append('available', String(data.available));
+    formData.append('price_per_day', String(data.price_per_day));
+    formData.append('status', data.status);
+    if (data.image) {
+      formData.append('image', data.image);
+    }
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/apis/v1/gears`, {
       method: 'POST',
-      headers: {
-        Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
-      },
-      body: normalizedFormData,
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
     });
 
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-      let errorData: any = null;
-
-      if (contentType && contentType.includes("application/json")) {
+      let errorData = null;
+      try {
         errorData = await res.json();
-      } else {
-        errorData = await res.text();
+      } catch {
+        /* ignore parse error */
       }
-
-      console.error("❌ Backend trả lỗi:", {
-        status: res.status,
-        errorData,
-      });
-
       throw {
         status: res.status,
-        message:
-          typeof errorData === "string"
-            ? errorData
-            : errorData?.message || `Lỗi ${res.status} khi thêm thiết bị`,
+        message: errorData?.message || 'Lỗi khi thêm thiết bị',
         errorData,
       };
     }
 
     return await res.json();
   } catch (err: any) {
-    console.error("❌ Error submitting equipment:", err);
+    console.error('Error submitting equipment:', {
+      status: err?.status || 500,
+      message: err?.message || 'Unknown error',
+      errorData: err?.errorData || null,
+    });
     throw err;
   }
 }
-
 
 
 /**
@@ -222,48 +213,23 @@ export const fetchBookings = async (token: string): Promise<Booking[]> => {
 /**
  * Fetch staff members
  */
-/**
- * Fetch staff members (only users with role "staff")
- */
 export const fetchStaff = async (token: string): Promise<Staff[]> => {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-    // Gọi API kèm query role=staff nếu backend hỗ trợ
     const response = await axios.get(`${API_URL}/apis/v1/users?role=staff`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    // Nếu backend không filter được thì lọc tại frontend
-    const staffList = Array.isArray(response.data)
-      ? response.data.filter((user: any) =>
-          Array.isArray(user.role)
-            ? user.role.includes('STAFF')
-            : user.role === 'STAFF'
-        )
-      : [];
-
-    // Chuẩn hóa dữ liệu
-    return staffList.map((s: any) => ({
-      _id: s.id || s._id,
-      name: s.name,
-      email: s.email,
-      phone: s.phone,
-      role: 'staff',
-      department: s.department || '',
-      joinDate: s.joinDate || '',
-      status: s.status?.toLowerCase() === 'active' ? 'active' : 'inactive',
-    }));
+    return response.data;
   } catch (error: any) {
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to fetch staff';
 
     console.error('Error fetching staff:', { status, message, data });
+
     throw { status, data, message };
   }
 };
-
 
 /**
  * Fetch services (packages)
@@ -295,67 +261,35 @@ export const fetchEquipment = async (token: string): Promise<Equipment[]> => {
     const response = await axios.get(`${API_URL}/apis/v1/gears`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    // Chuẩn hoá dữ liệu
-    return response.data.map((gear: any) => ({
-      _id: gear.id || gear._id, // đảm bảo có _id
-      name: gear.name,
-      category: gear.category,
-      price_per_day: gear.pricePerDay ?? gear.price_per_day,
-      available: gear.available,
-      total: gear.quantityInStock ?? gear.total,
-      status: gear.status.toLowerCase() as 'available' | 'out_of_stock' | 'maintenance',
-    }));
+    return response.data;
   } catch (error: any) {
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to fetch equipment';
 
     console.error('Error fetching equipment:', { status, message, data });
+
     throw { status, data, message };
   }
 };
 
-
 /**
  * Fetch customers
- */
-/**
- * Fetch customers (only users with role "customer")
  */
 export const fetchCustomers = async (token: string): Promise<Customer[]> => {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-    // Gọi API với query filter role=customer (nếu backend hỗ trợ)
-    const response = await axios.get(`${API_URL}/apis/v1/users?role=customer`, {
+    const response = await axios.get(`${API_URL}/apis/v1/users`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-
-    // Nếu backend chưa filter, thì filter ở frontend
-    const customers = Array.isArray(response.data)
-      ? response.data.filter((user: any) =>
-          Array.isArray(user.role)
-            ? user.role.includes('CUSTOMER')
-            : user.role === 'CUSTOMER'
-        )
-      : [];
-
-    // Chuẩn hóa dữ liệu
-    return customers.map((c: any) => ({
-      _id: c.id || c._id,
-      name: c.name,
-      email: c.email,
-      phone: c.phone,
-      bookings: c.bookings ?? 0,
-      spent: c.spent ?? 0,
-      joinDate: c.joinDate || c.joinDate || '',
-    }));
+    return response.data;
   } catch (error: any) {
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to fetch customers';
+
     console.error('Error fetching customers:', { status, message, data });
+
     throw { status, data, message };
   }
 };

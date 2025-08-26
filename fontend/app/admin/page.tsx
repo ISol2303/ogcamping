@@ -104,7 +104,7 @@ interface Customer {
   phone: string;
   bookings: number;
   spent: number;
-  joinDate: string;
+  created_at: string;
 }
 
 interface User {
@@ -998,11 +998,7 @@ export default function AdminDashboard() {
                     <CardTitle>Quản lý thiết bị</CardTitle>
                     <CardDescription>Kho thiết bị cho thuê</CardDescription>
                   </div>
-                   <div className="flex gap-2">
-                  <Dialog open={isCreateStaffOpen} onOpenChange={setIsCreateStaffOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-green-600 hover:bg-green-700 text-white border-0">
-                          <Plus className="w-4 h-4 mr-2" />
+                  <Button className="bg-green-600 hover:bg-green-700 text-white border-0" asChild>
                     <Link
                       href={{
                         pathname: '/admin/equipment/new',
@@ -1012,17 +1008,10 @@ export default function AdminDashboard() {
                         },
                       }}
                     >
-                      
+                      <Plus className="w-4 h-4 mr-2" />
                       Thêm thiết bị
                     </Link>
                   </Button>
-                  </DialogTrigger>
-                    </Dialog>
-                  <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-                    <Download className="w-4 h-4 mr-2" />
-                    Xuất danh sách
-                  </Button>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1140,8 +1129,8 @@ export default function AdminDashboard() {
                             : 'N/A'}
                         </TableCell>
                         <TableCell>
-                          {customer.joinDate && !isNaN(new Date(customer.joinDate).getTime())
-                            ? new Date(customer.joinDate).toLocaleDateString('vi-VN')
+                          {customer.created_at && !isNaN(new Date(customer.created_at).getTime())
+                            ? new Date(customer.created_at).toLocaleDateString('vi-VN')
                             : 'N/A'}
                         </TableCell>
                         <TableCell>

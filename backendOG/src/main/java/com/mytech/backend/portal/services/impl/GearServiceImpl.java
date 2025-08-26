@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mytech.backend.portal.dto.GearDTO;
-import com.mytech.backend.portal.models.Area.AreaName;
-import com.mytech.backend.portal.models.Category.CategoryName;
 import com.mytech.backend.portal.models.Gear;
-import com.mytech.backend.portal.models.Gear.GearStatus;
 import com.mytech.backend.portal.repositories.GearRepository;
 import com.mytech.backend.portal.services.GearService;
 
@@ -24,7 +21,6 @@ public class GearServiceImpl implements GearService {
     private GearRepository gearRepository;
 	@Autowired
     private ModelMapper modelMapper;
-	private final GearMapper gearMapper = new GearMapper();
 
     @Override
     public GearDTO createGear(GearDTO dto) {
@@ -57,30 +53,4 @@ public class GearServiceImpl implements GearService {
     public void deleteGear(Long id) {
         gearRepository.deleteById(id);
     }
-    
-    private GearDTO mapToDTO(Gear gear) {
-        return modelMapper.map(gear, GearDTO.class);
-    }
-
-	@Override
-	public List<GearDTO> findAll() {
-		return gearRepository.findAll()
-	            .stream()
-	            .map(gear -> mapToDTO(gear))
-	            .collect(Collectors.toList());
-	}
-
-	@Override
-	public List<GearDTO> searchGears(String name, CategoryName category, AreaName area, GearStatus status) {
-		 List<Gear> gears = gearRepository.searchGears(
-			        (name != null && !name.isEmpty()) ? name : null,
-			        category,
-			        area,
-			        status
-			    );
-
-			    return gears.stream()
-			            .map(gearMapper::toDTO) // hoặc convert thủ công
-			            .toList();
-	}
 }

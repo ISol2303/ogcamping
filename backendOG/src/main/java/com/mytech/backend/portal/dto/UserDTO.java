@@ -1,7 +1,5 @@
 package com.mytech.backend.portal.dto;
 
-import java.time.LocalDate;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,10 +18,9 @@ public class UserDTO {
     private String password;
     private String phone;
     private String department;
-    private LocalDate joinDate;
+    private String joinDate;
     private String status;
     private Boolean agreeMarketing;
-    
     
 	public Long getId() {
 		return id;
@@ -67,11 +64,10 @@ public class UserDTO {
 	public void setDepartment(String department) {
 		this.department = department;
 	}
-	
-	public LocalDate getJoinDate() {
+	public String getJoinDate() {
 		return joinDate;
 	}
-	public void setJoinDate(LocalDate joinDate) {
+	public void setJoinDate(String joinDate) {
 		this.joinDate = joinDate;
 	}
 	public String getStatus() {
@@ -137,7 +133,7 @@ public class UserDTO {
             return this;
         }
 
-        public Builder joinDate(LocalDate joinDate) {
+        public Builder joinDate(String joinDate) {
             userDTO.setJoinDate(joinDate);
             return this;
         }

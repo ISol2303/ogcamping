@@ -32,7 +32,7 @@ public class Area extends AbstractEntity{
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum AreaName {
-    	INSIDE_TENT, OUTSIDE_TENT, KITCHEN
+        TRONG_LEU, NGOAI_LEU, BEP
     }
 
 	public Long getId() {

@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StatDTO {
     private String title;
-    private String label;
     private String value;
     private String icon;
     private String color;
@@ -19,9 +18,6 @@ public class StatDTO {
 	public String getTitle() {
 		return title;
 	}
-	public StatDTO() {
-		super();
-	}
 	public StatDTO(String title, String value, String icon, String color, String change) {
 		super();
 		this.title = title;
@@ -29,12 +25,6 @@ public class StatDTO {
 		this.icon = icon;
 		this.color = color;
 		this.change = change;
-	}
-	
-	public StatDTO(String label, long totalUsers) {
-		super();
-		this.label = label;
-		this.value = String.valueOf(totalUsers);
 	}
 	public void setTitle(String title) {
 		this.title = title;
@@ -62,12 +52,6 @@ public class StatDTO {
 	}
 	public void setChange(String change) {
 		this.change = change;
-	}
-	public String getLabel() {
-		return label;
-	}
-	public void setLabel(String label) {
-		this.label = label;
 	}
     
 }

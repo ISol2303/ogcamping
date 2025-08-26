@@ -1,7 +1,5 @@
 package com.mytech.backend.portal.services.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,14 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.exceptions.ResourceAlreadyExistsException;
 import com.mytech.backend.portal.exceptions.ResourceNotFoundException;
 import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.repositories.BookingRepository;
-import com.mytech.backend.portal.repositories.GearRepository;
-import com.mytech.backend.portal.repositories.PackageRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import com.mytech.backend.portal.services.UserService;
 
@@ -29,15 +23,6 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 	@Autowired
     private BCryptPasswordEncoder passwordEncoder;
-	@Autowired
-	private BookingRepository bookingRepository;
-
-	@Autowired
-	private PackageRepository packageRepository;
-
-	@Autowired
-	private GearRepository gearRepository;
-
 
     @Override
     public UserDTO createUser(UserDTO userDTO) {
@@ -125,32 +110,7 @@ public class UserServiceImpl implements UserService {
 	public User save(User user) {
 		// TODO Auto-generated method stub
 		return userRepository.save(user);
-	}	
-
-	@Override
-    public UserDTO findById(Long id) {
-        return userRepository.findById(id)
-                .map(this::mapToDTO)
-                .orElse(null);
-    }
-
-	@Override
-	public Collection<StatDTO> findAllStats() {
-	    long totalUsers = userRepository.count();
-	    long totalBookings = bookingRepository.count();
-	    long totalPackages = packageRepository.count();
-	    long totalGears = gearRepository.count();
-
-	    List<StatDTO> stats = new ArrayList<>();
-	    stats.add(new StatDTO("Total Users", totalUsers));
-	    stats.add(new StatDTO("Total Bookings", totalBookings));
-	    stats.add(new StatDTO("Total Packages", totalPackages));
-	    stats.add(new StatDTO("Total Gears", totalGears));
-
-	    return stats;
 	}
+
+	
 }
-
-
-	
-	

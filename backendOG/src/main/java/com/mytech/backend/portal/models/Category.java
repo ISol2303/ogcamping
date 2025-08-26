@@ -32,7 +32,7 @@ public class Category extends AbstractEntity{
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum CategoryName {
-    	TENT, SLEEPING_BAG, AIR_MATTRESS, FOLDING_TABLE, FOLDING_CHAIR, STOVE, LAMP, OTHER
+        LEU, TUI_NGU, DEM_HOI, BAN_XEP, GHE_XEP, BEP, DEN, KHAC
     }
 
 	public Long getId() {

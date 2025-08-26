@@ -50,7 +50,7 @@ public class UserServiceTest {
                 .phone(faker.phoneNumber().cellPhone())
                 .role(random.nextBoolean() ? Role.CUSTOMER : Role.STAFF)
                 .department(faker.commerce().department())
-                .joinDate(LocalDate.now().minusDays(random.nextInt(365)))
+                .joinDate(LocalDate.now().minusDays(random.nextInt(365)).format(dateFormatter))
                 .status(random.nextBoolean() ? Status.ACTIVE : Status.INACTIVE)
                 .agreeMarketing(random.nextBoolean())
                 .createdAt(LocalDateTime.now())

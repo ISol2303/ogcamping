@@ -155,44 +155,38 @@ export default function NewEquipmentPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setSubmitError(null);
+    e.preventDefault();
+    setSubmitError(null);
 
-  if (formData.available > formData.quantity_in_stock) {
-    setSubmitError('Số lượng khả dụng không được vượt quá số lượng tồn kho.');
-    return;
-  }
-  if (!formData.image) {
-    setSubmitError('Vui lòng chọn ảnh.');
-    return;
-  }
-  if (!formData.area) {
-    setSubmitError('Vui lòng chọn khu vực.');
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setSubmitError('Không tìm thấy token xác thực. Vui lòng đăng nhập.');
-      router.push('/login');
+    if (formData.available > formData.quantity_in_stock) {
+      setSubmitError('Số lượng khả dụng không được vượt quá số lượng tồn kho.');
       return;
     }
 
-    const data = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null) data.append(key, value as any);
-      });
+    if (!formData.image) {
+      setSubmitError('Vui lòng chọn ảnh.');
+      return;
+    }
 
-    // page.tsx
-   await submitEquipment(token, data); // Không tạo fd ở đây
- // formData là object EquipmentFormData
-    router.push('/admin?tab=equipment');
-  } catch (err: any) {
-    setSubmitError(err?.message || 'Không thể thêm thiết bị. Vui lòng thử lại.');
-  }
-};
+    if (!formData.area) {
+      setSubmitError('Vui lòng chọn khu vực.');
+      return;
+    }
 
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setSubmitError('Không tìm thấy token xác thực. Vui lòng đăng nhập.');
+        router.push('/login');
+        return;
+      }
+
+      await submitEquipment(token, formData);
+      router.push('/admin?tab=equipment');
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Không thể thêm thiết bị. Vui lòng thử lại.');
+    }
+  };
 
   const handleInputChange = (field: keyof EquipmentFormData, value: string | number | File) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -294,9 +288,9 @@ export default function NewEquipmentPage() {
                     <SelectValue placeholder="Chọn khu vực" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="INSIDE_TENT">Bên trong lều</SelectItem>
-                    <SelectItem value="OUTSIDE_TENT">Bên ngoài lều</SelectItem>
-                    <SelectItem value="KITCHEN">Khu bếp</SelectItem>
+                    <SelectItem value="Inside Tent">Bên trong lều</SelectItem>
+                    <SelectItem value="Outside Tent">Bên ngoài lều</SelectItem>
+                    <SelectItem value="Kitchen">Khu bếp</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,9 +369,8 @@ export default function NewEquipmentPage() {
                     <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AVAILABLE">Còn hàng</SelectItem>
-                    <SelectItem value="OUT_OF_STOCK">Hết hàng</SelectItem>
-                    <SelectItem value="MAINTENANCE">Đang bảo trì</SelectItem>
+                    <SelectItem value="available">Còn hàng</SelectItem>
+                    <SelectItem value="out_of_stock">Hết hàng</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

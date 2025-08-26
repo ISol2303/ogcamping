@@ -94,7 +94,7 @@ public class AppRestController {
         newUser.setName(signUpRequest.getName());
         newUser.setPhone(signUpRequest.getPhone());
         newUser.setPassword(new BCryptPasswordEncoder().encode(signUpRequest.getPassword()));
-        newUser.setRole(User.Role.CUSTOMER);
+        newUser.setRole(User.Role.GUEST);
 
         userService.save(newUser);
 

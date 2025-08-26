@@ -11,7 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tent, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, AuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -68,47 +69,54 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
-    setError(null);
-    setIsLoading(true);
+const handleSocialLogin = async (provider: "google" | "facebook") => {
+  setError(null);
+  setIsLoading(true);
+  try {
+    const providerInstance: AuthProvider =
+      provider === "google" ? new GoogleAuthProvider() : new FacebookAuthProvider();
 
-    try {
-      const idToken = await result.user.getIdToken();
-
-      // Gửi token Firebase đến backend để xác thực
-      const response = await fetch('/api/auth/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, provider }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại.');
-      }
-
-      const { token, user } = data;
-      const role = (user.role || 'CUSTOMER').toString().toUpperCase();
-      const fullUser = { ...user, role };
-      const storage = formData.remember ? localStorage : sessionStorage;
-
-      storage.setItem('authToken', token);
-      storage.setItem('user', JSON.stringify(fullUser));
-
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else if (role === 'STAFF') {
-        router.push('/staff');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err: any) {
-      console.error(`Lỗi đăng nhập ${provider}:`, err);
-      setError(err.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`);
-    } finally {
-      setIsLoading(false);
+    if (provider === "google") {
+      (providerInstance as GoogleAuthProvider).setCustomParameters({ prompt: "select_account" });
     }
-  };
+
+    const result = await signInWithPopup(auth, providerInstance);
+    const idToken = await result.user.getIdToken();
+    
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+    const response = await fetch(`${API_BASE}/api/auth/exchange`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }), // ✅ gửi idToken lên backend
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || "Đăng nhập thất bại.");
+
+    const { token, user } = data;
+    const role = (user.role || "CUSTOMER").toString().toUpperCase();
+    const fullUser = { ...user, role };
+    const storage = formData.remember ? localStorage : sessionStorage;
+
+    storage.setItem("authToken", token);
+    storage.setItem("user", JSON.stringify(fullUser));
+
+    if (role === "ADMIN") router.push("/admin");
+    else if (role === "STAFF") router.push("/staff");
+    else router.push("/dashboard");
+  } catch (err: any) {
+    const code = err?.code as string | undefined;
+    const friendly =
+      code === "auth/popup-closed-by-user" ? "Bạn đã đóng cửa sổ đăng nhập." :
+      code === "auth/account-exists-with-different-credential" ? "Email này đã liên kết với nhà cung cấp khác." :
+      err?.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`;
+    console.error(`Lỗi đăng nhập ${provider}:`, err);
+    setError(friendly);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
