@@ -1,29 +1,15 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Tent,
-  Calendar,
-  Package,
-  Users,
-  TrendingUp,
-  Bell,
-  Settings,
-  LogOut,
-  BarChart3,
-  ShoppingCart,
-  MessageCircle,
-  Star,
-} from 'lucide-react';
-import Link from 'next/link';
-
+import { useState, useEffect, Suspense } from 'react'; 
+import { useRouter } from 'next/navigation'; 
+import axios from 'axios'; 
+import { Button } from '@/components/ui/button'; 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; 
+import { Badge } from '@/components/ui/badge'; 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; 
+import { Tent, Calendar, Package, Users, TrendingUp, Bell, Settings, LogOut, BarChart3, ShoppingCart, MessageCircle, Star, } from 'lucide-react';
+import Link from 'next/link'; import { useParams, useSearchParams } from "next/navigation" 
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 interface Booking {
   _id: string;
   service: string;
@@ -42,52 +28,55 @@ interface Stat {
   color: string;
 }
 
+interface User {
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  avatar?: string;
+}
+
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ name: string; email: string; phone?: string; role: string; avatar?: string } | null>(null);
-  const [stats, setStats] = useState<Stat[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<Stat[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        // Get token from storage
         const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        if (!token) {
+        const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+
+        if (!token || !userData) {
           router.push('/login');
           return;
         }
 
-        // Set axios default headers
+        // Parse user
+        const parsedUser: User = JSON.parse(userData);
+        setUser(parsedUser);
+
+        // Set axios default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        // Fetch user data
-        const userResponse = await axios.get('http://localhost:8080/apis/v1/users');
-        setUser(userResponse.data);
+        // Fetch orders
+        // const ordersRes = await axios.get('http://localhost:8080/apis/orders/my-orders');
+        // if (Array.isArray(ordersRes.data)) {
+        //   setPendingOrders(ordersRes.data);
+        // }
 
-        // Fetch stats
-        const statsResponse = await axios.get('http://localhost:8080/stats');
-        setStats(statsResponse.data.stats);
-
-        // Fetch bookings based on role
-        const bookingsEndpoint = userResponse.data.role === 'admin' ? '/bookings' : '/bookings/user';
-        const bookingsResponse = await axios.get(`http://localhost:8080${bookingsEndpoint}`);
-        setBookings(bookingsResponse.data);
-      } catch (error: any) {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          sessionStorage.removeItem('authToken');
-          sessionStorage.removeItem('user');
-          router.push('/login');
-        } else {
-          setError(error.response?.data?.error || 'Failed to fetch data');
-        }
+        // Example stats (mock data)
+        setStats([
+          { title: 'Đơn hàng', value: '12', change: '+5%', icon: 'ShoppingCart', color: 'text-green-600' },
+          { title: 'Khách hàng', value: '8', change: '+2%', icon: 'Users', color: 'text-blue-600' },
+          { title: 'Thiết bị', value: '25', change: '+10%', icon: 'Package', color: 'text-yellow-600' },
+          { title: 'Đánh giá', value: '4.8', change: '+1%', icon: 'Star', color: 'text-purple-600' },
+        ]);
+      } catch (error) {
+        console.error('❌ Lỗi khi fetch data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -97,10 +86,8 @@ export default function DashboardPage() {
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('user');
+    localStorage.clear();
+    sessionStorage.clear();
     router.push('/login');
   };
 
@@ -117,14 +104,6 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>;
-  }
-
-  if (!user) {
-    return null; // Redirect handled in useEffect
-  }
-
   const iconMap: { [key: string]: any } = {
     Calendar,
     Package,
@@ -134,10 +113,16 @@ export default function DashboardPage() {
     Star,
   };
 
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>;
+  }
+
+  if (!user) return null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
+      {/* <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Tent className="h-8 w-8 text-green-600" />
@@ -152,22 +137,17 @@ export default function DashboardPage() {
             </Button>
             <Avatar>
               <AvatarImage src={user.avatar || '/user-avatar.png'} />
-              <AvatarFallback>{user.name?.[0] || 'JD'}</AvatarFallback>
+              <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
             </Avatar>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
-      </header>
+      </header> */}
 
       <div className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded">
-            Error: {error}
-          </div>
-        )}
-        {/* Welcome Section */}
+        {/* Welcome */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Chào mừng trở lại, {user.name}!</h1>
           <p className="text-gray-600">
@@ -177,7 +157,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => {
             const Icon = iconMap[stat.icon];
@@ -197,7 +177,7 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Main Content */}
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full lg:w-auto grid-cols-4">
             <TabsTrigger value="overview">Tổng quan</TabsTrigger>
@@ -206,44 +186,56 @@ export default function DashboardPage() {
             <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
           </TabsList>
 
+          {/* Overview */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Recent Bookings */}
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Orders */}
+              <Card className="lg:col-span-2 shadow-lg rounded-2xl">
                 <CardHeader>
-                  <CardTitle>Đặt chỗ gần đây</CardTitle>
-                  <CardDescription>Các đơn đặt dịch vụ và thiết bị mới nhất</CardDescription>
+                  <CardTitle>Danh sách đơn hàng</CardTitle>
+                  <CardDescription>Các đơn hàng bạn đã đặt</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {bookings.length > 0 ? (
-                      bookings.map((booking) => (
-                        <div key={booking._id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <h4 className="font-medium">{booking.service}</h4>
-                            <p className="text-sm text-gray-600">{booking.date}</p>
-                          </div>
-                          <div className="text-right">
-                            {getStatusBadge(booking.status)}
-                            <p className="text-sm font-medium mt-1">{(booking.amount || 0).toLocaleString('vi-VN')}đ</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-center text-gray-500">Chưa có đặt chỗ nào</p>
-                    )}
-                  </div>
-                  <Button variant="outline" className="w-full mt-4" asChild>
-                    <Link href="/bookings">Xem tất cả</Link>
-                  </Button>
+                  {pendingOrders.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Mã đơn hàng</TableHead>
+                          <TableHead>Khách hàng</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Ngày khởi hành</TableHead>
+                          <TableHead>Giá đơn</TableHead>
+                          <TableHead>Số điện thoại</TableHead>
+                          <TableHead>Số người</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingOrders.map((order, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">#OGC{order._id.slice(-6)}</TableCell>
+                            <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.email}</TableCell>
+                            <TableCell>{new Date(order.bookingDate).toLocaleString()}</TableCell>
+                            <TableCell className="font-medium text-green-600">
+                              {order.totalPrice?.toLocaleString() + ' đ'}
+                            </TableCell>
+                            <TableCell>{order.phone}</TableCell>
+                            <TableCell>{order.people}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-center text-gray-500">Bạn chưa có đơn hàng nào</p>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Quick Actions */}
-              <Card>
+              <Card className="shadow-lg rounded-2xl">
                 <CardHeader>
                   <CardTitle>Thao tác nhanh</CardTitle>
-                  <CardDescription>Các tính năng thường sử dụng</CardDescription>
+                  <CardDescription>Các tính năng thường dùng</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Button className="w-full justify-start" asChild>
@@ -275,95 +267,52 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* AI Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-green-600" />
-                  Gợi ý từ AI
-                </CardTitle>
-                <CardDescription>Dựa trên lịch sử và sở thích của bạn</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg bg-green-50">
-                    <h4 className="font-medium text-green-800 mb-2">Gói được đề xuất</h4>
-                    <p className="text-sm text-green-700 mb-3">
-                      Cắm trại rừng Cát Tiên - phù hợp với sở thích khám phá thiên nhiên của bạn
-                    </p>
-                    <Button size="sm" variant="outline">
-                      Xem chi tiết
-                    </Button>
-                  </div>
-                  <div className="p-4 border rounded-lg bg-blue-50">
-                    <h4 className="font-medium text-blue-800 mb-2">Thiết bị nên thuê</h4>
-                    <p className="text-sm text-blue-700 mb-3">Túi ngủ cao cấp - thích hợp cho chuyến đi núi sắp tới</p>
-                    <Button size="sm" variant="outline">
-                      Thuê ngay
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
+          {/* Bookings */}
           <TabsContent value="bookings">
             <Card>
               <CardHeader>
                 <CardTitle>Lịch sử đặt chỗ</CardTitle>
-                <CardDescription>Quản lý tất cả các đơn đặt dịch vụ và thiết bị</CardDescription>
+                <CardDescription>Tính năng đang phát triển...</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Tính năng đang được phát triển...</p>
-                </div>
-              </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Equipment */}
           <TabsContent value="equipment">
             <Card>
               <CardHeader>
                 <CardTitle>Thiết bị đã thuê</CardTitle>
-                <CardDescription>Theo dõi tình trạng thiết bị và lịch trả</CardDescription>
+                <CardDescription>Tính năng đang phát triển...</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Tính năng đang được phát triển...</p>
-                </div>
-              </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Profile */}
           <TabsContent value="profile">
             <Card>
               <CardHeader>
                 <CardTitle>Thông tin cá nhân</CardTitle>
-                <CardDescription>Cập nhật thông tin tài khoản và cài đặt</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Họ và tên</h4>
-                    <p className="text-gray-600">{user.name}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Email</h4>
-                    <p className="text-gray-600">{user.email}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Số điện thoại</h4>
-                    <p className="text-gray-600">{user.phone || 'Chưa cập nhật'}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Vai trò</h4>
-                    <p className="text-gray-600">{user.role}</p>
-                  </div>
-                  <Button variant="outline">Cập nhật hồ sơ</Button>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-medium">Họ và tên</h4>
+                  <p className="text-gray-600">{user.name}</p>
                 </div>
+                <div>
+                  <h4 className="font-medium">Email</h4>
+                  <p className="text-gray-600">{user.email}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium">Số điện thoại</h4>
+                  <p className="text-gray-600">{user.phone || 'Chưa cập nhật'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium">Vai trò</h4>
+                  <p className="text-gray-600">{user.role}</p>
+                </div>
+                <Button variant="outline">Cập nhật hồ sơ</Button>
               </CardContent>
             </Card>
           </TabsContent>

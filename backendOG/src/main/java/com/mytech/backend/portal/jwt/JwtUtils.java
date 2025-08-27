@@ -46,15 +46,13 @@ public class JwtUtils {
         AppUserDetails userPrincipal = (AppUserDetails) authentication.getPrincipal();
         String role = userPrincipal.roles().stream().findFirst().orElse("USER");
 
-        return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
-                .setIssuedAt(new Date())
-                .setIssuer("TheApartment")
-                .claim("roles", role)
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS512) // Use HS512 for consistency
-                .compact();
-    }
+		return Jwts.builder().setSubject((userPrincipal.getUsername()))
+				.setIssuedAt(new Date())
+				.setIssuer("ogcamping")
+				.claim("roles", userPrincipal.roles())
+				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+				.signWith(key(), SignatureAlgorithm.HS256).compact();
+	}
 
     public String getUserNameFromJwtToken(String token) {
         return Jwts.parserBuilder()
@@ -73,16 +71,32 @@ public class JwtUtils {
                 .getBody();
     }
 
-    public boolean validateJwtToken(String authToken) {
-        try {
-            Jwts.parserBuilder()
-                .setSigningKey(key())
-                .build()
-                .parseClaimsJws(authToken);
-            return true;
-        } catch (Exception e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
-            return false;
-        }
-    }
+	public boolean validateJwtToken(String authToken) {
+		try {
+			Jwts.parserBuilder().setSigningKey(key()).build().parse(authToken);
+			return true;
+		} catch (MalformedJwtException e) {
+			logger.error("Invalid JWT token: {}", e.getMessage());
+		} catch (ExpiredJwtException e) {
+			logger.error("JWT token is expired: {}", e.getMessage());
+		} catch (UnsupportedJwtException e) {
+			logger.error("JWT token is unsupported: {}", e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("JWT claims string is empty: {}", e.getMessage());
+		}
+
+		return false;
+	}
+	
+	public String generateTokenFromEmail(String email) {
+	    return Jwts.builder()
+	            .setSubject(email)
+	            .setIssuedAt(new Date())
+	            .setIssuer("ogcamping")
+	            .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+	            .signWith(key(), SignatureAlgorithm.HS256)
+	            .compact();
+	}
+
+	
 }

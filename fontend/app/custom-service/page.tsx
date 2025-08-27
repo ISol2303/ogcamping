@@ -212,7 +212,7 @@ export default function CustomServicePage() {
 const handleMealToggle = (meal: string) => {
     setServiceData((prev) => ({
       ...prev,
-      meals: prev.meals.includes(meal.value) ? prev.meals.filter((m) => m !== meal.value) : [...prev.meals, meal.value],
+      meals: prev.meals.includes(meal) ? prev.meals.filter((m) => m !== meal) : [...prev.meals, meal],
     }))
   }
 
@@ -229,7 +229,7 @@ const handleMealToggle = (meal: string) => {
     setCurrentStep(4) // Success step
   }
 
-  const categories = [...new Set(equipment.map((item) => item.category))]
+  const categories = Array.from(new Set(equipment.map((item) => item.category)))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -466,7 +466,7 @@ const handleMealToggle = (meal: string) => {
                           <Checkbox
                             id={meal.value}
                             checked={serviceData.meals.includes(meal.value)}
-                            onCheckedChange={() => handleMealToggle(meal)}
+                            onCheckedChange={() => handleMealToggle(meal.value)}
                           />
                           <Label htmlFor={meal.value} className="text-sm flex-1">
                             {meal.label} (+{meal.price.toLocaleString("vi-VN")}đ/người/ngày)

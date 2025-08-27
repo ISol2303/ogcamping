@@ -46,11 +46,13 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+
     // Bỏ @NotBlank để login Google không lỗi
     @Column(nullable = true)
     private String password;
 
     @Column(nullable = true)
+  
     private String phone;
 
     @Enumerated(EnumType.STRING)
