@@ -1,12 +1,13 @@
 package com.mytech.backend.portal.security;
 
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.services.UserService;
 
 @Service
 public class AppUserDetailsService implements UserDetailsService {

@@ -1,23 +1,16 @@
 package com.mytech.backend.portal.services.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
+import com.mytech.backend.portal.exceptions.ResourceAlreadyExistsException;
+import com.mytech.backend.portal.exceptions.ResourceNotFoundException;
 import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.models.Customer.Customer;
-import com.mytech.backend.portal.repositories.BookingRepository;
-import com.mytech.backend.portal.repositories.CustomerRepository;
-import com.mytech.backend.portal.repositories.GearRepository;
-import com.mytech.backend.portal.repositories.PackageRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import com.mytech.backend.portal.services.UserService;
 
@@ -30,171 +23,94 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 	@Autowired
     private BCryptPasswordEncoder passwordEncoder;
-	@Autowired
-	private BookingRepository bookingRepository;
-
-	@Autowired
-	private PackageRepository packageRepository;
-
-	@Autowired
-	private GearRepository gearRepository;
-	@Autowired
-    private CustomerRepository customerRepo;
-    @Autowired
-    private CustomerRepository customerRepository;
 
     @Override
-    @Transactional
     public UserDTO createUser(UserDTO userDTO) {
+        if (userRepository.existsByEmail(userDTO.getEmail())) {
+            throw new ResourceAlreadyExistsException("Email already exists: " + userDTO.getEmail());
+        }
         User user = User.builder()
-                .name(userDTO.getFirstName() + " " + userDTO.getLastName())
+                .name(userDTO.getName())
                 .email(userDTO.getEmail())
-                .password(passwordEncoder.encode(userDTO.getPassword())) // nên encode nếu có security
+                .password(passwordEncoder.encode(userDTO.getPassword()))
                 .phone(userDTO.getPhone())
-                .role(userDTO.getRole() != null 
-                ? User.Role.valueOf(userDTO.getRole().toUpperCase()) 
-                : User.Role.CUSTOMER)
-                .status(userDTO.getStatus() != null 
-                ? User.Status.valueOf(userDTO.getStatus().toUpperCase()) 
-                : User.Status.ACTIVE)
-
+                .role(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : User.Role.CUSTOMER)
+                .department(userDTO.getDepartment())
+                .joinDate(userDTO.getJoinDate())
+                .status(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : User.Status.ACTIVE)
+                .agreeMarketing(userDTO.getAgreeMarketing() != null ? userDTO.getAgreeMarketing() : false)
                 .build();
         user = userRepository.save(user);
-//    Customer 0 Day
-        Customer customer = Customer.builder()
-                .firstName(userDTO.getFirstName())
-                .lastName(userDTO.getLastName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .address(userDTO.getAddress())
-                .user(user)
-                .build();
-        customerRepo.save(customer);
-
-        return mapToDTO(user, customer);
+        return mapToDTO(user);
     }
 
     @Override
     public UserDTO getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Customer customer = customerRepo.findByUser(user).orElse(null);
-        return mapToDTO(user, customer);
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return mapToDTO(user);
     }
 
     @Override
     public List<UserDTO> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(u -> mapToDTO(u, customerRepo.findByUser(u).orElse(null)))
+        return userRepository.findAll().stream()
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
     public UserDTO updateUser(Long id, UserDTO userDTO) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         user.setName(userDTO.getName());
         user.setEmail(userDTO.getEmail());
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
         user.setPhone(userDTO.getPhone());
-        if (userDTO.getRole() != null) {
-            user.setRole(User.Role.valueOf(userDTO.getRole().toUpperCase()));
-        }
-
-
-        if (userDTO.getStatus() != null) {
-            user.setStatus(User.Status.valueOf(userDTO.getStatus()));
-        }
-
-
+        user.setRole(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : user.getRole());
+        user.setDepartment(userDTO.getDepartment());
+        user.setJoinDate(userDTO.getJoinDate());
+        user.setStatus(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : user.getStatus());
+        user.setAgreeMarketing(userDTO.getAgreeMarketing() != null ? userDTO.getAgreeMarketing() : user.getAgreeMarketing());
         user = userRepository.save(user);
-
-        // Cập nhật customer
-        Customer customer = customerRepo.findByUser(user).orElse(null);
-        if (customer != null) {
-            customer.setFirstName(userDTO.getName());
-            customer.setEmail(userDTO.getEmail());
-            customer.setPhone(userDTO.getPhone());
-            customer.setAddress(userDTO.getAddress());
-            customerRepo.save(customer);
-        }
-
-        return mapToDTO(user, customer);
+        return mapToDTO(user);
     }
 
     @Override
-    @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        userRepository.delete(user); // cascade sẽ xóa customer nếu thiết lập
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 
     @Override
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        return userRepository.findByEmail(email).orElse(null);
     }
 
 
 
-    @Override
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-    @Override
-    public UserDTO getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
-        Customer customer = customerRepository.findByUserId(user.getId()).orElse(null);
-
-        return mapToDTO(user, customer);
-    }
-    // --- mapping User va Customer sang DTO ---
-    private UserDTO mapToDTO(User user, Customer customer) {
-        UserDTO dto = new UserDTO();
-        dto.setId(user.getId());
-        dto.setName(user.getName());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole().name());
-        dto.setStatus(user.getStatus().name());
-        dto.setAgreeMarketing(user.getAgreeMarketing());
-        dto.setAvatar(user.getAvatar());
-        dto.setCreatedAt(user.getCreatedAt());
-        if (customer != null) {
-            dto.setAddress(customer.getAddress());
-            dto.setFirstName(customer.getFirstName());
-            dto.setLastName(customer.getLastName());
-        }
-        return dto;
-    }
-
-    @Override
-    public UserDTO findById(Long id) {
-        return getUserById(id); // hoặc implement riêng
+    private UserDTO mapToDTO(User user) {
+        return UserDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .role(user.getRole().name())
+                .department(user.getDepartment())
+                .joinDate(user.getJoinDate())
+                .status(user.getStatus().name())
+                .agreeMarketing(user.getAgreeMarketing())
+                .build();
     }
 
 	@Override
-	public Collection<StatDTO> findAllStats() {
-	    long totalUsers = userRepository.count();
-	    long totalBookings = bookingRepository.count();
-	    long totalPackages = packageRepository.count();
-	    long totalGears = gearRepository.count();
-
-	    List<StatDTO> stats = new ArrayList<>();
-	    stats.add(new StatDTO("Total Users", totalUsers));
-	    stats.add(new StatDTO("Total Bookings", totalBookings));
-	    stats.add(new StatDTO("Total Packages", totalPackages));
-	    stats.add(new StatDTO("Total Gears", totalGears));
-
-	    return stats;
+	public User save(User user) {
+		// TODO Auto-generated method stub
+		return userRepository.save(user);
 	}
+
+	
 }
-
-
-	
-	

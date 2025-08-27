@@ -1,59 +1,43 @@
 package com.mytech.backend.portal.apis;
 
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.mytech.backend.portal.dto.Booking.BookingRequestDTO;
-import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
-import com.mytech.backend.portal.dto.Rating.ReviewRequestDTO;
-import com.mytech.backend.portal.services.Booking.BookingService;
-
-import lombok.RequiredArgsConstructor;
+import com.mytech.backend.portal.dto.BookingDTO;
+import com.mytech.backend.portal.services.BookingService;
 
 @RestController
 @RequestMapping("/apis/v1/bookings")
-@RequiredArgsConstructor
 public class BookingController {
-	@Autowired
+
+    @Autowired
     private BookingService bookingService;
 
-    @PostMapping
-    public ResponseEntity<BookingResponseDTO> placeBooking(
-            @RequestParam(name = "customerId") Long customerId,
-            @RequestBody BookingRequestDTO req) {
-        return ResponseEntity.ok(bookingService.placeBooking(customerId, req));
+    @GetMapping
+    public List<BookingDTO> getBookings() {
+        return bookingService.getBookings();
     }
-
-
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.getBooking(id));
+    public BookingDTO getBookingById(@PathVariable Long id) {
+        return bookingService.getBookingById(id);
     }
 
-    @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<BookingResponseDTO>> getCustomerBookings(@PathVariable Long customerId) {
-        return ResponseEntity.ok(bookingService.getBookingsByCustomer(customerId));
+    @PostMapping
+    public ResponseEntity<BookingDTO> createBooking(@RequestBody BookingDTO bookingDTO) {
+        return ResponseEntity.ok(bookingService.createBooking(bookingDTO));
     }
 
-    @PostMapping("/{id}/cancel")
-    public ResponseEntity<BookingResponseDTO> cancelBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id));
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingDTO> updateBooking(@PathVariable Long id, @RequestBody BookingDTO bookingDTO) {
+        return ResponseEntity.ok(bookingService.updateBooking(id, bookingDTO));
     }
 
-    @PostMapping("/{id}/review")
-    public ResponseEntity<BookingResponseDTO> reviewBooking(
-            @PathVariable Long id,
-            @RequestBody ReviewRequestDTO req) {
-        return ResponseEntity.ok(bookingService.reviewBooking(id, req));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
+        bookingService.deleteBooking(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Xác nhận đặt chỗ - OGCAMPING</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: #2ecc71;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .header img {
+      width: 60px;
+      margin-bottom: 10px;
+    }
+    .content {
+      padding: 20px;
+      color: #333;
+    }
+    .order-code {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2ecc71;
+      margin: 10px 0;
+    }
+    .button {
+      display: inline-block;
+      background: #2ecc71;
+      color: white;
+      padding: 12px 24px;
+      margin-top: 20px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .footer {
+      background: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://i.ibb.co/mH1W9XH/camping.png" alt="OGCAMPING Logo" />
+      <h2>OGCAMPING</h2>
+    </div>
+    <div class="content">
+      <p>Xin chào <strong th:text="${customerName}"></strong>,</p>
+      <p>Bạn đã đặt chỗ thành công tại <b>OGCAMPING</b>.</p>
+
+      <p class="order-code">Mã đơn hàng: <span th:text="${orderCode}"></span></p>
+      <p>Ngày check-in: <span th:text="${checkinDate}"></span></p>
+      <p>Tổng tiền: <b><span th:text="${totalPrice}"></span> VND</b></p>
+
+      <a class="button" href="https://ogcamping.vn/orders" target="_blank">Xem chi tiết đơn hàng</a>
+    </div>
+    <div class="footer">
+      <p>Cảm ơn bạn đã tin tưởng OGCAMPING! Hẹn gặp bạn trong chuyến đi sắp tới 🌿</p>
+    </div>
+  </div>
+</body>
+</html>
