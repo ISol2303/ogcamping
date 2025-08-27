@@ -33,11 +33,11 @@ dependencies {
 	implementation 'com.github.javafaker:javafaker:1.0.2'
 	implementation 'org.modelmapper:modelmapper:3.1.1'
 	runtimeOnly 'com.h2database:h2'
-	// ✅ Swagger UI
+	// Swagger UI
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
-	// ✅ Gửi email
+	// Gửi email
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	// ✅ OpenAI Java SDK chính thức
+	// OpenAI Java SDK chính thức
 	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
 	implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
 	
@@ -53,6 +53,12 @@ dependencies {
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.5'
 	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
+	
+	//firebase
+	implementation 'com.google.firebase:firebase-admin:9.2.0' // version mới nhất
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	
 	compileOnly 'org.projectlombok:lombok:1.18.32'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'

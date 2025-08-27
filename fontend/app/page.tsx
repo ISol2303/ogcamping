@@ -9,21 +9,38 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings } from "lucide-react"
 import Link from "next/link"
 import { login } from "../app/api/auth" // Import from auth.ts
+import Navbar from "@/components/NavBar"
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [hydrated, setHydrated] = useState(false);
   const router = useRouter()
 
   // Check login status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
+  // useEffect(() => {
+  //     setHydrated(true); // đánh dấu đã render client
+  //     const token =
+  //       localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  //     const userData =
+  //       localStorage.getItem('user') || sessionStorage.getItem('user');
+
+  //     if (token && userData) {
+  //       setIsLoggedIn(true);
+  //       setUser(JSON.parse(userData));
+  //     }
+
+  //     setLoading(false);
+  //   }, []);
+
+  // if (!hydrated || loading) {
+  //     return (
+  //       <div className="flex items-center justify-center min-h-screen">
+  //         <p>Đang tải...</p>
+  //       </div>
+  //     );
+  //   }
 
   // Handle logout
   const handleLogout = () => {
@@ -34,20 +51,24 @@ export default function HomePage() {
   }
 
   // Handle dashboard navigation based on role
-  const handleDashboardNavigation = () => {
+    const handleDashboardNavigation = () => {
     if (user?.role === 'ADMIN') {
       router.push('/admin')
     } else if (user?.role === 'STAFF') {
       router.push('/staff')
-    } else {
+    } else if (user?.role === 'CUSTOMER') {
       router.push('/dashboard')
+    } else if (user?.role === 'GUEST') {
+      router.push('/dashboard')  // về HomePage
     }
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* <Navbar/> */}
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+      {/* <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 group">
             <Link href="/" className="flex items-center gap-3">
@@ -127,7 +148,7 @@ export default function HomePage() {
             )}
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Hero Section */}
       <section className="py-24 px-4 relative overflow-hidden">

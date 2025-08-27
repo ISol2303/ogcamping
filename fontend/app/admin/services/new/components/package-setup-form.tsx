@@ -49,7 +49,7 @@ export default function PackageSetupForm({
     if (["Túi ngủ", "Đệm hơi"].includes(category.name)) {
       categoryToAreaMap[category.name] = ["Trong lều"];
     } else if (["Lều", "Bàn xếp", "Ghế xếp"].includes(category.name)) {
-      categoryToAreaMap[category.name] = ["Ngoài lều"];
+      categoryToAreaMap[category.name] = [ "Ngoài lều"];
     } else if (category.name === "Bếp") {
       categoryToAreaMap[category.name] = ["Bếp"];
     } else if (category.name === "Đèn") {
@@ -69,7 +69,7 @@ export default function PackageSetupForm({
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(price ?? 0)
+    }).format(price ?? 0) // Use 0 if price is undefined
   }
 
   // Hàm tính tổng giá cho một danh mục trong khu vực
@@ -109,7 +109,7 @@ export default function PackageSetupForm({
       const allowedAreas = categoryToAreaMap[gear.category] || categoryToAreaMap["Khác"] || [];
       return gear.category === category && allowedAreas.includes(area);
     });
-    console.log(`Thiết bị khả dụng cho ${area} - ${category}:`, filtered);
+    console.log(`Thiết bị khả dụng cho ${area} - ${category}:`, filtered); // Debug log
     return filtered;
   }, [gears, categoryToAreaMap]);
 
@@ -148,6 +148,7 @@ export default function PackageSetupForm({
         areaSelections[category] = categorySelections;
         updatedAreaSelections[area] = areaSelections;
 
+        // Cập nhật hình ảnh khi thay đổi gear_id
         if (field === "gear_id" && gears.length > 0 && area === currentArea) {
           const selectedGear = gears.find((g) => g._id === value);
           setDisplayImage(selectedGear?.imageUrl ? `http://localhost:8080${selectedGear.imageUrl}` : genericGearPlaceholder);
@@ -173,6 +174,7 @@ export default function PackageSetupForm({
       updatedAreaSelections[area] = areaSelections;
       return updatedAreaSelections;
     });
+    // Cập nhật lại hình ảnh khi thêm thiết bị mới
     updateDisplayImageBasedOnArea(area);
   }, [updateDisplayImageBasedOnArea, getFilteredGears]);
 
@@ -185,6 +187,7 @@ export default function PackageSetupForm({
         updatedAreaSelections[area] = areaSelections;
         return updatedAreaSelections;
       });
+      // Cập nhật lại hình ảnh khi xóa thiết bị
       updateDisplayImageBasedOnArea(area);
       setErrorMessage(null);
     },
@@ -192,6 +195,7 @@ export default function PackageSetupForm({
   );
 
   const handleNextStep = () => {
+    // Kiểm tra xem có thiết bị nào được chọn mà chưa có gear_id
     const flattenedGearSelections: GearSelection[] = [];
     Object.values(areaGearSelections).forEach((areaSelections) => {
       Object.values(areaSelections).forEach((categorySelections) => {
@@ -208,6 +212,7 @@ export default function PackageSetupForm({
   };
 
   useEffect(() => {
+    // Khởi tạo areaGearSelections dựa trên danh sách khu vực từ API
     const initialAreaSelections: Record<string, Record<string, GearSelection[]>> = {};
     areas.forEach(area => {
       initialAreaSelections[area.name] = {};
@@ -224,9 +229,12 @@ export default function PackageSetupForm({
       }
     });
     setAreaGearSelections(initialAreaSelections);
+
+    // Đặt lại hình ảnh khi dữ liệu gearSelections thay đổi
     updateDisplayImageBasedOnArea(currentArea);
   }, [gearSelections, currentArea, areas, categories, gears]);
 
+  // Lấy danh sách danh mục hợp lệ cho mỗi khu vực
   const getValidCategoriesForArea = (area: string) => {
     return categories.filter(category => {
       const allowedAreas = categoryToAreaMap[category.name] || categoryToAreaMap["Khác"] || [];
@@ -244,6 +252,7 @@ export default function PackageSetupForm({
           <div className="bg-red-100 text-red-700 p-4 rounded-md text-sm mb-6">{errorMessage}</div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Khu vực hiển thị hình ảnh */}
           <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg">
             <h3 className="text-lg font-semibold mb-4">Hình ảnh minh họa</h3>
             <div className="relative w-full h-64 md:h-96 bg-gray-200 rounded-md overflow-hidden">
@@ -260,6 +269,7 @@ export default function PackageSetupForm({
             </p>
           </div>
 
+          {/* Khu vực chọn thiết bị */}
           <div>
             <Tabs value={currentArea} onValueChange={(value) => setCurrentArea(value)} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
@@ -351,14 +361,12 @@ export default function PackageSetupForm({
           </div>
         </div>
 
-        <div className="flex justify-between mt-8">
+        {/* <div className="flex justify-between mt-8">
           <Button variant="outline" onClick={onBack}>
             Quay lại
           </Button>
-          <Button onClick={handleNextStep}>
-            Tiếp theo
-          </Button>
-        </div>
+          <Button onClick={handleNextStep}>Tiếp theo</Button>
+        </div> */}
       </CardContent>
     </Card>
   )

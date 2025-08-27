@@ -1,6 +1,7 @@
-"use client"
+'use client';
 
-import { useState } from "react"
+
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,9 +10,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Tent, ArrowLeft, Calendar, Users, CreditCard, Shield, CheckCircle,Sparkles } from "lucide-react"
+import { Tent, ArrowLeft, Calendar, Users, CreditCard, Shield, CheckCircle, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
+import axios from "axios"
+import router from "next/router"
+
 
 export default function BookingPage() {
   const params = useParams()
@@ -34,7 +38,11 @@ export default function BookingPage() {
     paymentMethod: "",
     agreeTerms: false,
     agreeInsurance: false,
+
+    // Priority (add default value)
+    priority: "NORMAL" as 'NORMAL' | 'HIGH' | 'LOW',
   })
+
 
   // Mock service data
   const service = {
@@ -59,12 +67,90 @@ export default function BookingPage() {
       setCurrentStep(currentStep - 1)
     }
   }
-
-  const handleSubmit = () => {
-    // Handle booking submission
-    console.log("Booking submitted:", bookingData)
-    setCurrentStep(4) // Success step
+  interface Order {
+    customerName: string;
+    phone: string;
+    people: number;
+    bookingDate: string;
+    totalPrice: number;
+    specialRequests?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
+    priority: 'NORMAL' | 'HIGH' | 'LOW';
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+    paymentMethod: 'vnpay' | 'momo' | 'bank';
   }
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        setBookingData((prev) => ({
+          ...prev,
+          email: parsed.email || ""
+        }));
+      } else {
+        // Guest → để trống để họ nhập
+        setBookingData((prev) => ({
+          ...prev,
+          email: ""
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi parse user:", err);
+    }
+  }, []);
+
+
+  const handleSubmit = async () => {
+    try {
+      const token =
+        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+      // Mapping bookingData sang Order
+      const orderToSave: any = {
+        customerName: bookingData.fullName,
+        email: bookingData.email,
+        phone: bookingData.phone,
+        people: bookingData.people,
+        bookingDate: new Date(bookingData.date).toISOString(),
+        totalPrice,
+        specialRequests: bookingData.specialRequests,
+        emergencyContact: bookingData.emergencyContact,
+        emergencyPhone: bookingData.emergencyPhone,
+        priority: bookingData.priority || "NORMAL",
+        status: "PENDING",
+        paymentMethod: bookingData.paymentMethod as "vnpay" | "momo" | "bank",
+      };
+
+      if (token) {
+        // Nếu login → gắn token để backend lấy email từ User
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      } else {
+        // Nếu guest → email phải có trong bookingData
+        if (!bookingData.email || bookingData.email.trim() === "") {
+          alert("Vui lòng nhập email để đặt đơn.");
+          return;
+        }
+        orderToSave.email = bookingData.email;
+      }
+
+      // Gửi lên backend
+      const response = await axios.post(
+        "http://localhost:8080/apis/orders",
+        orderToSave
+      );
+
+      console.log("Order created:", response.data);
+
+      // Chuyển sang bước 4: thành công
+      setCurrentStep(4);
+    } catch (err: any) {
+      console.error("Lỗi khi tạo đơn:", err.response?.data || err.message);
+      alert("Lỗi khi tạo đơn, vui lòng thử lại.");
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,7 +162,7 @@ export default function BookingPage() {
               <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
               <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
             </div>
-           <span className="text-3xl font-bold text-green-800">OG Camping</span>
+            <span className="text-3xl font-bold text-green-800">OG Camping</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/services" className="text-gray-600 hover:text-green-600 transition-colors">
@@ -108,11 +194,11 @@ export default function BookingPage() {
               <Link href="/login">Đăng nhập</Link>
             </Button>
             <Button
-                          asChild
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0 shadow-lg hover:shadow-xl transition-all"
-                        >
-                          <Link href="/register">Đăng ký</Link>
-             </Button>
+              asChild
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Link href="/register">Đăng ký</Link>
+            </Button>
           </div>
         </div>
       </header>
@@ -132,9 +218,8 @@ export default function BookingPage() {
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                    currentStep >= step ? "bg-green-600 text-white" : "bg-gray-200 text-gray-600"
-                  }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${currentStep >= step ? "bg-green-600 text-white" : "bg-gray-200 text-gray-600"
+                    }`}
                 >
                   {currentStep > step ? <CheckCircle className="w-5 h-5" /> : step}
                 </div>
@@ -181,11 +266,16 @@ export default function BookingPage() {
                           id="email"
                           type="email"
                           value={bookingData.email}
-                          onChange={(e) => setBookingData((prev) => ({ ...prev, email: e.target.value }))}
-                          placeholder="email@example.com"
-                          required
+                          onChange={(e) =>
+                            setBookingData((prev) => ({ ...prev, email: e.target.value }))
+                          }
+                          disabled={!!localStorage.getItem("authToken")} // nếu có login thì disable
+                          className="bg-gray-100 text-black"
                         />
                       </div>
+
+
+
                       <div>
                         <Label htmlFor="phone">Số điện thoại *</Label>
                         <Input

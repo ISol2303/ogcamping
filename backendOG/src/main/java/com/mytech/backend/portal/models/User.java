@@ -38,11 +38,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @NotBlank
+//    @NotBlank
     @Column(name = "password", nullable = false)
     private String password;
 
-    @NotBlank
+//    @NotBlank
     @Column(nullable = false)
     private String phone;
 

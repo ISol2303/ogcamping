@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings } from "lucide-react"
+import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { login } from "../api/auth" // Import from auth.ts
 
@@ -17,35 +16,6 @@ export default function ServicesPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const router = useRouter()
-
-  // Check login status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUser(null)
-  }
-
-  // Handle dashboard navigation based on role
-  const handleDashboardNavigation = () => {
-    if (user?.role === 'ADMIN') {
-      router.push('/admin')
-    } else if (user?.role === 'STAFF') {
-      router.push('/staff')
-    } else {
-      router.push('/dashboard')
-    }
-  }
 
   const services = [
     {
@@ -137,67 +107,6 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative">
-              <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-            </div>
-            <span className="text-3xl font-bold text-green-600">OG Camping</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/services" className="text-green-600 font-medium">
-              Dịch vụ
-            </Link>
-            <Link href="/equipment" className="text-gray-600 hover:text-green-600 transition-colors">
-              Thuê thiết bị
-            </Link>
-            <Link href="/ai-consultant" className="text-gray-600 hover:text-green-600 transition-colors">
-              Tư vấn AI
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-green-600 transition-colors">
-              Về chúng tôi
-            </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-green-600 transition-colors">
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDashboardNavigation}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="text-center mb-12">

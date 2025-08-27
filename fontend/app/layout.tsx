@@ -3,6 +3,9 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import ChatBot from "@/components/chat-bot"
+import { AuthProvider } from "@/context/AuthContext"
+import Navbar from "@/components/NavBar"
+import { ChatProvider } from "@/context/ChatContext"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,10 +25,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi" className="mdl-js">
-      <body className={`${inter.variable} ${inter.className}`}>
-        {children}
-        <ChatBot />
+    <html lang="vi">
+      <body className={`${inter.variable} ${inter.className}`} suppressHydrationWarning>
+        <AuthProvider>
+          <ChatProvider>
+            <Navbar />
+            {children}
+            <ChatBot />
+          </ChatProvider>
+        </AuthProvider>
       </body>
     </html>
   )
