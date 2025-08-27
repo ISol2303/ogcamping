@@ -8,58 +8,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { MessageCircle, Send, Bot, User, X, Minimize2, Maximize2 } from "lucide-react"
 import Link from "next/link"
+import { useChat } from "@/context/ChatContext"
 
-interface Message {
-  id: number
-  type: "user" | "bot"
-  content: string
-  timestamp: Date
-}
-
-interface ChatBotProps {
-  initialMessages?: Message[]
-}
-
-export default function ChatBot({ initialMessages = [] }: ChatBotProps) {
+export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [messages, setMessages] = useState<Message[]>(() => {
-    // Load from localStorage on initialization
-    if (typeof window !== "undefined") {
-      const savedMessages = localStorage.getItem("ai-chat-history")
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages)
-        // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsedMessages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp),
-        }))
-        return messagesWithDates
-      }
-    }
-
-    // Default messages if no history
-    return [
-      {
-        id: 1,
-        type: "bot",
-        content:
-          "Xin chào! Tôi là AI tư vấn của OG Camping. Tôi có thể giúp bạn tìm gói dịch vụ phù hợp. Bạn cần hỗ trợ gì?",
-        timestamp: new Date(),
-      },
-      ...initialMessages,
-    ]
-  })
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Save messages to localStorage whenever messages change
-  useEffect(() => {
-    if (typeof window !== "undefined" && messages.length > 0) {
-      localStorage.setItem("ai-chat-history", JSON.stringify(messages))
-    }
-  }, [messages])
+  const { messages, addMessage } = useChat()   // 👈 dùng chung messages
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -79,79 +37,25 @@ export default function ChatBot({ initialMessages = [] }: ChatBotProps) {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
 
-    const newUserMessage: Message = {
-      id: messages.length + 1,
-      type: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, newUserMessage])
+    // user msg
+    addMessage({ type: "user", content: inputMessage })
+    const userText = inputMessage
     setInputMessage("")
     setIsTyping(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: messages.length + 2,
-        type: "bot",
-        content: generateAIResponse(inputMessage),
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiResponse])
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText }),
+      })
+      const data = await res.json()
+      addMessage({ type: "bot", content: data.reply })
+    } catch (error) {
+      addMessage({ type: "bot", content: "Xin lỗi, đã có lỗi khi kết nối đến AI." })
+    } finally {
       setIsTyping(false)
-    }, 1500)
-  }
-
-  const generateAIResponse = (userMessage: string) => {
-    const lowerMessage = userMessage.toLowerCase()
-
-    if (lowerMessage.includes("gia đình")) {
-      return `Tuyệt vời! Dựa trên nhu cầu cắm trại gia đình của bạn, tôi khuyên bạn nên xem xét:
-
-🏕️ **Gói Cắm trại gia đình Đà Lạt** - 3.200.000đ
-• Thời gian: 2-4 ngày
-• Phù hợp: 6-10 người
-• Bao gồm: Lều lớn, hoạt động trẻ em, BBQ
-• Đánh giá: 4.7/5 ⭐
-
-Gói này có nhiều hoạt động an toàn cho trẻ em và không gian rộng rãi. Bạn có muốn tôi tư vấn thêm về chi tiết không?`
     }
-
-    if (lowerMessage.includes("thiết bị")) {
-      return `Dựa trên loại hình cắm trại bạn quan tâm, tôi gợi ý những thiết bị cần thiết:
-
-🎒 **Thiết bị cơ bản:**
-• Lều cắm trại 4 người - 150.000đ/ngày
-• Túi ngủ cao cấp - 120.000đ/ngày  
-• Đèn pin LED siêu sáng - 50.000đ/ngày
-• Bếp gas mini - 80.000đ/ngày
-
-💡 **Gợi ý:** Nếu đi cắm trại núi, nên thuê thêm áo ấm và giày trekking. Bạn có muốn tôi tư vấn gói thiết bị phù hợp không?`
-    }
-
-    if (lowerMessage.includes("giá") || lowerMessage.includes("so sánh")) {
-      return `Tôi hiểu bạn quan tâm đến giá cả. Dưới đây là các gói theo mức giá:
-
-💰 **Dưới 2 triệu:**
-• Cắm trại biển Phú Quốc - 1.800.000đ
-• Cắm trại sa mạc Mũi Né - 1.500.000đ
-
-💰 **2-3 triệu:**
-• Cắm trại núi Sapa - 2.500.000đ
-• Cắm trại rừng Cát Tiên - 2.800.000đ
-
-💰 **Trên 3 triệu:**
-• Cắm trại gia đình Đà Lạt - 3.200.000đ
-
-Bạn có ngân sách dự kiến bao nhiêu để tôi tư vấn chính xác hơn?`
-    }
-
-    return `Cảm ơn bạn đã chia sẻ! Để tư vấn chính xác nhất, bạn có thể cho tôi biết thêm về:
-• Số người tham gia?
-• Thời gian dự kiến (bao nhiêu ngày)?
-• Ngân sách dự tính?
-• Loại địa điểm yêu thích (núi, biển, rừng...)?`
   }
 
   const handleQuickQuestion = (question: string) => {

@@ -11,6 +11,7 @@ public class AreaDTO {
     private Long id;
     private String name;
     private String description;
+<<<<<<< HEAD
 	public Long getId() {
 		return id;
 	}
@@ -36,4 +37,6 @@ public class AreaDTO {
 		this.description = description;
 	}
     
+=======
+>>>>>>> abb7547f89df2c8b7d3c755c04871e4e890df328
 }

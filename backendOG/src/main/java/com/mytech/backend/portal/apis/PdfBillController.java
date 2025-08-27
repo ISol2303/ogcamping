@@ -26,16 +26,20 @@ public class PdfBillController {
 	        String base64Image = Base64.getEncoder().encodeToString(imageBytes);
 
 //	        // 2️⃣ Gắn HTML bill đầy đủ vào đây, thay thế đoạn HTML cũ
-//	        String html = "<!DOCTYPE html><html lang='vi'><head><meta charset='UTF-8'><title>OG Camping Bill</title></head><body>"
-//	                + "<div style='display:flex;align-items:center;justify-content:center;margin-bottom:16px;'>"
-//	                + "<img src='data:image/jpeg;base64," + base64Image + "' width='24' height='24' style='margin-right:8px;'>"
-//	                + "<span style='font-size:24px;font-weight:bold;color:#166534;'>OG CAMPING BILL</span>"
-//	                + "</div>"
-//	                + "<div style='margin:12px 0;'>Mã đơn hàng: " + OrderCode + "</div>"
-//	                + "<div style='margin:12px 0;'>Tên khách hàng: " + customerName + "</div>"
-//	                + "<div style='margin:12px 0;'>Email: " + email + "</div>"
-//	                // ... tiếp tục các section khác
-//	                + "</body></html>";
+	        String orderCode = "OGC123456";
+	        String customerName = "Nguyen Van A";
+	        String email = "example@gmail.com";
+
+	        String html = "<!DOCTYPE html><html lang='vi'><head><meta charset='UTF-8'><title>OG Camping Bill</title></head><body>"
+	                + "<div style='display:flex;align-items:center;justify-content:center;margin-bottom:16px;'>"
+	                + "<img src='data:image/jpeg;base64," + base64Image + "' width='50' height='50' style='margin-right:8px;'>"
+	                + "<span style='font-size:24px;font-weight:bold;color:#166534;'>OG CAMPING BILL</span>"
+	                + "</div>"
+	                + "<div style='margin:12px 0;'>Mã đơn hàng: " + orderCode + "</div>"
+	                + "<div style='margin:12px 0;'>Tên khách hàng: " + customerName + "</div>"
+	                + "<div style='margin:12px 0;'>Email: " + email + "</div>"
+	                + "</body></html>";
+
 
 	        // 3️⃣ Convert HTML → PDF
 	        ByteArrayOutputStream pdfOutput = new ByteArrayOutputStream();

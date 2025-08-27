@@ -36,7 +36,11 @@ public class JwtUtils {
 
 		return Jwts.builder().setSubject((userPrincipal.getUsername()))
 				.setIssuedAt(new Date())
+<<<<<<< HEAD
 				.setIssuer("TheApartment")
+=======
+				.setIssuer("ogcamping")
+>>>>>>> abb7547f89df2c8b7d3c755c04871e4e890df328
 				.claim("roles", userPrincipal.roles())
 				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
 				.signWith(key(), SignatureAlgorithm.HS256).compact();
@@ -70,6 +74,19 @@ public class JwtUtils {
 
 		return false;
 	}
+<<<<<<< HEAD
+=======
+	
+	public String generateTokenFromEmail(String email) {
+	    return Jwts.builder()
+	            .setSubject(email)
+	            .setIssuedAt(new Date())
+	            .setIssuer("ogcamping")
+	            .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+	            .signWith(key(), SignatureAlgorithm.HS256)
+	            .compact();
+	}
+>>>>>>> abb7547f89df2c8b7d3c755c04871e4e890df328
 
 	
 }

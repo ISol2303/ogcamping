@@ -11,12 +11,16 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tent, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, AuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useAuth } from '@/context/AuthContext';
+
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
     remember: false,
   });
   const [error, setError] = useState<string | null>(null);
@@ -46,50 +50,107 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
+  const { login: setAuth } = useAuth(); 
+  // ✅ lấy hàm login từ AuthContext để cập nhật user & token
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
+      // gọi API backend login
       const response = await login({
         email: formData.email,
         password: formData.password,
         remember: formData.remember,
       });
 
-      console.log('Login response:', response);
 
-      if (!response?.token || !response?.email) {
-        throw new Error('Dữ liệu phản hồi không hợp lệ từ máy chủ.');
+      if (!response?.token || !response?.user?.email) {
+        console.log("Login response:", response);
+        throw new Error("Dữ liệu phản hồi không hợp lệ từ máy chủ.");
       }
 
-      const { role } = response;
-      const normalizedRole = role.toUpperCase();
+      const { token, user } = response;
+      const role = (user.role || "CUSTOMER").toString().toUpperCase();
+      const fullUser = { ...user, role };
 
-      if (normalizedRole === 'ADMIN') {
-        router.push('/admin');
-      } else if (normalizedRole === 'STAFF') {
-        router.push('/staff');
-      } else {
-        router.push('/dashboard');
-      }
+      const storage = formData.remember ? localStorage : sessionStorage;
+      storage.setItem("authToken", token);
+      storage.setItem("user", JSON.stringify(fullUser));
+
+      // ✅ update AuthContext ngay -> Navbar sẽ thấy user mà không cần F5
+      setAuth(token, fullUser, formData.remember);
+
+      // ✅ redirect theo role
+      if (role === "ADMIN") router.push("/admin");
+      else if (role === "STAFF") router.push("/staff");
+      else router.push("/dashboard");
+
     } catch (err: any) {
-      console.error('Lỗi đăng nhập:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        responseBody: err.response?.data ? JSON.stringify(err.response.data, null, 2) : 'No response body',
-        stack: err.stack,
-      });
+      console.error("Lỗi đăng nhập:", err);
       setError(
-        err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.'
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          "Đăng nhập thất bại. Vui lòng thử lại."
       );
     } finally {
       setIsLoading(false);
     }
   };
 
+const handleSocialLogin = async (provider: "google" | "facebook") => {
+  setError(null);
+  setIsLoading(true);
+  try {
+    const providerInstance: AuthProvider =
+      provider === "google" ? new GoogleAuthProvider() : new FacebookAuthProvider();
+
+    if (provider === "google") {
+      (providerInstance as GoogleAuthProvider).setCustomParameters({ prompt: "select_account" });
+    }
+
+    const result = await signInWithPopup(auth, providerInstance);
+    const idToken = await result.user.getIdToken();
+    
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+    const response = await fetch(`${API_BASE}/api/auth/exchange`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }), // ✅ gửi idToken lên backend
+    });
+
+    const data = await response.json();
+        
+    console.log("Exchange response:", data);
+
+    if (!response.ok) throw new Error(data?.error || "Đăng nhập thất bại.");
+
+    const { token, user } = data;
+    const role = (user.role || "CUSTOMER").toString().toUpperCase();
+    const fullUser = { ...user, role };
+    const storage = formData.remember ? localStorage : sessionStorage;
+
+    storage.setItem("authToken", token);
+    storage.setItem("user", JSON.stringify(fullUser));
+
+    if (role === "ADMIN") router.push("/admin");
+    else if (role === "STAFF") router.push("/staff");
+    else router.push("/dashboard");
+  } catch (err: any) {
+    const code = err?.code as string | undefined;
+    const friendly =
+      code === "auth/popup-closed-by-user" ? "Bạn đã đóng cửa sổ đăng nhập." :
+      code === "auth/account-exists-with-different-credential" ? "Email này đã liên kết với nhà cung cấp khác." :
+      err?.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`;
+    console.error(`Lỗi đăng nhập ${provider}:`, err);
+    setError(friendly);
+  } finally {
+    setIsLoading(false);
+  }
+};
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">

@@ -17,6 +17,7 @@ public class BookingDTO {
     private Double amount;
     private Integer rating;
     private LocalDateTime createdAt;
+<<<<<<< HEAD
 
     // --- Constructors ---
     public BookingDTO() {}
@@ -140,3 +141,6 @@ public class BookingDTO {
         this.createdAt = createdAt;
     }
 }
+=======
+}
+>>>>>>> abb7547f89df2c8b7d3c755c04871e4e890df328

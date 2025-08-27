@@ -37,12 +37,22 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+<<<<<<< HEAD
     @NotBlank
     @Column(name = "password", nullable = false)
     private String password;
 
     @NotBlank
     @Column(nullable = false)
+=======
+
+    // Bỏ @NotBlank để login Google không lỗi
+    @Column(nullable = true)
+    private String password;
+
+    @Column(nullable = true)
+  
+>>>>>>> abb7547f89df2c8b7d3c755c04871e4e890df328
     private String phone;
 
     @Enumerated(EnumType.STRING)
