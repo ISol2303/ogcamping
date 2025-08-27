@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PackageFormData, Gear, GearSelection, Category, AreaData as Area } from '@/app/api/package';
-import { fetchGears, fetchCategories, fetchAreas, createPackage, fetchCurrentUser } from '@/app/api/admin';
-import PackageInfoForm from './components/package-info-form';
-import PackageSetupForm from './components/package-setup-form';
-import PackageConfirmation from './components/package-confirmation';
-import { StepIndicator } from './components/step-indicator';
+import { fetchGears, fetchCategories, fetchAreas, createPackage, fetchUser } from '@/app/api/admin';
+import PackageInfoForm from '../new/components/package-info-form';
+import PackageSetupForm from '../new/components/package-setup-form';
+import PackageConfirmation from '../new/components/package-confirmation';
+import { StepIndicator } from '../new/components/step-indicator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -33,9 +33,6 @@ export default function NewPackagePage() {
     available_slots: '',
     price: '',
     description: '',
-    status: (arg0: string, status: any) => {}, // Default function for status
-    category: (arg0: string, category: any) => {}, // Default function for category
-    duration: '', // Add default value for duration
   });
   const [image, setImage] = useState<File | null>(null);
   const [gearSelections, setGearSelections] = useState<GearSelection[]>([]);
@@ -46,73 +43,73 @@ export default function NewPackagePage() {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
 
-  // Fetch user ID to get the token and validate user
-  useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (!token) {
-        setError('No authentication token found. Please log in.');
-        router.push('/login');
-        return;
-      }
+ // Fetch user ID to get the token and validate user
+useEffect(() => {
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      setError('No authentication token found. Please log in.');
+      router.push('/login');
+      return;
+    }
 
-      try {
-        const user = await fetchCurrentUser(token, 1); // TODO: Replace with token decode
-        setUserId(Number(user._id));
-      } catch (err: any) {
-        const status = err.status || 500;
-        const message = err.message || 'Failed to fetch user';
-        console.error('Error fetching user:', { status, message });
-        setError(message);
+    try {
+      const user = await fetchUser(token, 1); // TODO: thay bằng decode token
+      setUserId(Number(user._id));
+    } catch (err: any) {
+      const status = err.status || 500;
+      const message = err.message || 'Failed to fetch user';
+      console.error('Error fetching user:', { status, message });
+      setError(message);
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+      router.push('/login');
+      setIsLoading(false); // Quan trọng: dừng loading nếu lỗi
+    }
+  };
+
+  fetchUserData();
+}, [router]);
+
+// Fetch gears, categories, and areas on component mount
+useEffect(() => {
+  const fetchData = async () => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      setError('No authentication token found. Please log in.');
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const [gearsData, categoriesData, areasData] = await Promise.all([
+        fetchGears(token),
+        fetchCategories(token),
+        fetchAreas(token),
+      ]);
+
+      setGears(gearsData);
+      setCategories(categoriesData);
+      setAreas(areasData);
+    } catch (err: any) {
+      const status = err.status || 500;
+      const message = err.message || 'Failed to fetch data';
+      console.error('Error fetching data:', { status, message });
+      if (status === 401 || status === 403) {
+        setError('Unauthorized. Please log in again.');
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
         router.push('/login');
-        setIsLoading(false);
+      } else {
+        setError(message);
       }
-    };
+    } finally {
+      setIsLoading(false); // Đảm bảo luôn tắt loading
+    }
+  };
 
-    fetchUserData();
-  }, [router]);
-
-  // Fetch gears, categories, and areas on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (!token) {
-        setError('No authentication token found. Please log in.');
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const [gearsData, categoriesData, areasData] = await Promise.all([
-          fetchGears(token),
-          fetchCategories(token),
-          fetchAreas(token),
-        ]);
-
-        setGears(gearsData);
-        setCategories(categoriesData);
-        setAreas(areasData);
-      } catch (err: any) {
-        const status = err.status || 500;
-        const message = err.message || 'Failed to fetch data';
-        console.error('Error fetching data:', { status, message });
-        if (status === 401 || status === 403) {
-          setError('Unauthorized. Please log in again.');
-          localStorage.removeItem('authToken');
-          sessionStorage.removeItem('authToken');
-          router.push('/login');
-        } else {
-          setError(message);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [router]);
+  fetchData();
+}, [router]);
 
   // Handle navigation to the next step
   const handleNext = () => {
@@ -162,6 +159,7 @@ export default function NewPackagePage() {
       setIsLoading(true);
       setError(null);
       await createPackage(token, formData, image, gearSelections);
+      // Redirect to the services list after successful submission
       router.push('/admin/services');
     } catch (err: any) {
       const status = err.status || 500;
