@@ -1,13 +1,14 @@
 package com.mytech.backend.portal.dto;
 
+import java.time.LocalDateTime;
+
 import com.mytech.backend.portal.models.Area;
 import com.mytech.backend.portal.models.Category;
 import com.mytech.backend.portal.models.Gear.GearStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor

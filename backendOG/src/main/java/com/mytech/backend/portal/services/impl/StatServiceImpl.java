@@ -1,15 +1,16 @@
 package com.mytech.backend.portal.services.impl;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.GearRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import com.mytech.backend.portal.services.StatService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Service
 public class StatServiceImpl implements StatService {
@@ -25,11 +26,11 @@ public class StatServiceImpl implements StatService {
 
     @Override
     public List<StatDTO> getStats(String period) {
-//        TODO: Implement actual logic based on period parameter (e.g., filter by date range)
+        // TODO: Implement actual logic based on period parameter (e.g., filter by date range)
         double revenue = bookingRepository.findAll().stream()
-                .mapToDouble(booking -> booking.getService().getPrice() != null ? booking.getService().getPrice() : 0.0)
+                .mapToDouble(booking -> booking.getAmount() != null ? booking.getAmount() : 0.0)
                 .sum();
-
+        
         return Arrays.asList(
                 new StatDTO("Total Users", String.valueOf(userRepository.count()), "users", "blue", "+5%"),
                 new StatDTO("Total Bookings", String.valueOf(bookingRepository.count()), "bookings", "green", "+10%"),

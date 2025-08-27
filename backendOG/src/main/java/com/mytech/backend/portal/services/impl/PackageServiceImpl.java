@@ -1,16 +1,18 @@
 package com.mytech.backend.portal.services.impl;
 
-import com.mytech.backend.portal.dto.PackageDTO;
-import com.mytech.backend.portal.models.Package;
-import com.mytech.backend.portal.repositories.PackageRepository;
-import com.mytech.backend.portal.services.PackageService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.mytech.backend.portal.dto.PackageDTO;
+import com.mytech.backend.portal.models.Package;
+import com.mytech.backend.portal.repositories.PackageRepository;
+import com.mytech.backend.portal.services.PackageService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -51,13 +53,4 @@ public class PackageServiceImpl implements PackageService {
     public void deletePackage(Long id) {
         packageRepository.deleteById(id);
     }
-
-    @Override
-    public List<PackageDTO> findAll() {
-        return packageRepository.findAll()
-                .stream()
-                .map(pkg -> modelMapper.map(pkg, PackageDTO.class))
-                .collect(Collectors.toList());
-    }
-
 }

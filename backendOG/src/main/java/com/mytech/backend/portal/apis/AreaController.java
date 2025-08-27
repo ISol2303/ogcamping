@@ -1,14 +1,15 @@
 package com.mytech.backend.portal.apis;
 
-import com.mytech.backend.portal.dto.ApiResponse;
-import com.mytech.backend.portal.dto.AreaDTO;
-import com.mytech.backend.portal.repositories.AreaRepository;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.mytech.backend.portal.dto.ApiResponse;
+import com.mytech.backend.portal.dto.AreaDTO;
+import com.mytech.backend.portal.repositories.AreaRepository;
 
 @RestController
 @RequestMapping("/apis/v1/areas")

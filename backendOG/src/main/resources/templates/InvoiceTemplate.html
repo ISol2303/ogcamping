@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>OG Camping Bill</title>
+<style> body { font-family: DejaVu Sans, sans-serif; margin: 30px; background-color: #f9fafb; } .container { max-width: 600px; margin: auto; padding: 20px; border: 2px solid #16a34a; border-radius: 12px; background-color: #ffffff; } .header { text-align: center; color: #166534; font-size: 24px; font-weight: bold; margin-bottom: 20px; } .section { margin: 12px 0; display: flex; } .label { font-weight: bold; color: #374151; width: 180px; flex-shrink: 0; } .value { color: #111827; word-break: break-word; /* cắt từ dài */ white-space: pre-wrap; /* giữ xuống dòng */ overflow-wrap: break-word; /* wrap bắt buộc */ min-width: 0; /* quan trọng để flex-wrap hoạt động */ flex-wrap: wrap; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; } th { background-color: #f3f4f6; } .footer { text-align: center; font-size: 12px; color: gray; margin-top: 20px; border-top: 1px solid #e5e7eb; padding-top: 10px; } .total {
+  justify-content: flex-end; /* đẩy nội dung sang bên phải */
+  font-size: 18px; 
+  font-weight: bold; 
+  color: #166534;
+} </style>
+</head>
+<body class="body">
+  <div class="container">
+   <div class="header" style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+  <!-- Logo nhỏ hơn -->
+  <img src="data:image/jpeg;base64,{{BASE64_IMAGE}}" alt="Logo" style="width:34px; height:29px; margin-right:6px;">
+  <span style="font-size:24px; font-weight:bold; color:#166534;">OG CAMPING BILL</span>
+</div>
+
+    <div class="section"><span class="label">Mã đơn hàng:</span> <span class="value">{{ORDER_CODE}}</span></div>
+    <div class="section"><span class="label">Tên khách hàng:</span> <span class="value">{{CUSTOMER_NAME}}</span></div>
+    <div class="section"><span class="label">Email:</span> <span class="value">{{EMAIL}}</span></div>
+    <div class="section"><span class="label">SĐT:</span> <span class="value">{{PHONE}}</span></div>
+    <div class="section"><span class="label">Ngày đặt:</span> <span class="value">{{BOOKING_DATE}}</span></div>
+    <div class="section"><span class="label">Số người tham gia:</span> <span class="value">{{PEOPLE}}</span></div>
+    <div class="section"><span class="label">Yêu cầu đặc biệt:</span> <span class="value">{{SPECIAL_REQUESTS}}</span></div>
+    <div class="section"><span class="label">Người liên hệ khẩn cấp:</span> <span class="value">{{EMERGENCY_CONTACT}}</span></div>
+    <div class="section"><span class="label">SĐT khẩn cấp:</span> <span class="value">{{EMERGENCY_PHONE}}</span></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tên dịch vụ</th>
+          <th>Giá</th>
+          <th>Số lượng</th>
+          <th>Tổng</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{SERVICE_ROWS}}
+      </tbody>
+    </table>
+
+     <div class="section total" style="text-align: lè; font-size: 18px; font-weight: bold; color: #166534;">
+      Tổng cộng: {{TOTAL_PRICE}} VND
+    </div>
+
+    <div class="footer">🎉 Cảm ơn quý khách đã tin tưởng dịch vụ của chúng tôi!</div>
+  </div>
+</body>
+</html>

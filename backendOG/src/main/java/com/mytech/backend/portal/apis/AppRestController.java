@@ -1,12 +1,5 @@
 package com.mytech.backend.portal.apis;
-
-import com.mytech.backend.portal.dto.SignInRequest;
-import com.mytech.backend.portal.dto.SignInResponse;
-import com.mytech.backend.portal.dto.SignUpRequest;
-import com.mytech.backend.portal.dto.UserDTO;
-import com.mytech.backend.portal.jwt.JwtUtils;
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.services.UserService;
+	
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +7,18 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.mytech.backend.portal.dto.SignInRequest;
+import com.mytech.backend.portal.dto.SignInResponse;
+import com.mytech.backend.portal.dto.SignUpRequest;
+import com.mytech.backend.portal.jwt.JwtUtils;
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.services.UserService;
 
 @RestController
 @RequestMapping("/apis/**")
@@ -36,7 +40,7 @@ public class AppRestController {
                     new UsernamePasswordAuthenticationToken(
                             signInRequest.getEmail(), signInRequest.getPassword()));
 
-            UserDTO user = userService.findByEmail(signInRequest.getEmail());
+            User user = userService.findByEmail(signInRequest.getEmail());
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ Tài khoản không tồn tại.");
             }
@@ -62,7 +66,7 @@ public class AppRestController {
         }
 
         String email = authentication.getName();
-        UserDTO user = userService.findByEmail(email);
+        User user = userService.findByEmail(email);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ Người dùng không tồn tại.");
         }
@@ -79,7 +83,7 @@ public class AppRestController {
     // Register endpoint remains unchanged
     @PostMapping({"/v1/register", "/test/register"})
     public ResponseEntity<?> register(@RequestBody SignUpRequest signUpRequest) {
-        UserDTO existingUser = userService.findByEmail(signUpRequest.getEmail());
+        User existingUser = userService.findByEmail(signUpRequest.getEmail());
 
         if (existingUser != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("❌ Email đã được đăng ký.");
@@ -90,7 +94,7 @@ public class AppRestController {
         newUser.setName(signUpRequest.getName());
         newUser.setPhone(signUpRequest.getPhone());
         newUser.setPassword(new BCryptPasswordEncoder().encode(signUpRequest.getPassword()));
-        newUser.setRole(User.Role.CUSTOMER);
+        newUser.setRole(User.Role.GUEST);
 
         userService.save(newUser);
 

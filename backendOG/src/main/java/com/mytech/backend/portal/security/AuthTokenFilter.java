@@ -35,18 +35,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getServletPath();
-        String authHeader = request.getHeader("Authorization");
-
-        return path.startsWith("/apis/v1/login")
-                || path.startsWith("/apis/v1/register")
-                || path.startsWith("/oauth2")
-                || path.startsWith("/login")
-                // cho phép /me nếu không có token
-                || (path.startsWith("/apis/v1/users/me") && (authHeader == null || !authHeader.startsWith("Bearer ")));
+      String path = request.getServletPath();
+      System.out.println("------------shouldNotFilter------------" + path);
+      return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
     }
-
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -59,19 +51,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
                 Claims claims = jwtUtils.getClaimsFromJwtToken(jwt);
-                Object rolesObj = claims.get("roles");
-                List<String> roles;
-
-                if (rolesObj instanceof List<?>) {
-                    roles = ((List<?>) rolesObj).stream()
-                            .map(Object::toString)
-                            .collect(Collectors.toList());
-                } else if (rolesObj instanceof String) {
-                    roles = List.of(rolesObj.toString());
-                } else {
-                    roles = List.of();
-                }
-
+                List<String> roles = claims.get("roles", List.class); // Retrieve roles as a List
 
                 AppUserDetails userDetails = (AppUserDetails) userDetailsService.loadUserByUsername(username);
 
@@ -91,7 +71,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e.getMessage());
+            logger.error("Cannot set user authentication: {}", e);
         }
 
         filterChain.doFilter(request, response);
@@ -99,15 +79,13 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
+
+        System.out.println("headerAuth:: " + headerAuth);
+
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-            // Extract token and remove any extra spaces
-            String token = headerAuth.substring(7).trim();
-            if (token.startsWith("Bearer ")) {
-                token = token.substring(7).trim(); // Handle case of double "Bearer "
-            }
-            System.out.println("Parsed JWT token: " + (token.length() > 10 ? token.substring(0, 10) + "..." : token));
-            return token.isEmpty() ? null : token;
+            return headerAuth.substring(7);
         }
+
         return null;
     }
 }
