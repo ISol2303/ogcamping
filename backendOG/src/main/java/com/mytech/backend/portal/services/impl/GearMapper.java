@@ -1,11 +1,10 @@
 package com.mytech.backend.portal.services.impl;
 
-import java.util.List;
-
-import org.springframework.stereotype.Component;
-
 import com.mytech.backend.portal.dto.GearDTO;
 import com.mytech.backend.portal.models.Gear;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class GearMapper {

@@ -1,16 +1,18 @@
 package com.mytech.backend.portal.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
 public class AreaDTO {
     private Long id;
     private String name;
     private String description;
+    
+
 	public Long getId() {
 		return id;
 	}
@@ -29,11 +31,6 @@ public class AreaDTO {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public AreaDTO(Long id, String name, String description) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.description = description;
-	}
+    
     
 }

@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
  * Class dùng để chuẩn hóa tất cả response trả về cho frontend
  */
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class ApiResponse<T> {
     private int status;

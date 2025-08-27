@@ -4,7 +4,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'com.mytech'
+group = 'com.mytech.backend'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -13,14 +13,21 @@ java {
 	}
 }
 
+repositories {
+	mavenCentral()
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
 }
 
-repositories {
-	mavenCentral()
+// ⚡ Ép tất cả configuration dùng snakeyaml 2.4 chuẩn Java
+configurations.all {
+	resolutionStrategy {
+		force 'org.yaml:snakeyaml:2.4'
+	}
 }
 
 dependencies {
@@ -30,34 +37,42 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
-	implementation 'com.github.javafaker:javafaker:1.0.2'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	
+	// JavaFaker, exclude snakeyaml Android
+	implementation('com.github.javafaker:javafaker:1.0.2') {
+		exclude group: 'org.yaml', module: 'snakeyaml'
+	}
+
+	// Ép Snakeyaml chuẩn
+	implementation 'org.yaml:snakeyaml:2.4'
+
 	implementation 'org.modelmapper:modelmapper:3.1.1'
 	runtimeOnly 'com.h2database:h2'
-	// ✅ Swagger UI
+
+	// Swagger UI
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
-	// ✅ Gửi email
+
+	// Mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	// ✅ OpenAI Java SDK chính thức
+
+	// OpenAI SDK
 	implementation 'com.theokanning.openai-gpt3-java:service:0.18.2'
 	implementation 'com.squareup.retrofit2:converter-jackson:2.9.0'
-	
-	// https://mvnrepository.com/artifact/com.github.javafaker/javafaker
-	implementation("com.github.javafaker:javafaker:1.0.2")
 
-	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-config
 	implementation group: 'org.springframework.security', name: 'spring-security-config', version: '6.2.1'
-	
-	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
+
 	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.11.5'
-	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.11.5'
-	// https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
 	runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.11.5'
-	
-	compileOnly 'org.projectlombok:lombok:1.18.32'
+
+	compileOnly 'org.projectlombok:lombok:1.18.34'
+	annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok:1.18.32'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -65,7 +80,4 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-tasks.withType(JavaCompile) {
-    options.compilerArgs << '-parameters'
 }

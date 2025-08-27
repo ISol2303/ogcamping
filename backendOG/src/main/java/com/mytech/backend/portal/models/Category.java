@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Category extends AbstractEntity{
-    /**
-	 * 
-	 */
 	private static final long serialVersionUID = 1541660217813447786L;
 
 	@Id

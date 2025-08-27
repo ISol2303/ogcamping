@@ -1,12 +1,10 @@
 package com.mytech.backend.portal;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
+import com.github.javafaker.Faker;
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.Role;
+import com.mytech.backend.portal.models.User.Status;
+import com.mytech.backend.portal.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +13,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 
-import com.github.javafaker.Faker;
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.models.User.Role;
-import com.mytech.backend.portal.models.User.Status;
-import com.mytech.backend.portal.services.UserService;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 @SpringBootTest
 @Rollback(false)
