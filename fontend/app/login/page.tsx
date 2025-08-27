@@ -73,35 +73,46 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const idToken = await result.user.getIdToken();
+      // Import firebase/auth and initialize your auth instance
+      // You may need to adjust the import path and initialization as per your project setup
+      import('firebase/auth').then(async ({ GoogleAuthProvider, FacebookAuthProvider, getAuth }) => {
+        const auth = getAuth();
+        const providerInstance =
+          provider === 'google'
+            ? new GoogleAuthProvider()
+            : new FacebookAuthProvider();
 
-      // Gửi token Firebase đến backend để xác thực
-      const response = await fetch('/api/auth/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, provider }),
+        const result = await signInWithPopup(auth, providerInstance);
+        const idToken = await result.user.getIdToken();
+
+        // Gửi token Firebase đến backend để xác thực
+        const response = await fetch('/api/auth/social', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken, provider }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Đăng nhập thất bại.');
+        }
+
+        const { token, user } = data;
+        const role = (user.role || 'CUSTOMER').toString().toUpperCase();
+        const fullUser = { ...user, role };
+        const storage = formData.remember ? localStorage : sessionStorage;
+
+        storage.setItem('authToken', token);
+        storage.setItem('user', JSON.stringify(fullUser));
+
+        if (role === 'ADMIN') {
+          router.push('/admin');
+        } else if (role === 'STAFF') {
+          router.push('/staff');
+        } else {
+          router.push('/dashboard');
+        }
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại.');
-      }
-
-      const { token, user } = data;
-      const role = (user.role || 'CUSTOMER').toString().toUpperCase();
-      const fullUser = { ...user, role };
-      const storage = formData.remember ? localStorage : sessionStorage;
-
-      storage.setItem('authToken', token);
-      storage.setItem('user', JSON.stringify(fullUser));
-
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else if (role === 'STAFF') {
-        router.push('/staff');
-      } else {
-        router.push('/dashboard');
-      }
     } catch (err: any) {
       console.error(`Lỗi đăng nhập ${provider}:`, err);
       setError(err.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`);
