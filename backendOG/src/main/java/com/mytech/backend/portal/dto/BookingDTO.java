@@ -19,6 +19,4 @@ public class BookingDTO {
     private Double amount;
     private Integer rating;
     private LocalDateTime createdAt;
-
-    
 }

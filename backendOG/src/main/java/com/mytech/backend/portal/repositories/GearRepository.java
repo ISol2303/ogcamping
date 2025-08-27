@@ -1,16 +1,15 @@
 package com.mytech.backend.portal.repositories;
 
-import java.util.List;
-
+import com.mytech.backend.portal.models.Area.AreaName;
+import com.mytech.backend.portal.models.Category.CategoryName;
+import com.mytech.backend.portal.models.Gear;
+import com.mytech.backend.portal.models.Gear.GearStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.mytech.backend.portal.models.Area.AreaName;
-import com.mytech.backend.portal.models.Category.CategoryName;
-import com.mytech.backend.portal.models.Gear;
-import com.mytech.backend.portal.models.Gear.GearStatus;
+import java.util.List;
 
 @Repository
 public interface GearRepository extends JpaRepository<Gear, Long> {

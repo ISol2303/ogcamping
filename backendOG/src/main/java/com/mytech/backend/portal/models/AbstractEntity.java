@@ -1,13 +1,9 @@
 package com.mytech.backend.portal.models;
 
+import jakarta.persistence.*;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
-
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Version;
 
 @MappedSuperclass
 public abstract class AbstractEntity implements Serializable {

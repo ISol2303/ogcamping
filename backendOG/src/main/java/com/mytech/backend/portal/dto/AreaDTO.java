@@ -1,12 +1,12 @@
 package com.mytech.backend.portal.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Setter
+@Getter
 public class AreaDTO {
     private Long id;
     private String name;
