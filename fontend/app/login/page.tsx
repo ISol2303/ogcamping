@@ -1,9 +1,9 @@
 'use client';
 
 import type React from 'react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { login } from '@/app/api/auth';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { login, socialLogin } from '@/app/api/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tent, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { signInWithPopup } from 'firebase/auth';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +22,29 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const queryError = searchParams.get('error');
+    if (queryError) {
+      switch (queryError) {
+        case 'unauthenticated':
+          setError('Phiên đăng nhập hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
+          break;
+        case 'no-token':
+          setError('Vui lòng đăng nhập để tiếp tục.');
+          break;
+        case 'invalid-token':
+          setError('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+          break;
+        case 'unauthorized':
+          setError('Bạn không có quyền truy cập. Vui lòng kiểm tra vai trò.');
+          break;
+        default:
+          setError('Lỗi không xác định. Vui lòng thử lại.');
+      }
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,78 +55,36 @@ export default function LoginPage() {
       const response = await login({
         email: formData.email,
         password: formData.password,
+        remember: formData.remember,
       });
 
-      if (!response?.token || !response?.user?.email) {
-        console.log('Login response:', response);
+      console.log('Login response:', response);
+
+      if (!response?.token || !response?.email) {
         throw new Error('Dữ liệu phản hồi không hợp lệ từ máy chủ.');
       }
 
-      const { token, user } = response;
-      const role = (user.role || 'CUSTOMER').toString().toUpperCase();
-      const fullUser = { ...user, role };
-      const storage = formData.remember ? localStorage : sessionStorage;
+      const { role } = response;
+      const normalizedRole = role.toUpperCase();
 
-      storage.setItem('authToken', token);
-      storage.setItem('user', JSON.stringify(fullUser));
-
-      if (role === 'ADMIN') {
+      if (normalizedRole === 'ADMIN') {
         router.push('/admin');
-      } else if (role === 'STAFF') {
+      } else if (normalizedRole === 'STAFF') {
         router.push('/staff');
       } else {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      console.error('Lỗi đăng nhập:', err);
-      setError(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          'Đăng nhập thất bại. Vui lòng thử lại.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const idToken = await result.user.getIdToken();
-
-      // Gửi token Firebase đến backend để xác thực
-      const response = await fetch('/api/auth/social', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken, provider }),
+      console.error('Lỗi đăng nhập:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        responseBody: err.response?.data ? JSON.stringify(err.response.data, null, 2) : 'No response body',
+        stack: err.stack,
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại.');
-      }
-
-      const { token, user } = data;
-      const role = (user.role || 'CUSTOMER').toString().toUpperCase();
-      const fullUser = { ...user, role };
-      const storage = formData.remember ? localStorage : sessionStorage;
-
-      storage.setItem('authToken', token);
-      storage.setItem('user', JSON.stringify(fullUser));
-
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else if (role === 'STAFF') {
-        router.push('/staff');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err: any) {
-      console.error(`Lỗi đăng nhập ${provider}:`, err);
-      setError(err.message || `Đăng nhập bằng ${provider} thất bại. Vui lòng thử lại.`);
+      setError(
+        err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +92,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
@@ -120,13 +99,13 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 group">
             <div className="relative">
               <img
                 src="/ai-avatar.jpg"
                 className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
+                alt="OG Camping Logo"
               />
               <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
             </div>
@@ -235,7 +214,7 @@ export default function LoginPage() {
               <Button
                 variant="outline"
                 className="h-12 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                onClick={() => handleSocialLogin('google')}
+                onClick={() => socialLogin('google')}
                 disabled={isLoading}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -253,7 +232,7 @@ export default function LoginPage() {
                   />
                   <path
                     fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.30-4.53 6.16-4.53z"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.60 3.30-4.53 6.16-4.53z"
                   />
                 </svg>
                 Google
@@ -261,7 +240,7 @@ export default function LoginPage() {
               <Button
                 variant="outline"
                 className="h-12 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
-                onClick={() => handleSocialLogin('facebook')}
+                onClick={() => socialLogin('facebook')}
                 disabled={isLoading}
               >
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">

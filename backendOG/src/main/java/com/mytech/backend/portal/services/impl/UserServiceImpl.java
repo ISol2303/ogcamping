@@ -21,7 +21,6 @@ import com.mytech.backend.portal.repositories.PackageRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import com.mytech.backend.portal.services.UserService;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -52,8 +51,13 @@ public class UserServiceImpl implements UserService {
                 .email(userDTO.getEmail())
                 .password(passwordEncoder.encode(userDTO.getPassword())) // nên encode nếu có security
                 .phone(userDTO.getPhone())
-                .role(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : User.Role.CUSTOMER)
-                .status(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : User.Status.ACTIVE)
+                .role(userDTO.getRole() != null 
+                ? User.Role.valueOf(userDTO.getRole().toUpperCase()) 
+                : User.Role.CUSTOMER)
+                .status(userDTO.getStatus() != null 
+                ? User.Status.valueOf(userDTO.getStatus().toUpperCase()) 
+                : User.Status.ACTIVE)
+
                 .build();
         user = userRepository.save(user);
 //    Customer 0 Day
@@ -96,8 +100,9 @@ public class UserServiceImpl implements UserService {
         user.setEmail(userDTO.getEmail());
         user.setPhone(userDTO.getPhone());
         if (userDTO.getRole() != null) {
-            user.setRole(User.Role.valueOf(userDTO.getRole()));
+            user.setRole(User.Role.valueOf(userDTO.getRole().toUpperCase()));
         }
+
 
         if (userDTO.getStatus() != null) {
             user.setStatus(User.Status.valueOf(userDTO.getStatus()));
@@ -128,11 +133,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO findByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    
 
 
     @Override
@@ -188,18 +193,6 @@ public class UserServiceImpl implements UserService {
 
 	    return stats;
 	}
-	@PostConstruct
-	public void initAdmin() {
-	    if (userRepository.findByEmail("admin@example.com").isEmpty()) {
-	        User admin = new User();
-	        admin.setEmail("admin@example.com");
-	        admin.setName("Super Admin");
-	        admin.setPassword(new BCryptPasswordEncoder().encode("admin123"));
-	        admin.setRole(User.Role.ADMIN);
-	        userRepository.save(admin);
-	    }
-	}
-
 }
 
 

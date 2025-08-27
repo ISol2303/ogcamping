@@ -4,10 +4,10 @@ package com.mytech.backend.portal.apis;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.mytech.backend.portal.security.AppUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +26,8 @@ import com.mytech.backend.portal.dto.PromotionDTO;
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.security.AppUserDetails;
 import com.mytech.backend.portal.services.AdminService;
 import com.mytech.backend.portal.services.AreaService;
 import com.mytech.backend.portal.services.CategoryService;
@@ -164,7 +166,7 @@ public class AdminController {
         return ResponseEntity.ok(areaService.findAll());
     }
     @GetMapping("/me")
-    public ResponseEntity<UserDTO> getCurrentAdmin(@AuthenticationPrincipal AppUserDetails userDetails) {
+    public ResponseEntity<User> getCurrentAdmin(@AuthenticationPrincipal AppUserDetails userDetails) {
         return ResponseEntity.ok(userService.findByEmail(userDetails.getUsername()));
     }
 }

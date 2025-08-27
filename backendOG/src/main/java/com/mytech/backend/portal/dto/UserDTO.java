@@ -1,6 +1,8 @@
 package com.mytech.backend.portal.dto;
 
 import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.Role;
+
 import lombok.*;
 
 import java.time.LocalDate;
@@ -16,7 +18,7 @@ public class UserDTO {
 	private String lastName;
     private String name;
     private String email;
-    private User.Role role;
+    private String role;
     private String avatar;
     private String password;
     private String phone;
@@ -57,10 +59,11 @@ public class UserDTO {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-	public User.Role getRole() {
+	
+	public String getRole() {
 		return role;
 	}
-	public void setRole(User.Role role) {
+	public void setRole(String role) {
 		this.role = role;
 	}
 	public String getAvatar() {

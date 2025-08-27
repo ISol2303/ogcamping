@@ -14,7 +14,7 @@ public interface UserService {
     List<UserDTO> getAllUsers();                 // Lấy tất cả users
     UserDTO updateUser(Long id, UserDTO userDTO);// Cập nhật user
     void deleteUser(Long id);                    // Xóa user + customer nếu cascade
-    UserDTO findByEmail(String email);              // Tìm user theo email
+    User findByEmail(String email);              // Tìm user theo email
     User save(User user);                        // Save trực tiếp entity
     Collection<StatDTO> findAllStats();          // Thống kê user
     UserDTO findById(Long id);

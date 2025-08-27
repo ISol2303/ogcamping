@@ -36,7 +36,7 @@ public class AppRestController {
                     new UsernamePasswordAuthenticationToken(
                             signInRequest.getEmail(), signInRequest.getPassword()));
 
-            UserDTO user = userService.findByEmail(signInRequest.getEmail());
+            User user = userService.findByEmail(signInRequest.getEmail());
             if (user == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ Tài khoản không tồn tại.");
             }
@@ -62,7 +62,7 @@ public class AppRestController {
         }
 
         String email = authentication.getName();
-        UserDTO user = userService.findByEmail(email);
+        User user = userService.findByEmail(email);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("❌ Người dùng không tồn tại.");
         }
@@ -79,7 +79,7 @@ public class AppRestController {
     // Register endpoint remains unchanged
     @PostMapping({"/v1/register", "/test/register"})
     public ResponseEntity<?> register(@RequestBody SignUpRequest signUpRequest) {
-        UserDTO existingUser = userService.findByEmail(signUpRequest.getEmail());
+        User existingUser = userService.findByEmail(signUpRequest.getEmail());
 
         if (existingUser != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("❌ Email đã được đăng ký.");
