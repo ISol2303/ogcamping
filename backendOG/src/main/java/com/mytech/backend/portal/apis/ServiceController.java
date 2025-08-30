@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mytech.backend.portal.dto.Service.ServiceRequestDTO;
-import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
-import com.mytech.backend.portal.services.Service.ServiceService;
+import com.mytech.backend.portal.dto.ServiceRequestDTO;
+import com.mytech.backend.portal.dto.ServiceResponseDTO;
+import com.mytech.backend.portal.services.ServiceService;
 
 import lombok.RequiredArgsConstructor;
 

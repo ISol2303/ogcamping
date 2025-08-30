@@ -1,18 +1,19 @@
 package com.mytech.backend.portal.services.impl;
 
-import com.mytech.backend.portal.dto.StatDTO;
-import com.mytech.backend.portal.repositories.BookingRepository;
-import com.mytech.backend.portal.repositories.OrderBookingRepository;
-import com.mytech.backend.portal.repositories.PackageRepository;
-import com.mytech.backend.portal.repositories.UserRepository;
-import com.mytech.backend.portal.services.AdminService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.mytech.backend.portal.dto.StatDTO;
+import com.mytech.backend.portal.repositories.BookingRepository;
+import com.mytech.backend.portal.repositories.OrderBookingRepository;
+import com.mytech.backend.portal.repositories.ServiceRepository;
+import com.mytech.backend.portal.repositories.UserRepository;
+import com.mytech.backend.portal.services.AdminService;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -24,7 +25,7 @@ public class AdminServiceImpl implements AdminService {
     private OrderBookingRepository orderBookingRepository;
 
     @Autowired
-    private PackageRepository packageRepository;
+    private ServiceRepository serviceRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -58,7 +59,7 @@ public class AdminServiceImpl implements AdminService {
         StatDTO revenueStat = new StatDTO();
         revenueStat.setTitle("Total Revenue");
         revenueStat.setValue(String.format("%,.0f VND", totalRevenue));
-        revenueStat.setIcon("dollar");
+        revenueStat.setIcon("VND");
         revenueStat.setColor("text-green-600");
         revenueStat.setChange("+5%"); // Mocked change, replace with actual calculation if needed
         stats.add(revenueStat);
@@ -89,7 +90,7 @@ public class AdminServiceImpl implements AdminService {
         stats.add(customersStat);
 
         // Services Stat
-        long totalServices = packageRepository.count();
+        long totalServices = serviceRepository.count();
         StatDTO servicesStat = new StatDTO();
         servicesStat.setTitle("Active Services");
         servicesStat.setValue(String.valueOf(totalServices));

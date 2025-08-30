@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mytech.backend.portal.dto.Payment.PaymentRequestDTO;
-import com.mytech.backend.portal.dto.Payment.PaymentResponseDTO;
-import com.mytech.backend.portal.services.Payment.PaymentService;
+import com.mytech.backend.portal.dto.PaymentRequestDTO;
+import com.mytech.backend.portal.dto.PaymentResponseDTO;
+import com.mytech.backend.portal.services.PaymentService;
 
 import lombok.RequiredArgsConstructor;
 

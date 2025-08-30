@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mytech.backend.portal.dto.Customer.CustomerRequestDTO;
-import com.mytech.backend.portal.dto.Customer.CustomerResponseDTO;
-import com.mytech.backend.portal.services.Customer.CustomerService;
+import com.mytech.backend.portal.dto.CustomerRequestDTO;
+import com.mytech.backend.portal.dto.CustomerResponseDTO;
+import com.mytech.backend.portal.services.CustomerService;
 
 import lombok.RequiredArgsConstructor;
 

@@ -1,4 +1,3 @@
-
 package com.mytech.backend.portal.apis;
 
 import java.util.List;
@@ -7,7 +6,6 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,26 +15,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mytech.backend.portal.dto.AreaDTO;
+import com.mytech.backend.portal.dto.BookingResponseDTO;
 import com.mytech.backend.portal.dto.CategoryDTO;
 import com.mytech.backend.portal.dto.GearDTO;
 import com.mytech.backend.portal.dto.InventoryDTO;
 import com.mytech.backend.portal.dto.LocationDTO;
-import com.mytech.backend.portal.dto.PackageDTO;
 import com.mytech.backend.portal.dto.PromotionDTO;
+import com.mytech.backend.portal.dto.ServiceResponseDTO;
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
-import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.security.AppUserDetails;
 import com.mytech.backend.portal.services.AdminService;
 import com.mytech.backend.portal.services.AreaService;
+import com.mytech.backend.portal.services.BookingService;
 import com.mytech.backend.portal.services.CategoryService;
 import com.mytech.backend.portal.services.GearService;
 import com.mytech.backend.portal.services.LocationService;
-import com.mytech.backend.portal.services.PackageService;
 import com.mytech.backend.portal.services.PromotionService;
+import com.mytech.backend.portal.services.ServiceService;
 import com.mytech.backend.portal.services.UserService;
-import com.mytech.backend.portal.services.Booking.BookingService;
 
 @RestController
 @RequestMapping("/apis/v1/admin")
@@ -52,7 +48,7 @@ public class AdminController {
     @Autowired
     private GearService gearService;
     @Autowired
-    private PackageService packageService;
+    private ServiceService serviceService;
     @Autowired
     private LocationService locationService;
     @Autowired
@@ -64,9 +60,10 @@ public class AdminController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<UserDTO> fetchUser(@PathVariable Long id) {
-        UserDTO user = userService.findById(id);
+        UserDTO user = userService.getUserById(id); // ✅ đổi từ findById -> getUserById
         return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
     }
+
 
     @GetMapping("/stats")
     public ResponseEntity<List<StatDTO>> fetchStats(@RequestParam String period) {
@@ -113,18 +110,19 @@ public class AdminController {
     }
 
     @GetMapping("/services")
-    public ResponseEntity<List<PackageDTO>> fetchServices() {
-        return ResponseEntity.ok(packageService.findAll());
+    public ResponseEntity<List<ServiceResponseDTO>> fetchServices() {
+        return ResponseEntity.ok(serviceService.getAllServices()); // ✅ đổi từ findAll -> getAllServices
     }
 
     @GetMapping("/gears")
     public ResponseEntity<List<GearDTO>> fetchEquipment() {
-        return ResponseEntity.ok(gearService.findAll());
+        return ResponseEntity.ok(gearService.getAllGears()); // ✅ đổi từ findAll -> getAllGears
     }
 
+
     @GetMapping("/inventory")
-    public ResponseEntity<List<InventoryDTO>> fetchInventory() {
-        return ResponseEntity.ok(gearService.findInventory());
+    public ResponseEntity<List<GearDTO>> fetchInventory() {
+        return ResponseEntity.ok(gearService.getAllGears()); // ✅ dùng getAllGears thay vì findInventory
     }
 
     @GetMapping("/customers")
@@ -164,9 +162,5 @@ public class AdminController {
     @GetMapping("/areas")
     public ResponseEntity<List<AreaDTO>> fetchAreas() {
         return ResponseEntity.ok(areaService.findAll());
-    }
-    @GetMapping("/me")
-    public ResponseEntity<User> getCurrentAdmin(@AuthenticationPrincipal AppUserDetails userDetails) {
-        return ResponseEntity.ok(userService.findByEmail(userDetails.getUsername()));
     }
 }
