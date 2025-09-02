@@ -27,19 +27,34 @@ import {
   MessageCircle,
   Phone,
   Mail,
+  Plus,
+  Trash2,
+  Upload,
+  Edit,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
 
 interface Order {
-  _id: string;
-  customer: string;
-  service: string;
-  date: string;
+  id: string;
+  orderCode: string;
+  customerName: string;        // sửa từ customer -> customerName
+  email: string;               // thêm email
   phone: string;
-  status: 'pending_confirmation' | 'pending_payment' | 'confirmed';
-  priority: 'high' | 'medium' | 'low';
+  people: number;              // thêm số lượng người
+  bookingDate: string;         // sửa từ date -> bookingDate
+  totalPrice: number;          // thêm tổng giá
+  specialRequests: string;     // thêm yêu cầu đặc biệt
+  emergencyContact: string;    // thêm thông tin liên hệ khẩn cấp
+  emergencyPhone: string;      // thêm số điện thoại khẩn cấp
+  priority: 'NORMAL' | 'HIGH' | 'LOW';
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'; // sửa status cho trùng backend
+  emailSentAt?: string | null;
 }
+
+
 
 interface EquipmentCheck {
   _id: string;
@@ -65,6 +80,7 @@ const iconMap: { [key: string]: LucideIcon } = {
   Package,
 };
 
+
 export default function StaffDashboard() {
   const [selectedTab, setSelectedTab] = useState('orders');
   const [stats, setStats] = useState<Stat[]>([]);
@@ -75,41 +91,54 @@ export default function StaffDashboard() {
   const [searchOrders, setSearchOrders] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const router = useRouter();
-
+  // const [selectedTab, setSelectedTab] = useState("orders")
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const token =
+          localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         if (!token) {
+          console.log('Token không tồn tại, redirect login');
           router.push('/login');
           return;
         }
 
+        // Set default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        // Fetch user to verify staff role
+        // 1️⃣ Lấy user
         const userResponse = await axios.get('http://localhost:8080/users/me');
         const role = userResponse.data.role;
+        console.log('User role:', role);
         if (!['staff', 'manager', 'guide'].includes(role)) {
           router.push('/login');
           return;
         }
 
-        // Fetch stats
+        // 2️⃣ Lấy thống kê
         const statsResponse = await axios.get('http://localhost:8080/stats/staff');
         setStats(statsResponse.data.stats);
 
-        // Fetch pending orders
-        const ordersResponse = await axios.get('http://localhost:8080/bookings/pending');
-        setPendingOrders(ordersResponse.data);
+        // 3️⃣ Lấy tất cả orders
+        const ordersResponse = await axios.get('http://localhost:8080/apis/orders');
+        console.log('Orders Response:', ordersResponse.data);
 
-        // Fetch equipment checks
+        // Convert bookingDate về string để frontend hiển thị
+        const orders: Order[] = ordersResponse.data.map((order: any) => ({
+          ...order,
+          bookingDate: order.bookingDate || order.date || '', // fallback nếu khác tên field
+        }));
+        setPendingOrders(orders);
+
+        // 4️⃣ Lấy equipment checks
         const equipmentResponse = await axios.get('http://localhost:8080/equipment/checks');
         setEquipmentChecks(equipmentResponse.data);
       } catch (err: any) {
+        console.error('Lỗi fetchData:', err);
         if (err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
@@ -126,6 +155,458 @@ export default function StaffDashboard() {
 
     fetchData();
   }, [router]);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const ordersResponse = await axios.get('http://localhost:8080/apis/orders/all');
+        setPendingOrders(ordersResponse.data);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách order:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+  //list order
+  const handleViewOrder = (order: any) => {
+    console.log("👉 handleViewOrder called with:", order); // log ngay đầu
+    setSelectedOrder(order);
+    try {
+      if (!order) {
+        throw new Error("Không tìm thấy dữ liệu đơn hàng");
+      }
+      setSelectedOrder(order);
+      setError(null);
+    } catch (err: any) {
+      console.error("Lỗi khi chọn đơn hàng:", err.message);
+      setError(err.message);
+      setSelectedOrder(null);
+    }
+  };
+  //xác nhận đơn hàng 
+  const handleConfirmOrder = async (order: Order) => {
+    try {
+      if (!order || !order.id) {
+        console.error("❌ Order hoặc order.id không hợp lệ:", order);
+        alert("Không tìm thấy đơn hàng để xác nhận!");
+        return;
+      }
+
+      console.log("👉 Xác nhận đơn hàng ID:", order.id, "Type:", typeof order.id);
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) {
+        console.error("❌ Token không tồn tại");
+        alert("Vui lòng đăng nhập lại!");
+        return;
+      }
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axios.patch(
+        `http://localhost:8080/apis/orders/${order.id}/confirm`,
+        {}, // body rỗng
+        config
+      );
+
+      console.log("✅ Response xác nhận đơn:", response.data);
+
+      // Cập nhật UI ngay lập tức
+      setPendingOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, status: 'CONFIRMED' } : o))
+      );
+
+      alert(`Đơn hàng ${order.orderCode} đã được xác nhận!`);
+
+    } catch (err: any) {
+      console.error("❌ Lỗi xác nhận đơn:", err.response?.data || err.message);
+      alert("Không thể xác nhận đơn hàng. Vui lòng thử lại.");
+    }
+  };
+
+  //xác nhận all đơn hàng 
+  // Xác nhận tất cả đơn hàng đang PENDING
+  const handleConfirmAllOrders = async () => {
+    try {
+      const response = await axios.patch(
+        "http://localhost:8080/apis/orders/confirm-all",
+        {}, // body rỗng
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
+      console.log("✅ Xác nhận tất cả đơn:", response.data);
+
+      // Cập nhật UI: đánh dấu tất cả đơn đang PENDING thành CONFIRMED
+      setPendingOrders((prev) =>
+        prev.map((o) => (o.status === "PENDING" ? { ...o, status: "CONFIRMED" } : o))
+      );
+
+      alert("Đã xác nhận tất cả đơn hàng PENDING!");
+    } catch (error: any) {
+      console.error("❌ Lỗi xác nhận tất cả đơn:", error.response?.data || error.message);
+      alert("Không thể xác nhận tất cả đơn. Vui lòng thử lại!");
+    }
+  };
+  const [sendingEmailIds, setSendingEmailIds] = useState<string[]>([]); // lưu id các đơn đang gửi
+  const [sendingAllEmail, setSendingAllEmail] = useState(false);
+
+  // send email single
+  const handleSendEmailSingle = async (order: Order) => {
+    if (!order || !order.id) return;
+
+    // 🔥 Thêm vào danh sách đang gửi email (loading)
+    setSendingEmailIds(prev => [...prev, order.id]);
+
+    try {
+      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      if (!token) {
+        alert("Token không tồn tại, vui lòng đăng nhập lại!");
+        return;
+      }
+
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Gửi email qua API
+      const response = await axios.patch(
+        `http://localhost:8080/apis/orders/${order.id}/send-email`,
+        {},
+        config
+      );
+
+      alert(`✅ ${response.data}`);
+
+      // 🔥 Cập nhật trạng thái emailSentAt trên frontend để disable nút gửi email
+      setPendingOrders(prev =>
+        prev.map(o =>
+          o.id === order.id ? { ...o, emailSentAt: new Date().toISOString() } : o
+        )
+      );
+
+    } catch (err: any) {
+      console.error("❌ Lỗi gửi email đơn:", err.response?.data || err.message);
+      alert("Không thể gửi email đơn. Vui lòng thử lại!");
+    } finally {
+      // 🔥 Xóa khỏi danh sách đang gửi email
+      setSendingEmailIds(prev => prev.filter(id => id !== order.id));
+    }
+  };
+
+
+  //send email all
+
+  const [sentEmailIds, setSentEmailIds] = useState<number[]>([]);
+
+  const handleSendEmailAll = async () => {
+    // Kiểm tra pendingOrders có dữ liệu
+    if (!pendingOrders || !Array.isArray(pendingOrders) || pendingOrders.length === 0) {
+      console.warn("Không có đơn hàng nào đang PENDING để gửi email");
+      return;
+    }
+
+    // Tất cả đơn đang gửi
+    setSendingEmailIds(pendingOrders.map(o => o.id));
+
+    try {
+      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      const response = await axios.patch("http://localhost:8080/apis/orders/send-email-all", {}, config);
+
+      const { successIds = [], failedIds = [] } = response.data || {};
+
+      // Cập nhật trạng thái đã gửi và đang gửi
+      setSentEmailIds(prev => [...prev, ...successIds]);
+      setSendingEmailIds(prev => prev.filter(id => !successIds.includes(id)));
+
+      if (failedIds.length) {
+        alert(`❌ Một số đơn gửi email thất bại: ${failedIds.join(", ")}`);
+      } else {
+        alert("✅ Gửi email tất cả thành công!");
+      }
+
+    } catch (err: any) {
+      console.error("❌ Lỗi gửi email tất cả:", err.response?.data || err.message);
+      alert("❌ Không thể gửi email tất cả. Vui lòng thử lại!");
+      setSendingEmailIds([]);
+    }
+  };
+
+
+  //in hóa đơn 
+  const handlePrintInvoice = async (orderId: number) => {
+    try {
+      // Gọi backend Spring Boot trên port 8080
+      const response = await axios.get(`http://localhost:8080/apis/orders/${orderId}/invoice`, {
+        responseType: "blob", // quan trọng để nhận PDF
+      });
+
+      // Kiểm tra dữ liệu trả về
+      if (!response.data) {
+        throw new Error("Không có dữ liệu PDF từ server");
+      }
+
+      // Tạo URL tạm cho file PDF
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = window.URL.createObjectURL(blob);
+
+      // Tạo link download tạm thời
+      const fileLink = document.createElement("a");
+      fileLink.href = fileURL;
+      fileLink.setAttribute("download", `invoice_${orderId}.pdf`);
+      document.body.appendChild(fileLink);
+      fileLink.click();
+
+      // Xóa link tạm
+      fileLink.remove();
+      window.URL.revokeObjectURL(fileURL); // giải phóng bộ nhớ
+    } catch (error: any) {
+      console.error("Lỗi khi tải hóa đơn:", error);
+      alert(
+        error.response?.status === 404
+          ? "Không tìm thấy hóa đơn. Vui lòng kiểm tra ID đơn hàng!"
+          : "Không thể tải hóa đơn. Vui lòng thử lại!"
+      );
+    }
+  };
+
+  //DISH
+  const [dishes, setDishes] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [filteredDishes, setFilteredDishes] = useState<any[]>([]);
+
+  // ===== Lọc dữ liệu + reset id khi cần =====
+  useEffect(() => {
+    fetchDishes();
+  }, []);
+
+  useEffect(() => {
+    let filtered = dishes
+      .filter((dish: any) =>
+        dish.name?.toLowerCase().includes((search || "").toLowerCase())
+      )
+      .filter((dish: any) =>
+        categoryFilter === "ALL"
+          ? true
+          : dish.category?.toUpperCase() === categoryFilter
+      );
+
+    // ⚡ CHỈNH SỬA Ở ĐÂY:
+    // Nếu đang lọc category (khác ALL) → reset id tạm theo thứ tự
+    if (categoryFilter !== "ALL") {
+      filtered = filtered.map((dish: any, index: number) => ({
+        ...dish,
+        tempId: index + 1, // id hiển thị tạm (1,2,3...)
+      }));
+    } else {
+      filtered = filtered.map((dish: any) => ({
+        ...dish,
+        tempId: dish.id, // giữ nguyên id gốc DB
+      }));
+    }
+
+    setFilteredDishes(filtered);
+  }, [dishes, search, categoryFilter]);
+
+  const fetchDishes = async () => {
+    try {
+      const res = await axios.get("http://localhost:8080/apis/dishes/all");
+      setDishes(res.data);
+    } catch (error) {
+      console.error("Error fetching dishes:", error);
+    }
+  };
+
+
+  const handleDelete = async (id: number) => {
+    await axios.delete(`http://localhost:8080/apis/dishes/${id}`);
+    fetchDishes();
+  };
+
+  //Add DISH
+  const [showAddCard, setShowAddCard] = useState(false);
+  const [newDish, setNewDish] = useState({
+    name: "",
+    description: "",
+    price: 0,
+    quantity: 0,
+    category: "",
+    imageUrl: "",
+  });
+
+
+  const handleAddDish = async () => {
+    try {
+      if (!newDish.name || !newDish.price || !newDish.quantity || !newDish.category) {
+        alert("Vui lòng điền đầy đủ thông tin món ăn!");
+        return;
+      }
+
+      const validCategories = ["APPETIZER", "BBQ", "HOTPOT", "SNACK", "DESSERT", "DRINK"];
+      if (!validCategories.includes(newDish.category.toUpperCase())) {
+        alert("Category không hợp lệ! Chọn một trong:APPETIZER, HOTPOT, BBQ, SNACK, DESSERT, DRINK");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", newDish.name);
+      formData.append("description", newDish.description || "");
+      formData.append("price", String(newDish.price));
+      formData.append("quantity", String(newDish.quantity));
+      formData.append("category", newDish.category.toUpperCase());
+
+      if (imageFile) {
+        formData.append("file", imageFile);
+      }
+
+      const response = await axios.post(
+        "http://localhost:8080/apis/dishes/createWithImage",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      alert("Thêm món ăn thành công!");
+      fetchDishes();
+      setShowAddCard(false);
+      setNewDish({ name: "", description: "", price: 0, quantity: 0, category: "", imageUrl: "" });
+      setImageFile(null);
+      setImagePreview(null);
+
+    } catch (err: any) {
+      console.error("Add dish error:", err.response?.data || err.message);
+      alert("Không thể thêm món ăn. Vui lòng thử lại!");
+    }
+  };
+
+
+
+
+
+  // state mới
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // xử lý chọn file DISH
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file)); // hiển thị preview
+    }
+  };
+  //EDIT DISH
+  const [showEditCard, setShowEditCard] = useState(false);
+  const [editingDish, setEditingDish] = useState<any | null>(null);
+
+  const handleEditClick = (dish: any) => {
+    setEditingDish({ ...dish });   // clone tránh sửa trực tiếp list
+    setShowEditCard(true);
+  };
+
+  const handleUpdateDishText = async () => {
+    try {
+      if (!editingDish) return;
+
+      await axios.put(
+        `http://localhost:8080/apis/dishes/edit/${editingDish.id}`,
+        editingDish
+      );
+
+      alert("Cập nhật món ăn thành công!");
+      fetchDishes();
+      setShowEditCard(false);
+      setEditingDish(null);
+    } catch (error) {
+      console.error("Update dish error:", error);
+      alert("Không thể cập nhật món ăn. Vui lòng thử lại!");
+    }
+  };
+
+
+
+  // ==== UPLOAD IMAGE (CARD RIÊNG) ====
+  const [showUploadCard, setShowUploadCard] = useState(false);
+  const [uploadTargetDish, setUploadTargetDish] = useState<any | null>(null);
+  const [uploadImageFile, setUploadImageFile] = useState<File | null>(null);
+  const [uploadImagePreview, setUploadImagePreview] = useState<string | null>(null);
+
+  const handleOpenUpload = (dish: any) => {
+    setUploadTargetDish(dish);
+    setUploadImageFile(null);
+    setUploadImagePreview(null);
+    setShowUploadCard(true);
+  };
+
+  const handleUploadFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadImageFile(file);
+    setUploadImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmitUploadImage = async () => {
+    try {
+      if (!uploadTargetDish || !uploadImageFile) {
+        alert("Vui lòng chọn ảnh!");
+        return;
+      }
+
+      const formData = new FormData();
+      // 🔑 phải đúng "file" vì backend @RequestParam("file")
+      formData.append("file", uploadImageFile);
+
+      const response = await axios.put(
+        `http://localhost:8080/apis/dishes/editImage/${uploadTargetDish.id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert("✅ Cập nhật hình ảnh thành công!");
+      console.log("Server response:", response.data);
+
+      fetchDishes();
+      setShowUploadCard(false);
+      setUploadTargetDish(null);
+      setUploadImageFile(null);
+      setUploadImagePreview(null);
+    } catch (error: any) {
+      console.error("❌ Update image error:", error);
+
+      if (error.response) {
+        console.error("📌 Response data:", error.response.data);
+        console.error("📌 Status:", error.response.status);
+        console.error("📌 Headers:", error.response.headers);
+      } else if (error.request) {
+        console.error("📌 Request (no response):", error.request);
+      } else {
+        console.error("📌 Error message:", error.message);
+      }
+
+      alert("Không thể cập nhật hình ảnh. Vui lòng thử lại!");
+    }
+  };
+
+
+
+
+  //order
+  const [orderCode, setOrderCode] = useState<string>("");
+  useEffect(() => {
+    const code = localStorage.getItem("orderCode"); // ✅ lấy lại từ localStorage
+    if (code) {
+      setOrderCode(code);
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -137,46 +618,43 @@ export default function StaffDashboard() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending_confirmation':
-        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xác nhận</Badge>;
-      case 'pending_payment':
-        return <Badge className="bg-orange-100 text-orange-800">Chờ thanh toán</Badge>;
-      case 'confirmed':
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xử lý</Badge>;
+      case 'CONFIRMED':
         return <Badge className="bg-green-100 text-green-800">Đã xác nhận</Badge>;
-      case 'due':
-        return <Badge className="bg-red-100 text-red-800">Cần kiểm tra</Badge>;
-      case 'upcoming':
-        return <Badge className="bg-yellow-100 text-yellow-800">Sắp đến hạn</Badge>;
-      case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">Quá hạn</Badge>;
+      case 'CANCELLED':
+        return <Badge className="bg-red-100 text-red-800">Hủy</Badge>;
       default:
         return <Badge variant="secondary">Không xác định</Badge>;
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <Badge variant="destructive">Cao</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-100 text-yellow-800">Trung bình</Badge>;
-      case 'low':
-        return <Badge className="bg-green-100 text-green-800">Thấp</Badge>;
-      default:
-        return <Badge variant="secondary">Bình thường</Badge>;
-    }
-  };
+  // const getPriorityBadge = (priority: string) => {
+  //   switch (priority.toUpperCase()) {
+  //     case 'HIGH':
+  //       return <Badge variant="destructive">Cao</Badge>;
+  //     case 'NORMAL':
+  //       return <Badge className="bg-yellow-100 text-yellow-800">Trung bình</Badge>;
+  //     case 'LOW':
+  //       return <Badge className="bg-green-100 text-green-800">Thấp</Badge>;
+  //     default:
+  //       return <Badge variant="secondary">Bình thường</Badge>;
+  //   }
+  // };
 
-  const filteredOrders = pendingOrders.filter(
-    (order) =>
-      (order.customer.toLowerCase().includes(searchOrders.toLowerCase()) ||
-        order.service.toLowerCase().includes(searchOrders.toLowerCase())) &&
-      (filterStatus === 'all' || order.status === filterStatus)
-  );
+  const filteredOrders = pendingOrders.filter((order) => {
+    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
+    const matchesSearch =
+      order.customerName.toLowerCase().includes(searchOrders.toLowerCase()) ||
+      order.id.toLowerCase().includes(searchOrders.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>;
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -207,11 +685,7 @@ export default function StaffDashboard() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded">
-            Error: {error}
-          </div>
-        )}
+
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Nhân viên</h1>
@@ -242,7 +716,7 @@ export default function StaffDashboard() {
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
           <TabsList className="grid w-full lg:w-auto grid-cols-4">
             <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
-            <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
+            <TabsTrigger value="dish">Danh mục món ăn</TabsTrigger>
             <TabsTrigger value="customers">Khách hàng</TabsTrigger>
             <TabsTrigger value="reports">Báo cáo</TabsTrigger>
           </TabsList>
@@ -280,58 +754,88 @@ export default function StaffDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả</SelectItem>
-                      <SelectItem value="pending_confirmation">Chờ xác nhận</SelectItem>
-                      <SelectItem value="pending_payment">Chờ thanh toán</SelectItem>
-                      <SelectItem value="confirmed">Đã xác nhận</SelectItem>
+                      <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+                      <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
+                      <SelectItem value="CANCELLED">Hủy</SelectItem>
+
                     </SelectContent>
                   </Select>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mã đơn</TableHead>
-                      <TableHead>Khách hàng</TableHead>
-                      <TableHead>Dịch vụ</TableHead>
-                      <TableHead>Ngày</TableHead>
-                      <TableHead>Ưu tiên</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrders.map((order) => (
-                      <TableRow key={order._id}>
-                        <TableCell className="font-medium">{order._id}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{order.customer}</p>
-                            <p className="text-sm text-gray-600">{order.phone}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{order.service}</TableCell>
-                        <TableCell>{order.date}</TableCell>
-                        <TableCell>{getPriorityBadge(order.priority)}</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Phone className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="overflow-y-auto max-h-[500px] border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Mã đơn hàng</TableHead>
+                        <TableHead>Email khách hàng </TableHead>
+                        <TableHead>Khách hàng</TableHead>
+                        <TableHead>Dịch vụ</TableHead>
+                        <TableHead>Ngày</TableHead>
+                        {/* <TableHead>Ưu tiên</TableHead> */}
+                        <TableHead className="w-[110px] text-center align-middle">Trạng thái</TableHead>
+                        <TableHead>Thao tác</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.id}</TableCell>
+                          <TableCell className="font-medium">{order.orderCode}</TableCell>
+
+                          <TableCell className="font-medium">{order.email}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium w-[150px] truncate]" >{order.customerName}</p>
+                              <p className="text-sm text-gray-600">{order.phone}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-5 w-[200px] text-center align-middle whitespace-nowrap">{order.totalPrice ? order.totalPrice.toLocaleString() + ' đ' : '-'} </TableCell>
+                          <TableCell>{new Date(order.bookingDate).toLocaleString()}</TableCell>
+                          {/* <TableCell>{getPriorityBadge(order.priority)}</TableCell> */}
+                          <TableCell className="min-w-[180px] text-center align-middle">{getStatusBadge(order.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  console.log("👉 Eye clicked for order:", order); // log khi click
+                                  handleViewOrder(order);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                className="min-w-[110px] text-center align-middle "
+                                size="sm"
+                                disabled={order.status === 'CONFIRMED'} // disable nếu đã xác nhận
+                                onClick={() => handleConfirmOrder(order)}
+                              >
+                                ✅ Xác nhận
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={!!order.emailSentAt || sendingEmailIds.includes(order.id)} // đã gửi hoặc đang gửi
+                                onClick={() => handleSendEmailSingle(order)}
+                              >
+                                <Mail className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+
+
+                  </Table>
+                </div>
               </CardContent>
             </Card>
+
 
             {/* Quick Actions */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -340,18 +844,21 @@ export default function StaffDashboard() {
                   <CardTitle>Xử lý nhanh</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full justify-start">
+                  <Button className="w-full justify-start" onClick={handleConfirmAllOrders}>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Xác nhận đơn hàng
+                    Xác nhận tất cả đơn hàng
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Phone className="w-4 h-4 mr-2" />
-                    Gọi khách hàng
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleSendEmailAll}
+                    disabled={sendingAllEmail}
+                  >
                     <Mail className="w-4 h-4 mr-2" />
-                    Gửi email xác nhận
+                    {sendingAllEmail ? "Đang gửi email..." : "Gửi email tất cả"}
                   </Button>
+
                 </CardContent>
               </Card>
 
@@ -365,48 +872,441 @@ export default function StaffDashboard() {
                 </CardContent>
               </Card>
             </div>
+            {selectedOrder && (
+              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                <div className="bg-white p-6 rounded-2xl shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+                  {/* Header */}
+                  <div className="text-center mb-4">
+                    {/* Logo */}
+                    <div className="flex items-left justify-left mb-2">
+                      <Tent className="h-6 w-6 text-green-600" />
+                      <span className="text-xl font-bold text-green-800">OG CAMPING BILL </span>
+                    </div>
+                    {/* Hóa đơn */}
+                    <h2 className="text-2xl font-bold text-gray-800">🧾 Hóa đơn đặt tour</h2>
+                    <p className="text-sm text-gray-500 mt-1">Mã đơn hàng: #{selectedOrder.id}</p>
+                  </div>
+
+                  {/* Body */}
+                  <div className="divide-y divide-gray-200 border rounded-lg">
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Tên khách hàng</p>
+                      <p className="text-gray-800">{selectedOrder.customerName}</p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 break-words">
+                      <p className="font-semibold text-gray-600">Email</p>
+                      <p className="text-gray-800">{selectedOrder.email}</p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Số điện thoại</p>
+                      <p className="text-gray-800">{selectedOrder.phone}</p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3">
+                      <p className="font-semibold text-gray-600">Ngày đặt</p>
+                      <p className="text-gray-800">
+                        {new Date(selectedOrder.bookingDate).toLocaleString("vi-VN")}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Giá tiền</p>
+                      <p className="text-gray-800 font-medium">
+                        {selectedOrder.totalPrice?.toLocaleString("vi-VN")} VND
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3">
+                      <p className="font-semibold text-gray-600">Tour đặt</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.service?.name || "Chưa có thông tin"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Dịch vụ đã chọn</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.serviceName || "Chưa có thông tin"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3">
+                      <p className="font-semibold text-gray-600">Thiết bị thuê</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.equipment || "Không thuê"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Số người tham gia</p>
+                      <p className="text-gray-800">{selectedOrder.people}</p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 break-words">
+                      <p className="font-semibold text-gray-600">Yêu cầu đặc biệt</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.specialRequests || "Không có"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3 bg-gray-50">
+                      <p className="font-semibold text-gray-600">Người liên hệ khẩn cấp</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.emergencyContact || "Không có"}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 p-3">
+                      <p className="font-semibold text-gray-600">SĐT khẩn cấp</p>
+                      <p className="text-gray-800">
+                        {selectedOrder.emergencyPhone || "Không có"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <p className="text-center text-gray-500 text-sm mt-6">
+                    🎉 Cảm ơn quý khách đã tin tưởng dịch vụ của chúng tôi!
+                  </p>
+
+                  <div className="flex justify-end mt-4">
+                    <button
+                      className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                      onClick={() => handlePrintInvoice(selectedOrder.id)}
+                    >
+                      In hóa đơn
+                    </button>
+                    <button
+                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                      onClick={() => setSelectedOrder(null)}
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+
+
           </TabsContent>
 
-          <TabsContent value="equipment">
+          <TabsContent value="dish">
             <Card>
               <CardHeader>
-                <CardTitle>Kiểm tra thiết bị</CardTitle>
-                <CardDescription>Lịch kiểm tra và bảo trì thiết bị</CardDescription>
+                <CardTitle>Quản lý món ăn</CardTitle>
+                <CardDescription>Danh sách và thao tác quản lý món ăn</CardDescription>
               </CardHeader>
+              <div className="flex justify-start items-center px-8 py-4">
+                <Button className="flex items-center" onClick={() => setShowAddCard(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Thêm món ăn
+                </Button>
+              </div>
+              {/* Card thêm món ăn */}
+              {showAddCard && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                  <div className="bg-white p-6 rounded-2xl shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+                    {/* Header */}
+                    <div className="text-center mb-4">
+                      <div className="flex items-left justify-left mb-2">
+                        <Plus className="h-6 w-6 text-green-600" />
+                        <span className="text-xl font-bold text-green-800">THÊM MÓN ĂN</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Điền thông tin món ăn mới</p>
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex flex-col gap-4">
+
+                      <Input
+                        placeholder="Tên món ăn"
+                        value={newDish.name}
+                        onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Mô tả"
+                        value={newDish.description}
+                        onChange={(e) => setNewDish({ ...newDish, description: e.target.value })}
+                      />
+
+                      <Input
+                        type="text"
+                        placeholder="Giá (VNĐ)"
+                        value={newDish.price === 0 ? "" : newDish.price}
+                        onChange={(e) =>
+                          setNewDish({ ...newDish, price: Number(e.target.value) || 0 })
+                        }
+                      />
+
+                      <Input
+                        type="text"
+                        placeholder="Số lượng"
+                        value={newDish.quantity === 0 ? "" : newDish.quantity}
+                        onChange={(e) =>
+                          setNewDish({ ...newDish, quantity: Number(e.target.value) || 0 })
+                        }
+                      />
+
+                      {/* Chọn phân loại */}
+                      <Select
+                        value={newDish.category}
+                        onValueChange={(val) => setNewDish({ ...newDish, category: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn phân loại" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="APPETIZER">APPETIZER</SelectItem>
+                          <SelectItem value="BBQ">BBQ</SelectItem>
+                          <SelectItem value="HOTPOT">HOTPOT</SelectItem>
+                          <SelectItem value="SNACK">SNACK</SelectItem>
+                          <SelectItem value="DRINK">DRINK</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Upload ảnh riêng */}
+                      <div className="flex flex-col gap-2">
+                        <label className="font-medium">Hình ảnh món ăn</label>
+                        <input type="file" accept="image/*" onChange={handleImageChange} />
+                        {imagePreview && (
+                          <img
+                            src={imagePreview}
+                            alt="preview"
+                            className="w-32 h-32 object-cover rounded-md"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button variant="outline" onClick={() => setShowAddCard(false)}>Hủy</Button>
+                      <Button onClick={handleAddDish}>Lưu</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ShowEdit card */}
+              {showEditCard && editingDish && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                  <div className="bg-white p-6 rounded-2xl shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+                    {/* Header */}
+                    <div className="text-center mb-4">
+                      <div className="flex items-left justify-left mb-2">
+                        <Edit className="h-6 w-6 text-blue-600" />
+                        <span className="text-xl font-bold text-blue-800">CHỈNH SỬA MÓN ĂN</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Cập nhật thông tin món ăn</p>
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex flex-col gap-4">
+                      <Input
+                        placeholder="Tên món ăn"
+                        value={editingDish.name}
+                        onChange={(e) => setEditingDish({ ...editingDish, name: e.target.value })}
+                      />
+                      <Input
+                        placeholder="Mô tả"
+                        value={editingDish.description}
+                        onChange={(e) => setEditingDish({ ...editingDish, description: e.target.value })}
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Giá (VNĐ)"
+                        value={editingDish.price}
+                        onChange={(e) =>
+                          setEditingDish({ ...editingDish, price: Number(e.target.value) || 0 })
+                        }
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Số lượng"
+                        value={editingDish.quantity}
+                        onChange={(e) =>
+                          setEditingDish({ ...editingDish, quantity: Number(e.target.value) || 0 })
+                        }
+                      />
+
+                      {/* Chọn phân loại */}
+                      <Select
+                        value={editingDish.category}
+                        onValueChange={(val) => setEditingDish({ ...editingDish, category: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn phân loại" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="APPETIZER">APPETIZER</SelectItem>
+                          <SelectItem value="BBQ">BBQ</SelectItem>
+                          <SelectItem value="HOTPOT">HOTPOT</SelectItem>
+                          <SelectItem value="SNACK">SNACK</SelectItem>
+                          <SelectItem value="DESSERT">DESSERT</SelectItem>
+                          <SelectItem value="DRINK">DRINK</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button variant="outline" onClick={() => setShowEditCard(false)}>Hủy</Button>
+                      <Button onClick={handleUpdateDishText}>Lưu</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Show edit Image */}
+              {showUploadCard && uploadTargetDish && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                  <div className="bg-white p-6 rounded-2xl shadow-xl w-[460px] max-h-[90vh] overflow-y-auto">
+                    {/* Header */}
+                    <div className="text-center mb-4">
+                      <div className="flex items-left justify-left mb-2">
+                        <Upload className="h-6 w-6 text-purple-600" />
+                        <span className="text-xl font-bold text-purple-800">CẬP NHẬT ẢNH MÓN ĂN</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Chọn ảnh mới cho: <b>{uploadTargetDish.name}</b></p>
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex flex-col gap-3">
+                      {/* Ảnh hiện tại */}
+                      {uploadTargetDish.imageUrl && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Ảnh hiện tại:</p>
+                          <img
+                            src={`http://localhost:8080${uploadTargetDish.imageUrl}`}
+                            alt={uploadTargetDish.name}
+                            className="w-28 h-28 object-cover rounded-md border"
+                          />
+                        </div>
+                      )}
+
+                      {/* Chọn ảnh mới */}
+                      <div className="flex flex-col gap-2">
+                        <label className="font-medium">Ảnh mới</label>
+                        <input type="file" accept="image/*" onChange={handleUploadFileChange} />
+                        {uploadImagePreview && (
+                          <img
+                            src={uploadImagePreview}
+                            alt="preview"
+                            className="w-28 h-28 object-cover rounded-md border"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => { setShowUploadCard(false); setUploadTargetDish(null); setUploadImageFile(null); setUploadImagePreview(null); }}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSubmitUploadImage} disabled={!uploadImageFile}>
+                        Lưu ảnh
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
+              {/* Card danh sách món ăn */}
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tên thiết bị</TableHead>
-                      <TableHead>Mã thiết bị</TableHead>
-                      <TableHead>Lần kiểm tra cuối</TableHead>
-                      <TableHead>Kiểm tra tiếp theo</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {equipmentChecks.map((equipment) => (
-                      <TableRow key={equipment._id}>
-                        <TableCell className="font-medium">{equipment.name}</TableCell>
-                        <TableCell>{equipment.code}</TableCell>
-                        <TableCell>{equipment.lastCheck}</TableCell>
-                        <TableCell>{equipment.nextCheck}</TableCell>
-                        <TableCell>{getStatusBadge(equipment.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                {/* Thanh tìm kiếm + lọc category */}
+                <div className="flex gap-4 mb-4">
+                  <div className="flex items-center gap-2 relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="text"
+                      placeholder="Tìm kiếm theo tên..."
+                      className="pl-10"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </div>
+                  <Select onValueChange={setCategoryFilter} defaultValue="ALL">
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Lọc theo loại" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Tất cả</SelectItem>
+                      <SelectItem value="APPETIZER">APPETIZER</SelectItem>
+                      <SelectItem value="BBQ">BBQ</SelectItem>
+                      <SelectItem value="HOTPOT">HOTPOT</SelectItem>
+                      <SelectItem value="SNACK">SNACK</SelectItem>
+                      <SelectItem value="DESSERT">DESSERT</SelectItem>
+                      <SelectItem value="DRINK">DRINK</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Bảng dữ liệu món ăn với scroll */}
+                <div className="overflow-y-auto max-h-[500px] border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Hình ảnh</TableHead>
+                        <TableHead>Tên món</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead>Giá (VNĐ)</TableHead>
+                        <TableHead>Số lượng</TableHead>
+                        <TableHead>Phân loại</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+
+                        <TableHead>Thao tác</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredDishes.map((dish: any) => (
+                        <TableRow key={dish.id}>
+                          <TableCell>{dish.tempId}</TableCell>
+                          <TableCell>
+                            {dish.imageUrl ? (
+                              <img
+                                src={`http://localhost:8080${dish.imageUrl}`}
+                                alt={dish.name}
+                                className="w-16 h-16 object-cover rounded-md"
+                              />
+                            ) : (
+                              <span className="text-gray-400 italic">Chưa có ảnh</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{dish.name}</TableCell>
+                          <TableCell>{dish.description}</TableCell>
+                          <TableCell className="px-2 w-[105px]">
+                            {dish.price.toLocaleString()} đ
+                          </TableCell>
+                          <TableCell className="w-[105px]  text-center align-middle">
+                            {dish.quantity} 
+                          </TableCell>
+                          <TableCell>{dish.category}</TableCell>
+                          <TableCell>
+                            {dish.quantity > 0 ? (
+                              <span className="text-green-600 font-semibold">AVAILABLE</span>
+                            ) : (
+                              <span className="text-red-500 font-semibold">SOLD OUT</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEditClick(dish)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleOpenUpload(dish)}>
+                                <Upload className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(dish.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
