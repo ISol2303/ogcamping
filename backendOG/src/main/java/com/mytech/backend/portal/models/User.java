@@ -94,7 +94,7 @@ public class User {
     }
     @Column(name = "google_Id", nullable = true)
     private String googleId;
-
+    
 	public Long getId() {
 		return id;
 	}

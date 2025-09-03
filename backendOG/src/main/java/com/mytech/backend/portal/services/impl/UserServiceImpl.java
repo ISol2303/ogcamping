@@ -34,11 +34,12 @@ public class UserServiceImpl implements UserService {
                 .email(userDTO.getEmail())
                 .password(passwordEncoder.encode(userDTO.getPassword()))
                 .phone(userDTO.getPhone())
-                .role(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : User.Role.CUSTOMER)
+                .role(userDTO.getRole() != null ? userDTO.getRole() : User.Role.CUSTOMER) // Use enum directly
                 .department(userDTO.getDepartment())
                 .joinDate(userDTO.getJoinDate())
                 .status(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : User.Status.ACTIVE)
                 .agreeMarketing(userDTO.getAgreeMarketing() != null ? userDTO.getAgreeMarketing() : false)
+                .avatar(userDTO.getAvatar())
                 .build();
         user = userRepository.save(user);
         return mapToDTO(user);
@@ -68,11 +69,12 @@ public class UserServiceImpl implements UserService {
             user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         }
         user.setPhone(userDTO.getPhone());
-        user.setRole(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : user.getRole());
+        user.setRole(userDTO.getRole() != null ? userDTO.getRole() : user.getRole()); // Use enum directly
         user.setDepartment(userDTO.getDepartment());
         user.setJoinDate(userDTO.getJoinDate());
         user.setStatus(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : user.getStatus());
         user.setAgreeMarketing(userDTO.getAgreeMarketing() != null ? userDTO.getAgreeMarketing() : user.getAgreeMarketing());
+        user.setAvatar(userDTO.getAvatar());
         user = userRepository.save(user);
         return mapToDTO(user);
     }
@@ -99,7 +101,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
-        return mapToDTO(user); // Use mapToDTO for consistency
+        return mapToDTO(user);
     }
 
     private UserDTO mapToDTO(User user) {
@@ -108,11 +110,15 @@ public class UserServiceImpl implements UserService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .role(user.getRole().name())
+                .role(user.getRole())
                 .department(user.getDepartment())
                 .joinDate(user.getJoinDate())
                 .status(user.getStatus().name())
                 .agreeMarketing(user.getAgreeMarketing())
+                .avatar(user.getAvatar())
+                .spent(user.getCustomer() != null ? user.getCustomer().getSpent() : 0.0)
+                .bookings(user.getCustomer() != null && user.getCustomer().getBookings() != null ? user.getCustomer().getBookings().size() : 0)
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.mytech.backend.portal.apis.StatController.ErrorResponse;
 import com.mytech.backend.portal.dto.AreaDTO;
 import com.mytech.backend.portal.dto.BookingResponseDTO;
 import com.mytech.backend.portal.dto.CategoryDTO;
@@ -36,6 +35,7 @@ import com.mytech.backend.portal.dto.ServiceRequestDTO;
 import com.mytech.backend.portal.dto.ServiceResponseDTO;
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
+import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.services.AdminService;
 import com.mytech.backend.portal.services.AreaService;
 import com.mytech.backend.portal.services.BookingService;
@@ -165,15 +165,27 @@ public class AdminController {
         logger.info("Fetching staff");
         try {
             List<UserDTO> staff = userService.getAllUsers().stream()
-                    .filter(u -> "STAFF".equals(u.getRole()))
+                    .filter(u -> User.Role.STAFF.equals(u.getRole()))
+                    .map(u -> {
+                        UserDTO dto = new UserDTO();
+                        dto.setId(u.getId());
+                        dto.setName(u.getName());
+                        dto.setEmail(u.getEmail());
+                        dto.setPhone(u.getPhone());
+                        dto.setRole(User.Role.valueOf("STAFF"));
+                        dto.setDepartment(u.getDepartment());
+                        dto.setJoinDate(u.getJoinDate());
+                        dto.setStatus(u.getStatus() != null ? u.getStatus().toLowerCase() : "active");
+                        return dto;
+                    })
                     .collect(Collectors.toList());
+            logger.info("Fetched {} staff members", staff.size());
             return ResponseEntity.ok(staff);
         } catch (Exception e) {
             logger.error("Error fetching staff: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch staff: " + e.getMessage(), e);
         }
     }
-
     @PostMapping("/staff")
     public ResponseEntity<UserDTO> createStaff(@RequestBody CreateStaffRequest request) {
         logger.info("Creating staff with email: {}", request.getEmail());
@@ -183,7 +195,7 @@ public class AdminController {
             dto.setEmail(request.getEmail());
             dto.setPhone(request.getPhone());
             dto.setPassword(request.getPassword());
-            dto.setRole("STAFF");
+            dto.setRole(User.Role.valueOf("STAFF")); // Convert String to User.Role enum
             dto.setDepartment(request.getDepartment());
             dto.setJoinDate(request.getJoinDate());
             dto.setStatus(request.getStatus());
@@ -291,11 +303,11 @@ public class AdminController {
     }
 
     @GetMapping("/customers")
-    public ResponseEntity<List<UserDTO>> fetchCustomers() {
-        logger.info("Fetching customers");
+    public ResponseEntity<List<UserDTO>> getAllCustomers() {
+        logger.info("Fetching all customers");
         try {
             List<UserDTO> customers = userService.getAllUsers().stream()
-                    .filter(u -> "CUSTOMER".equals(u.getRole()))
+                    .filter(userDTO -> userDTO.getRole() == User.Role.CUSTOMER)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(customers);
         } catch (Exception e) {
