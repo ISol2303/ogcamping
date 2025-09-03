@@ -17,11 +17,19 @@ public interface ServiceService {
     ServiceResponseDTO getServiceById(Long id);
 
     // Tạo service mới
+<<<<<<< HEAD
     ServiceResponseDTO createService(ServiceRequestDTO dto, MultipartFile imageFile) throws IOException;
 
 
     // Cập nhật service
     ServiceResponseDTO updateService(Long id, ServiceRequestDTO req);
+=======
+    ServiceResponseDTO createService(ServiceRequestDTO dto, MultipartFile imageFile, MultipartFile[] extraImages ) throws IOException;
+
+
+    // Cập nhật service
+    ServiceResponseDTO updateService(Long id, ServiceRequestDTO dto, MultipartFile imageFile);
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
     // Lấy dịch vụ theo tag (POPULAR, NEW, DISCOUNT)
     List<ServiceResponseDTO> getServicesByTag(String tag);

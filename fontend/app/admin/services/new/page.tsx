@@ -3,11 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PackageFormData, Gear, GearSelection, Category, AreaData as Area } from '@/app/api/package';
+<<<<<<< HEAD
 import { fetchGears, fetchCategories, fetchAreas, createPackage, fetchUser } from '@/app/api/admin';
 import PackageInfoForm from '../new/components/package-info-form';
 import PackageSetupForm from '../new/components/package-setup-form';
 import PackageConfirmation from '../new/components/package-confirmation';
 import { StepIndicator } from '../new/components/step-indicator';
+=======
+import { fetchGears, fetchCategories, fetchAreas, createService, fetchUser } from '@/app/api/admin';
+import PackageInfoForm from './components/package-info-form';
+import PackageConfirmation from './components/package-confirmation';
+import { StepIndicator } from './components/step-indicator';
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -18,11 +25,15 @@ interface ApiError {
   data: any;
   message: string;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 export default function NewPackagePage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PackageFormData>({
+<<<<<<< HEAD
     name: '',
     location: '',
     days: '',
@@ -39,10 +50,49 @@ export default function NewPackagePage() {
   const [gears, setGears] = useState<Gear[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
+=======
+    name: "",
+    location: "",
+    days: "",           // nếu đây là string input, để "" (nếu là số thì đổi thành 0)
+    food_type: "",
+    tent_type: "",
+    activities: "",
+    max_people: 0,      // số → mặc định 0
+    available_slots: 0, // số → mặc định 0
+    price: 0,           // số → mặc định 0
+    description: "",
+
+    // bổ sung các field mới theo DTO đã nói
+    tag: "",                 // "POPULAR" | "NEW" | "DISCOUNT" | ""
+    duration: "",            // "2-3 ngày"
+    capacity: "",            // "4-6 người"
+    isExperience: false,
+    minDays: 1,
+    maxDays: 1,
+    peoplePerSession: 1,
+
+    minCapacity: 0,
+    maxCapacity: 0,
+    defaultSlotsPerDay: 0,
+
+    allowExtraPeople: false,
+    extraFeePerPerson: 0,
+    maxExtraPeople: 0,
+
+    highlights: [],      // ⚠️ phải là mảng
+    included: [],        // ⚠️ phải là mảng
+    itinerary: [],       // ⚠️ phải là mảng các object
+  });
+
+  const [images, setImages] = useState<File[]>([]);
+  const [extraImages, setExtraImages] = useState<string[]>([]);
+  const [gearSelections, setGearSelections] = useState<GearSelection[]>([]);
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
 
+<<<<<<< HEAD
  // Fetch user ID to get the token and validate user
 useEffect(() => {
   const fetchUserData = async () => {
@@ -130,10 +180,163 @@ useEffect(() => {
         return;
       }
     }
+=======
+  // Fetch user ID to get the token and validate user
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) {
+        setError('No authentication token found. Please log in.');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const user = await fetchUser(token, 1); // TODO: Replace with token decode
+        setUserId(Number(user._id));
+      } catch (err: any) {
+        const status = err.status || 500;
+        const message = err.message || 'Failed to fetch user';
+        // console.error('Error fetching user:', { status, message });
+        setError(message);
+        localStorage.removeItem('authToken');
+        sessionStorage.removeItem('authToken');
+        router.push('/login');
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
+
+  // Fetch gears, categories, and areas on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) {
+        setError('No authentication token found. Please log in.');
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const [gearsData, categoriesData, areasData] = await Promise.all([
+          fetchGears(token),
+          fetchCategories(token),
+          fetchAreas(token),
+        ]);
+
+      } catch (err: any) {
+        const status = err.status || 500;
+        const message = err.message || 'Failed to fetch data';
+        // console.error('Error fetching data:', { status, message });
+        if (status === 401 || status === 403) {
+          setError('Unauthorized. Please log in again.');
+          localStorage.removeItem('authToken');
+          sessionStorage.removeItem('authToken');
+          router.push('/login');
+        } else {
+          setError(message);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [router]);
+
+  // Handle navigation to the next step
+  const validateStep1 = () => {
+    const {
+      name,
+      location,
+      price,
+      tag,
+      isExperience,
+      minDays,
+      maxDays,
+      peoplePerSession,
+      minCapacity,
+      maxCapacity,
+      allowExtraPeople,
+      extraFeePerPerson,
+      maxExtraPeople,
+    } = formData;
+
+    // Required cơ bản
+    if (!name || !location || !price) {
+      return 'Vui lòng nhập đầy đủ Tên gói, Địa điểm và Giá.';
+    }
+
+    if (Number(price) < 0) {
+      return 'Giá phải lớn hơn hoặc bằng 0.';
+    }
+
+    // Nếu KHÔNG phải trải nghiệm thì bắt buộc nhập minDays và maxDays
+    if (!isExperience) {
+      if (!minDays || !maxDays) {
+        return 'Vui lòng nhập số ngày tối thiểu và tối đa.';
+      }
+      if (Number(minDays) < 1 || Number(maxDays) < Number(minDays)) {
+        return 'Số ngày tối thiểu phải ≥ 1 và nhỏ hơn hoặc bằng số ngày tối đa.';
+      }
+      // Validate capacity
+      if (!minCapacity || !maxCapacity) {
+        return 'Vui lòng nhập số người tối thiểu, tối đa';
+      }
+      if (Number(minCapacity) < 1 || Number(maxCapacity) < Number(minCapacity)) {
+        return 'Sức chứa tối thiểu phải ≥ 1 và nhỏ hơn hoặc bằng sức chứa tối đa.';
+      }
+    } else {
+      // Nếu là trải nghiệm thì bắt buộc nhập peoplePerSession
+      if (!peoplePerSession || Number(peoplePerSession) < 1) {
+        return 'Vui lòng nhập số người / lượt hợp lệ.';
+      }
+    }
+
+
+
+    // Nếu cho phép thêm người thì validate phụ thu
+    if (allowExtraPeople) {
+      if (!extraFeePerPerson || Number(extraFeePerPerson) <= 0) {
+        return 'Phí phụ thu / người phải > 0.';
+      }
+      if (!maxExtraPeople || Number(maxExtraPeople) < 1) {
+        return 'Số người vượt tối đa phải ≥ 1.';
+      }
+    }
+    // ✅ Validate ít nhất 1 ảnh
+    if (!images || images.length === 0) {
+      return 'Vui lòng chọn ít nhất 1 ảnh minh họa.';
+    }
+
+    return null;
+  };
+
+  const handleNext = () => {
+    let errorMsg: string | null = null;
+
+    if (currentStep === 1) {
+      errorMsg = validateStep1();
+    }
+    // nếu có step 2, 3 thì validate tương tự
+    // else if (currentStep === 2) { ... }
+
+    if (errorMsg) {
+      setError(errorMsg);
+      return;
+    }
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     setError(null);
     setCurrentStep((prev) => Math.min(prev + 1, 3));
   };
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   // Handle navigation to the previous step
   const handleBack = () => {
     setError(null);
@@ -148,6 +351,7 @@ useEffect(() => {
       router.push('/login');
       return;
     }
+<<<<<<< HEAD
 
     // Validate all required fields
     if (!formData.name || !formData.location || !formData.days || !formData.max_people || !formData.available_slots || !formData.price) {
@@ -165,6 +369,16 @@ useEffect(() => {
       const status = err.status || 500;
       const message = err.message || 'Failed to create package';
       console.error('Error creating package:', { status, message });
+=======
+    try {
+      setIsLoading(true);
+      setError(null);
+      await createService(token, formData, images, gearSelections);
+      router.push('/admin/services');
+    } catch (err: any) {
+      const status = err.status || 500;
+      const message = err.message || 'Failed to create service';
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
       setError(message);
     } finally {
       setIsLoading(false);
@@ -179,7 +393,13 @@ useEffect(() => {
       </div>
     );
   }
+<<<<<<< HEAD
 
+=======
+  const handleCancel = () => {
+    router.back(); // quay về trang trước
+  };
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -206,6 +426,7 @@ useEffect(() => {
               <PackageInfoForm
                 formData={formData}
                 setFormData={setFormData}
+<<<<<<< HEAD
                 image={image}
                 setImage={setImage}
               />
@@ -232,17 +453,44 @@ useEffect(() => {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
+=======
+                images={images}
+                setImages={setImages}
+              />
+            )}
+            {currentStep === 2 && (
+              <PackageConfirmation
+                formData={formData}
+                images={images}
+              />
+            )}
+
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8">
+              <Button variant="destructive" onClick={handleCancel} disabled={isLoading}>
+                Huỷ
+              </Button>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
               {currentStep > 1 && (
                 <Button variant="outline" onClick={handleBack} disabled={isLoading}>
                   Quay lại
                 </Button>
               )}
+<<<<<<< HEAD
               {currentStep < 3 && (
+=======
+              {currentStep < 2 && (
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 <Button onClick={handleNext} disabled={isLoading}>
                   Tiếp theo
                 </Button>
               )}
+<<<<<<< HEAD
               {currentStep === 3 && (
+=======
+              {currentStep === 2 && (
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 <Button onClick={handleSubmit} disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -258,6 +506,10 @@ useEffect(() => {
           </CardContent>
         </Card>
       </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     </div>
   );
 }

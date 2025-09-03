@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { PackageFormData } from './package';
+<<<<<<< HEAD
+=======
+import { Itinerary, ServiceAvailability } from '../admin/page';
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
 
 // Define interfaces for request and response data
@@ -31,6 +35,7 @@ interface Staff {
   status: 'active' | 'inactive';
 }
 
+<<<<<<< HEAD
 interface Service {
   _id: string;
   name: string;
@@ -41,6 +46,45 @@ interface Service {
   status: 'active' | 'inactive';
 }
 
+=======
+export interface Service {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  location: string;
+
+  minDays: number;
+  maxDays: number;
+  minCapacity: number;
+  maxCapacity: number;
+  isExperience: boolean;
+  active: boolean | null;   // ✅ sửa lại, khớp với backend
+
+  averageRating: number;
+  totalReviews: number;
+  duration: string;
+  capacity: string;
+
+  tag: 'POPULAR' | 'NEW' | 'DISCOUNT' | null;
+  imageUrl: string;
+  extraImageUrls: string[];
+
+  highlights: string[];
+  included: string[];
+
+  allowExtraPeople: boolean | null;
+  extraFeePerPerson: number | null;
+  maxExtraPeople: number | null;
+
+  requireAdditionalSiteIfOver: boolean | null;
+
+  itinerary: Itinerary[];
+  availability: ServiceAvailability[];
+}
+
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 interface Equipment {
   _id: string;
   name: string;
@@ -67,6 +111,10 @@ interface User {
   email: string;
   role: string | string[];
   avatar?: string;
+<<<<<<< HEAD
+=======
+  token: string;
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 }
 
 interface CreateStaffRequest {
@@ -213,7 +261,11 @@ export const fetchBookings = async (token: string): Promise<Booking[]> => {
     const data = error.response?.data || {};
     const message = data.error || error.message || 'Failed to fetch bookings';
 
+<<<<<<< HEAD
     console.error('Error fetching bookings:', { status, message, data });
+=======
+    // console.error('Error fetching bookings:', { status, message, data });
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
     throw { status, data, message };
   }
@@ -237,10 +289,17 @@ export const fetchStaff = async (token: string): Promise<Staff[]> => {
     // Nếu backend không filter được thì lọc tại frontend
     const staffList = Array.isArray(response.data)
       ? response.data.filter((user: any) =>
+<<<<<<< HEAD
           Array.isArray(user.role)
             ? user.role.includes('staff')
             : user.role === 'staff'
         )
+=======
+        Array.isArray(user.role)
+          ? user.role.includes('staff')
+          : user.role === 'staff'
+      )
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
       : [];
 
     // Chuẩn hóa dữ liệu
@@ -270,6 +329,7 @@ export const fetchStaff = async (token: string): Promise<Staff[]> => {
  */
 export const fetchServices = async (token: string): Promise<Service[]> => {
   try {
+<<<<<<< HEAD
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const response = await axios.get(`${API_URL}/apis/v1/packages`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -281,6 +341,24 @@ export const fetchServices = async (token: string): Promise<Service[]> => {
     const message = data.error || error.message || 'Failed to fetch services';
 
     console.error('Error fetching services:', { status, message, data });
+=======
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+    const response = await axios.get(`${API_URL}/apis/v1/services`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data; // backend trả list ServiceResponseDTO
+  } catch (error: any) {
+    const status = error.response?.status || 500;
+    const data = error.response?.data || {};
+    const message = data.error || error.message || "Failed to fetch services";
+    console.log("Services from API:", data);
+
+    console.error("Error fetching services:", { status, message, data });
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
     throw { status, data, message };
   }
@@ -335,10 +413,17 @@ export const fetchCustomers = async (token: string): Promise<Customer[]> => {
     // Nếu backend chưa filter, thì filter ở frontend
     const customers = Array.isArray(response.data)
       ? response.data.filter((user: any) =>
+<<<<<<< HEAD
           Array.isArray(user.role)
             ? user.role.includes('customer')
             : user.role === 'customer'
         )
+=======
+        Array.isArray(user.role)
+          ? user.role.includes('customer')
+          : user.role === 'customer'
+      )
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
       : [];
 
     // Chuẩn hóa dữ liệu
@@ -436,6 +521,7 @@ export const fetchAreas = async (token: string) => {
     throw { status, data, message };
   }
 };
+<<<<<<< HEAD
 export const createPackage = async (
   token: string,
   packageData: PackageFormData,
@@ -473,3 +559,112 @@ export const createPackage = async (
     throw { status, data, message };
   }
 };
+=======
+// api/services.ts
+export async function createService(
+  token: string,
+  formData: any,
+  images: File[],           // ảnh minh họa (images[0] = ảnh chính, images[1..] = ảnh phụ)
+  gearSelections?: any      // nếu cần thêm dữ liệu khác
+) {
+  const form = new FormData();
+
+  // 1. Append JSON service data
+  const serviceJson = {
+    name: formData.name,
+    description: formData.description,
+    price: formData.price,
+    location: formData.location,
+    minDays: formData.minDays,
+    maxDays: formData.maxDays,
+    minCapacity: formData.minCapacity,
+    maxCapacity: formData.maxCapacity,
+    tag: formData.tag,
+    highlights: formData.highlights,
+    included: formData.included,
+    itinerary: formData.itinerary,
+  };
+
+  form.append("service", new Blob([JSON.stringify(serviceJson)], { type: "application/json" }));
+
+  // 2. Append ảnh chính (imageFile)
+  if (images && images.length > 0) {
+    form.append("imageFile", images[0]); // ảnh đầu tiên coi là ảnh chính
+  }
+
+  // 3. Append ảnh phụ (extraImages)
+  if (images && images.length > 1) {
+    images.slice(1).forEach((file) => {
+      form.append("extraImages", file);
+    });
+  }
+
+  // 4. Nếu có gearSelections (optional)
+  if (gearSelections) {
+    form.append("gearSelections", new Blob([JSON.stringify(gearSelections)], { type: "application/json" }));
+  }
+
+  // 5. Fetch API
+  const response = await fetch("http://localhost:8080/apis/v1/services", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      // ❌ KHÔNG set Content-Type thủ công → browser tự set multipart/form-data
+    },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw { status: response.status, message: error.message || "Upload failed" };
+  }
+
+  return await response.json();
+}
+
+
+export interface ApiError {
+  status: number;
+  message: string;
+  data?: any;
+}
+
+// Fetch danh sách địa điểm
+export async function fetchLocations(token: string): Promise<any[]> {
+  console.log("Mock fetchLocations called with token:", token);
+  return Promise.resolve([
+    { id: 1, name: "Hà Nội" },
+    { id: 2, name: "Đà Nẵng" },
+    { id: 3, name: "Hồ Chí Minh" },
+  ]);
+}
+
+// Fetch danh sách tồn kho
+export async function fetchInventory(token: string): Promise<any[]> {
+  console.log("Mock fetchInventory called with token:", token);
+  return Promise.resolve([
+    { id: 1, item: "Lều", stock: 20 },
+    { id: 2, item: "Ghế xếp", stock: 50 },
+  ]);
+}
+
+// Fetch danh sách khuyến mãi
+export async function fetchPromotions(token: string): Promise<any[]> {
+  console.log("Mock fetchPromotions called with token:", token);
+  return Promise.resolve([
+    { id: 1, title: "Giảm 10% mùa hè", active: true },
+    { id: 2, title: "Mua 2 tặng 1", active: false },
+  ]);
+}
+
+// Kiểm tra thông tin booking
+export async function checkBooking(token: string, bookingId: string): Promise<any> {
+  console.log("Mock checkBooking called with:", { token, bookingId });
+  return Promise.resolve({
+    id: bookingId,
+    status: "CONFIRMED",
+    totalPrice: 500000,
+  });
+}
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)

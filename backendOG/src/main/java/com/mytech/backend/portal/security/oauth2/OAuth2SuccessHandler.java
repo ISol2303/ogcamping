@@ -31,6 +31,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Value("${app.oauth2.redirect-success}")
     private String redirectSuccess;
+<<<<<<< HEAD
 
 //    @Override
 //    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -47,6 +48,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 //
 //        getRedirectStrategy().sendRedirect(request, response, targetUrl);
 //    }
+=======
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 @Override
 public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                     Authentication authentication) throws IOException {

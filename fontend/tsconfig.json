@@ -23,6 +23,10 @@
       "@/*": ["./*"]
     }
   },
+<<<<<<< HEAD
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+=======
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/admin/services/new/components/package-info-form.jsx"],
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   "exclude": ["node_modules"]
 }

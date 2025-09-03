@@ -6,23 +6,54 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+<<<<<<< HEAD
 import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings } from "lucide-react"
 import Link from "next/link"
 import { login } from "../app/api/auth" // Import from auth.ts
+=======
+import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings, ShoppingCart } from "lucide-react"
+import Link from "next/link"
+import { login } from "../app/api/auth" // Import from auth.ts
+import Image from "next/image"
+interface Service {
+  id: number
+  name: string
+  description: string
+  duration?: string
+  capacity?: string
+  tag?: "NEW" | "POPULAR" | "DISCOUNT" | null
+  price: number
+  averageRating?: number
+  totalReviews?: number
+  imageUrl?: string | null
+}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+<<<<<<< HEAD
   const router = useRouter()
 
   // Check login status on component mount
   useEffect(() => {
     const token = localStorage.getItem('authToken')
     const userData = localStorage.getItem('user')
+=======
+  const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
+  const router = useRouter()
+
+  // Kiểm tra login và fetch service
+  useEffect(() => {
+    // check login từ localStorage
+    const token = localStorage.getItem("authToken")
+    const userData = localStorage.getItem("user")
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     if (token && userData) {
       setIsLoggedIn(true)
       setUser(JSON.parse(userData))
     }
+<<<<<<< HEAD
   }, [])
 
   // Handle logout
@@ -44,6 +75,58 @@ export default function HomePage() {
     }
   }
 
+=======
+
+    // fetch services từ API
+    const fetchServices = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/apis/v1/services")
+        const data: Service[] = await res.json()
+        setServices(data.slice(-3)) // lấy 3 dịch vụ cuối cùng
+      } catch (err) {
+        console.error("Lỗi khi fetch services:", err)
+      }
+    }
+    fetchServices()
+  }, [])
+
+  // Style cho tag
+  const tagStyles: Record<string, { text: string; className: string }> = {
+    POPULAR: { text: "Phổ biến", className: "bg-red-500 hover:bg-red-600" },
+    NEW: { text: "Mới", className: "bg-green-500 hover:bg-green-600" },
+    DISCOUNT: { text: "Khuyến mãi", className: "bg-yellow-500 hover:bg-yellow-600" },
+  }
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("authToken")
+    localStorage.removeItem("user")
+    setIsLoggedIn(false)
+    setUser(null)
+  }
+  const handleGoToCart = () => {
+    router.push("/cart");
+  };
+  // Chuyển dashboard theo role
+  const handleDashboardNavigation = () => {
+    if (user?.role === "ADMIN") {
+      router.push("/admin")
+    } else if (user?.role === "STAFF") {
+      router.push("/staff")
+    } else {
+      router.push("/dashboard")
+    }
+  }
+
+  // Format duration + capacity
+  function formatDurationCapacity(duration?: string, capacity?: string) {
+    const validDuration = duration && duration !== "null-null ngày" ? duration : null
+    const validCapacity = capacity && capacity !== "null-null người" ? capacity : null
+    if (!validDuration && !validCapacity) return null
+    return [validDuration, validCapacity].filter(Boolean).join(" | ")
+  }
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       {/* Header */}
@@ -92,6 +175,12 @@ export default function HomePage() {
             {isLoggedIn ? (
               <>
                 <span className="text-gray-800 font-medium">{user?.name}</span>
+<<<<<<< HEAD
+=======
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -268,6 +357,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
+<<<<<<< HEAD
             <Card className="overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 backdrop-blur-sm group">
               <div className="h-56 bg-gradient-to-br from-green-400 to-green-600 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
@@ -369,6 +459,90 @@ export default function HomePage() {
                 </Button>
               </CardContent>
             </Card>
+=======
+            {services.map((service) => (
+              <Card
+                key={service.id}
+                className="overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 backdrop-blur-sm group"
+              >
+                {/* Hình ảnh nền */}
+                <div className="h-56 bg-gradient-to-br from-green-400 to-green-600 relative overflow-hidden">
+                  {/* Ảnh nền */}
+                  <Image
+                    src={service.imageUrl ? `http://localhost:8080${service.imageUrl}` : "/default.jpg"}
+                    alt={service.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+
+                  <Mountain className="absolute bottom-4 right-4 w-10 h-10 text-white/80 group-hover:scale-110 transition-transform duration-300" />
+
+                  <div className="absolute bottom-0 left-0 right-0 h-24">
+                    {/* Overlay full width */}
+                    <div className="absolute inset-0 bg-black/40"></div>
+
+                    {/* Text bên trên overlay */}
+                    <div className="absolute bottom-4 left-4 right-4 text-white min-h-[60px] flex-col justify-end gap-1">
+                      {/* Badge */}
+                      {service.tag ? (
+                        <Badge
+                          className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full
+              ${tagStyles[service.tag]?.className || "bg-gray-500"} text-white border-0`}
+                        >
+                          {tagStyles[service.tag]?.text || service.tag}
+                        </Badge>
+
+                      ) : (
+                        <div className="h-5"></div> // placeholder giữ layout nếu không có tag
+                      )}
+
+
+                      {/* Name */}
+                      <h3 className="text-xl font-bold">{service.name || <span className="invisible">placeholder</span>}</h3>
+
+                      {/* Duration / Capacity */}
+                      {formatDurationCapacity(service.duration, service.capacity) ? (
+                        <p className="text-sm opacity-90">{formatDurationCapacity(service.duration, service.capacity)}</p>
+                      ) : (
+                        <div className="h-4"></div>
+                      )}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                <CardHeader>
+                  <CardDescription className=" min-h-[80px] text-gray-800 line-clamp-2">
+                    {service.description}
+                  </CardDescription>
+                </CardHeader>
+
+
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold text-gray-900">{service.averageRating || 0}</span>
+                      <span className="text-sm text-gray-700">({service.totalReviews || 0})</span>
+                    </div>
+                    <span className="text-2xl font-bold text-green-600">{service.price.toLocaleString('vi-VN')}đ</span>
+                  </div>
+
+                  <Button
+                    className="w-full mt-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0"
+                    asChild
+                  >
+                    <Link href={`/services/${service.id}`}>Tham khảo</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
           </div>
 
           <div className="text-center mt-12">

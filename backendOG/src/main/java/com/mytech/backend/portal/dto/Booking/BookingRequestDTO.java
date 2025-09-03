@@ -3,6 +3,7 @@ import com.mytech.backend.portal.models.Payment.PaymentMethod;
 import lombok.*;
 
 import java.time.LocalDate;
+<<<<<<< HEAD
 
 @Data
 public class BookingRequestDTO {
@@ -11,5 +12,17 @@ public class BookingRequestDTO {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private Integer numberOfPeople;
+=======
+import java.util.List;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class BookingRequestDTO {
+    private List<BookingServiceDTO> services;
+    private List<Long> comboIds;
+    private List<Long> equipmentIds;
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     private String note;
 }

@@ -12,6 +12,12 @@ java {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
+<<<<<<< HEAD
+=======
+tasks.withType(JavaCompile) {
+	options.compilerArgs << "-parameters"
+}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
 repositories {
 	mavenCentral()

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+<<<<<<< HEAD
 import { MapPin, Users, Star, Clock, Shield, Utensils, Tent, Camera, ArrowLeft, Settings } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
@@ -34,10 +35,55 @@ interface ServiceResponseDTO {
 }
 interface ItineraryDTO {
   day: string;
+=======
+import { MapPin, Users, Star, Clock, Shield, Utensils, Tent, Camera, ArrowLeft, Settings, Sparkles, ShoppingCart } from "lucide-react"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import Image from "next/image"
+interface Availability {
+  id: number;
+  date: string;
+  totalSlots: number;
+  bookedSlots: number;
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  price: number;
+  location: string;
+  duration: string;
+  minDays?: number;
+  maxDays?: number;
+  capacity: string;
+  minCapacity: number;
+  maxCapacity: number;
+  allowExtraPeople: boolean;
+  extraFeePerPerson?: number;
+  maxExtraPeople: number;
+  imageUrl?: string;
+  availability?: ServiceAvailability[];
+  itinerary?: ItineraryDay[];
+  highlights?: string[];
+  included?: string[];
+}
+
+export interface ServiceAvailability {
+  date: string; // "YYYY-MM-DD"
+  totalSlots: number;
+  bookedSlots: number;
+}
+
+export interface ItineraryDay {
+  day: string; // "Ngày 1"
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   title: string;
   activities: string[];
 }
 
+<<<<<<< HEAD
 
 export default function ServiceDetailPage() {
   const params = useParams<{ id: string }>(); // type-safe params
@@ -57,12 +103,90 @@ export default function ServiceDetailPage() {
   const today = new Date().toISOString().split("T")[0];
   // Check login status on component mount
   useEffect(() => {
+=======
+export interface Combo {
+  id: number;
+  name: string;
+  description?: string;
+  price: number;
+  active?: boolean;
+  items?: ComboItem[];
+}
+
+export interface ComboItem {
+  id: number;
+  service?: Service;
+  equipment?: Equipment;
+  quantity: number;
+  price: number;
+}
+
+export interface Equipment {
+  id: number;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+}
+
+export interface CartItem {
+  id: string;
+  type: "SERVICE" | "COMBO" | "EQUIPMENT";
+  item: Service | Combo | Equipment;
+  quantity: number;
+  totalPrice: number;
+  // chỉ dành cho service
+  checkInDate?: string;
+  checkOutDate?: string;
+  allowExtra?: boolean;
+  extraPeople?: number;
+}
+
+export default function ServiceDetailPage() {
+  const params = useParams()
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const router = useRouter()
+  const [service, setService] = useState<Service | null>(null)
+  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedPeople, setSelectedPeople] = useState<number>(0)
+  const [allowExtraChecked, setAllowExtraChecked] = useState(false)
+  const [extraPeople, setExtraPeople] = useState(0)
+
+  const [dateError, setDateError] = useState("")
+  const [peopleError, setPeopleError] = useState("")
+
+  const today = new Date().toISOString().split("T")[0]
+  const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [selectedCombos, setSelectedCombos] = useState<Combo[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    // Load cart từ localStorage lúc khởi tạo
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("cart");
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  useEffect(() => {
+    const fetchService = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/apis/v1/services/${params.id}`)
+        const data: Service = await res.json()
+        setService(data)
+      } catch (err) {
+        console.error("Fetch service error:", err)
+      }
+    }
+    if (params.id) fetchService()
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     const token = localStorage.getItem('authToken')
     const userData = localStorage.getItem('user')
     if (token && userData) {
       setIsLoggedIn(true)
       setUser(JSON.parse(userData))
     }
+<<<<<<< HEAD
   }, [])
 
   // Handle logout
@@ -73,6 +197,35 @@ export default function ServiceDetailPage() {
     setUser(null)
   }
   // Handle dashboard navigation based on role
+=======
+  }, [params.id])
+
+  if (!service) {
+    return <div className="p-8 text-center">Đang tải dữ liệu...</div>
+  }
+
+  const selectedAvailability = (service.availability || []).find(
+    (a) => a.date === selectedDate
+  )
+
+  const maxAllowed = service.allowExtraPeople
+    ? service.maxCapacity + service.maxExtraPeople
+    : service.maxCapacity
+
+  const peopleOptions = Array.from(
+    { length: maxAllowed - service.minCapacity + 1 },
+    (_, i) => service.minCapacity + i
+  )
+
+  const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0)
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('user');
+    router.push('/login');
+  };
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   const handleDashboardNavigation = () => {
     if (user?.role === 'ADMIN') {
       router.push('/admin')
@@ -82,17 +235,150 @@ export default function ServiceDetailPage() {
       router.push('/dashboard')
     }
   }
+<<<<<<< HEAD
   if (!service) {
     return <p className="p-6">Đang tải dữ liệu dịch vụ...</p>;
   }
+=======
+  const handleGoToCart = () => {
+    router.push("/cart");
+  };
+  const handleBooking = () => {
+    let hasError = false;
+    const token = localStorage.getItem("authToken");
+
+    // ✅ Kiểm tra ngày khởi hành
+    if (!selectedDate) {
+      setDateError("Vui lòng chọn ngày khởi hành");
+      hasError = true;
+    } else if (!selectedAvailability) {
+      setDateError("Chưa có lịch đặt cho ngày này");
+      hasError = true;
+    } else if (selectedAvailability.totalSlots - selectedAvailability.bookedSlots <= 0) {
+      setDateError("Ngày này đã hết chỗ");
+      hasError = true;
+    } else {
+      setDateError("");
+    }
+
+    // ✅ Kiểm tra số người
+    if (!selectedPeople || selectedPeople <= 0) {
+      setPeopleError("Vui lòng chọn số người");
+      hasError = true;
+    } else {
+      setPeopleError("");
+    }
+
+    if (hasError) return;
+
+    // ✅ Nếu chưa login → lưu redirect gốc + chuyển login
+    if (!token) {
+      localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
+      router.push("/login");
+      return;
+    }
+
+    // ✅ Nếu đã login → sang booking page
+    const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0);
+    const extraFee = allowExtraChecked && extraPeople > 0
+      ? extraPeople * (service.extraFeePerPerson || 0)
+      : 0
+    const total = service.price + extraFee
+    router.push(
+      `/booking/${service.id}?date=${selectedDate}&people=${selectedPeople}&allowExtra=${allowExtraChecked}&extraPeople=${extraPeople}`
+    );
+  };
+
+
+  const handleAddToCart = () => {
+    if (!service) return;
+
+    if (!selectedDate) {
+      alert("Vui lòng chọn ngày khởi hành");
+      return;
+    }
+
+    const availabilityList = service.availability || [];
+    const selectedAvailability = availabilityList.find(a => a.date === selectedDate);
+
+    if (!selectedAvailability) {
+      alert("Ngày này chưa có lịch đặt");
+      return;
+    }
+
+    if (selectedAvailability.totalSlots - selectedAvailability.bookedSlots <= 0) {
+      alert("Ngày này đã hết chỗ");
+      return;
+    }
+
+    const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0);
+    const maxAllowed = service.allowExtraPeople
+      ? service.maxCapacity + (service.maxExtraPeople || 0)
+      : service.maxCapacity;
+
+    if (totalPeople < service.minCapacity) {
+      alert(`Số người tối thiểu là ${service.minCapacity}`);
+      return;
+    }
+
+    if (totalPeople > maxAllowed) {
+      alert(`Số người tối đa cho phép là ${maxAllowed}`);
+      return;
+    }
+
+    // ✅ Tính checkOutDate dựa vào maxDays
+    const checkInDate = new Date(selectedDate);
+    let checkOutDate = new Date(checkInDate);
+
+    if (service.maxDays && service.maxDays > 0) {
+      checkOutDate.setDate(checkOutDate.getDate() + service.maxDays);
+    } else {
+      // Nếu không có maxDays thì mặc định 1 ngày
+      checkOutDate.setDate(checkOutDate.getDate() + 1);
+    }
+
+    // format yyyy-MM-dd
+    const formatDate = (d: Date) => d.toISOString().split("T")[0];
+
+    const newItem: CartItem = {
+      id: crypto.randomUUID(),
+      type: "SERVICE",
+      item: service,
+      quantity: totalPeople,
+      totalPrice: service.price + (allowExtraChecked ? extraPeople * (service.extraFeePerPerson || 0) : 0),
+      checkInDate: formatDate(checkInDate),
+      checkOutDate: formatDate(checkOutDate),
+      allowExtra: allowExtraChecked,
+      extraPeople: extraPeople || 0,
+    };
+
+    // Cập nhật state và localStorage
+    setCart(prevCart => {
+      const updatedCart = [...prevCart, newItem];
+      localStorage.setItem("cart", JSON.stringify(updatedCart));
+      return updatedCart;
+    });
+
+    router.push('/cart')
+  };
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+<<<<<<< HEAD
           <Link href="/" className="flex items-center gap-2">
             <Tent className="h-8 w-8 text-green-600" />
             <span className="text-2xl font-bold text-green-800">OG Camping</span>
+=======
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative">
+              <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
+              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
+            </div>
+            <span className="text-3xl font-bold text-green-600">OG Camping</span>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/services" className="text-green-600 font-medium">
@@ -115,6 +401,14 @@ export default function ServiceDetailPage() {
             {isLoggedIn ? (
               <>
                 <span className="text-gray-800 font-medium">{user?.name}</span>
+<<<<<<< HEAD
+=======
+
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -139,6 +433,14 @@ export default function ServiceDetailPage() {
                 <Button asChild>
                   <Link href="/register">Đăng ký</Link>
                 </Button>
+<<<<<<< HEAD
+=======
+
+                {/* Icon giỏ hàng vẫn hiện ngay cả khi chưa đăng nhập */}
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
               </>
             )}
           </div>
@@ -159,7 +461,21 @@ export default function ServiceDetailPage() {
           <div className="lg:col-span-2">
             {/* Hero Image */}
             <div className="h-64 md:h-80 bg-gradient-to-br from-green-400 to-green-600 rounded-lg mb-6 relative overflow-hidden">
+<<<<<<< HEAD
               <div className="absolute inset-0 bg-black/20"></div>
+=======
+              <div className="absolute inset-0 bg-black/20">
+                <div className="relative h-56 w-full rounded-lg overflow-hidden">
+                  <Image
+                    src={service.imageUrl ? `http://localhost:8080${service.imageUrl}` : "/default.jpg"}
+                    alt={service.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                </div></div>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
               <div className="absolute bottom-4 left-4 text-white">
                 <h1 className="text-3xl font-bold mb-2">{service.name}</h1>
                 <div className="flex items-center gap-4 text-sm">
@@ -178,7 +494,22 @@ export default function ServiceDetailPage() {
                 </div>
               </div>
               <div className="absolute top-4 right-4">
+<<<<<<< HEAD
                 <Badge className="bg-green-500 text-white">{service.availableSlots}</Badge>
+=======
+                {/* Badge hiển thị số chỗ trống theo ngày chọn */}
+                {selectedDate && (
+                  <Badge variant="secondary" className="mt-2">
+                    {selectedAvailability ? (
+                      selectedAvailability.totalSlots - selectedAvailability.bookedSlots > 0
+                        ? `Còn ${selectedAvailability.totalSlots - selectedAvailability.bookedSlots} chỗ`
+                        : "Hết chỗ"
+                    ) : (
+                      "Không có lịch cho ngày này"
+                    )}
+                  </Badge>
+                )}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
               </div>
             </div>
 
@@ -199,6 +530,7 @@ export default function ServiceDetailPage() {
                   <CardContent className="space-y-6">
                     <p className="text-gray-700 leading-relaxed">{service.description}</p>
 
+<<<<<<< HEAD
                     <div>
                       <h3 className="font-semibold mb-3">Điểm nổi bật</h3>
                       <div className="grid md:grid-cols-2 gap-2">
@@ -210,6 +542,22 @@ export default function ServiceDetailPage() {
                         ))}
                       </div>
                     </div>
+=======
+                    {/* Hiển thị highlights nếu có */}
+                    {service.highlights && service.highlights.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-3">Điểm nổi bật</h3>
+                        <div className="grid md:grid-cols-2 gap-2">
+                          {service.highlights.map((highlight, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm">{highlight}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
                     <div className="grid md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg">
                       <div className="text-center">
@@ -230,6 +578,10 @@ export default function ServiceDetailPage() {
                     </div>
                   </CardContent>
                 </Card>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
               </TabsContent>
 
               <TabsContent value="itinerary">
@@ -239,12 +591,20 @@ export default function ServiceDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
+<<<<<<< HEAD
                       {service.itinerary.map((day, index) => (
+=======
+                      {service.itinerary?.map((day, index) => (
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                         <div key={index} className="border-l-4 border-green-500 pl-4">
                           <h3 className="font-semibold text-lg text-green-700">{day.day}</h3>
                           <h4 className="font-medium mb-3">{day.title}</h4>
                           <div className="space-y-2">
+<<<<<<< HEAD
                             {day.activities.map((activity, actIndex) => (
+=======
+                            {day.activities?.map((activity, actIndex) => (
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                               <div key={actIndex} className="flex items-start gap-2">
                                 <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
                                 <span className="text-sm text-gray-700">{activity}</span>
@@ -254,6 +614,10 @@ export default function ServiceDetailPage() {
                         </div>
                       ))}
                     </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -265,7 +629,11 @@ export default function ServiceDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid md:grid-cols-2 gap-4">
+<<<<<<< HEAD
                       {service.included.map((item, index) => (
+=======
+                      {service.included?.map((item, index) => (
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                         <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
                           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                             <div className="w-4 h-4 bg-green-500 rounded-full"></div>
@@ -326,15 +694,30 @@ export default function ServiceDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Đặt dịch vụ</span>
+<<<<<<< HEAD
                   <Badge variant="secondary">{service.availableSlots}</Badge>
                 </CardTitle>
                 <CardDescription>
                   <span className="text-2xl font-bold text-green-600">{service.price.toLocaleString("vi-VN")}đ</span>
+=======
+                  {/* Badge hiển thị số chỗ trống theo ngày chọn */}
+                  {selectedDate && (
+                    <Badge variant="secondary" className="mt-2">
+                      {selectedAvailability
+                        ? `Còn ${selectedAvailability.totalSlots - selectedAvailability.bookedSlots} chỗ`
+                        : "Không có lịch cho ngày này"}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  <span className="text-2xl font-bold text-green-600">{service.price?.toLocaleString("vi-VN")}đ</span>
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                   <span className="text-gray-500">/gói</span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
+<<<<<<< HEAD
                   <label className="text-sm font-medium mb-2 block">Ngày khởi hành</label>
                   <input
                     type="date"
@@ -375,14 +758,134 @@ export default function ServiceDetailPage() {
                       {(service.price + (selectedPeople > 4 ? (selectedPeople - 4) * 200000 : 0)).toLocaleString(
                         "vi-VN",
                       )}
+=======
+                  {/* Ngày khởi hành */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium mb-2 block">Ngày khởi hành</label>
+                    <input
+                      type="date"
+                      className={`w-full p-2 border rounded-lg ${dateError ? "border-red-500" : "border-gray-300"}`}
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      min={today}
+                    />
+                    {dateError && <p className="text-red-500 text-sm mt-1">{dateError}</p>}
+                  </div>
+
+                  {/* Số người tham gia */}
+                  <div className="mb-4">
+                    <label className="text-sm font-medium mb-2 block">Số người tham gia</label>
+                    <select
+                      className={`w-full p-2 border rounded-lg ${peopleError ? "border-red-500" : "border-gray-300"
+                        }`}
+                      value={selectedPeople}
+                      onChange={(e) => setSelectedPeople(Number(e.target.value))}
+                    >
+                      <option value={0}>Chọn số người</option>
+                      {Array.from(
+                        { length: service.maxCapacity - service.minCapacity + 1 },
+                        (_, i) => service.minCapacity + i
+                      ).map((num) => (
+                        <option key={num} value={num}>
+                          {num} người
+                        </option>
+                      ))}
+                    </select>
+                    {peopleError && (
+                      <p className="text-red-500 text-sm mt-1">{peopleError}</p>
+                    )}
+                  </div>
+
+                  {/* Cho phép thêm người ngoài maxCapacity */}
+                  {service.allowExtraPeople && service.maxExtraPeople > 0 && selectedPeople === service.maxCapacity && (
+                    <div className="mb-4 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="allowExtra"
+                        checked={allowExtraChecked}
+                        onChange={(e) => {
+                          setAllowExtraChecked(e.target.checked);
+                          if (!e.target.checked) {
+                            setExtraPeople(0); // reset nếu bỏ chọn
+                          }
+                        }}
+                      />
+                      <label htmlFor="allowExtra" className="text-sm font-medium">
+                        Thêm người ngoài giới hạn
+                      </label>
+
+                      {allowExtraChecked && (
+                        <>
+                          <input
+                            type="number"
+                            className="w-16 p-1 border rounded ml-2"
+                            min={0}
+                            max={service.maxExtraPeople}
+                            value={extraPeople}
+                            onChange={(e) =>
+                              setExtraPeople(
+                                Math.min(Number(e.target.value), service.maxExtraPeople)
+                              )
+                            }
+                          />
+                          <span className="text-sm text-gray-500 ml-2">
+                            Tối đa +{service.maxExtraPeople} người
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="border-t pt-4">
+                  {/* Giá gói chính */}
+                  <div className="flex justify-between mb-2">
+                    <span>Giá gói:</span>
+                    <span>{service.price?.toLocaleString("vi-VN")}đ</span>
+                  </div>
+
+                  {/* Phụ thu (nếu có) */}
+                  {allowExtraChecked && extraPeople > 0 && (
+                    <div className="flex justify-between mb-2">
+                      <span>
+                        Phụ thu ({extraPeople} người):
+                      </span>
+                      <span>
+                        {(extraPeople * (service.extraFeePerPerson || 0)).toLocaleString("vi-VN")}đ
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Tổng cộng */}
+                  <div className="flex justify-between font-semibold text-lg border-t pt-2">
+                    <span>Tổng cộng:</span>
+                    <span className="text-green-600">
+                      {(
+                        service.price +
+                        (allowExtraChecked && extraPeople > 0
+                          ? extraPeople * (service.extraFeePerPerson || 0)
+                          : 0)
+                      ).toLocaleString("vi-VN")}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                       đ
                     </span>
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 <Button className="w-full" size="lg" asChild>
                   <Link href={`/booking/${service.id}?date=${selectedDate}&people=${selectedPeople}`}>Đặt ngay</Link>
                 </Button>
+=======
+
+                <Button className="w-full" size="lg" onClick={handleBooking}>
+                  Đặt ngay
+                </Button>
+                <Button className="w-full mt-2" size="lg" onClick={handleAddToCart}>
+                  Thêm vào kế hoạch
+                </Button>
+
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
                 <Button variant="outline" className="w-full" asChild>
                   <Link href="/ai-consultant">Tư vấn với AI</Link>
@@ -398,6 +901,10 @@ export default function ServiceDetailPage() {
           </div>
         </div>
       </div>
+<<<<<<< HEAD
     </div>
+=======
+    </div >
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   )
 }

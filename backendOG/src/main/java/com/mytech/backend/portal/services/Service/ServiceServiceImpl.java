@@ -2,6 +2,10 @@ package com.mytech.backend.portal.services.Service;
 
 
 import com.mytech.backend.portal.dto.Service.ItineraryDTO;
+<<<<<<< HEAD
+=======
+import com.mytech.backend.portal.dto.Service.ServiceAvailabilityDTO;
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 import com.mytech.backend.portal.dto.Service.ServiceRequestDTO;
 import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
 import com.mytech.backend.portal.models.Service.ItineraryItem;
@@ -40,6 +44,7 @@ public class ServiceServiceImpl implements ServiceService {
                 .orElseThrow(() -> new RuntimeException("Service not found"));
         return mapToDTO(service);
     }
+<<<<<<< HEAD
 
 //    @Override
 //    public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile imageFile) throws IOException {
@@ -73,6 +78,10 @@ public class ServiceServiceImpl implements ServiceService {
 //    }
 @Override
 public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile imageFile) throws IOException {
+=======
+@Override
+public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile imageFile, MultipartFile[] extraImages   ) throws IOException {
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     // Tạo entity Service
     Service service = Service.builder()
             .name(req.getName())
@@ -84,7 +93,12 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
             .minCapacity(req.getMinCapacity())
             .maxCapacity(req.getMaxCapacity())
             .active(true)
+<<<<<<< HEAD
             .availableSlots(req.getAvailableSlots())
+=======
+            .isExperience(false)
+            .defaultSlotsPerDay(req.getDefaultSlotsPerDay())
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
             .averageRating(0.0)
             .totalReviews(0)
             .duration(req.getDuration())
@@ -95,6 +109,7 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
             .build();
 
     // Lưu ảnh nếu có
+<<<<<<< HEAD
     if (imageFile != null && !imageFile.isEmpty()) {
         String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
         Path uploadPath = Paths.get("C:/Users/hieud/Desktop/Ogcamping/backendOG/uploads/services");
@@ -107,6 +122,45 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
         service.setImageUrl("/uploads/services/" + fileName); // đường dẫn relative
     }
 
+=======
+//    if (imageFile != null && !imageFile.isEmpty()) {
+//        String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+//        Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+//        if (!Files.exists(uploadPath)) {
+//            Files.createDirectories(uploadPath);
+//        }
+//        Path filePath = uploadPath.resolve(fileName);
+//        imageFile.transferTo(filePath.toFile());
+//
+//        service.setImageUrl("/uploads/services/" + fileName); // đường dẫn relative
+//    }
+// 1. Lưu ảnh chính
+    if (imageFile != null && !imageFile.isEmpty()) {
+        String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+        Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+        Path filePath = uploadPath.resolve(fileName);
+        imageFile.transferTo(filePath.toFile());
+        service.setImageUrl("/uploads/services/" + fileName);
+    }
+
+// 2. Lưu ảnh phụ
+    List<String> extraImageUrls = new ArrayList<>();
+    if (extraImages != null) {
+        for (MultipartFile file : extraImages) {
+            if (!file.isEmpty()) {
+                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+                if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+                Path filePath = uploadPath.resolve(fileName);
+                file.transferTo(filePath.toFile());
+                extraImageUrls.add("/uploads/services/" + fileName);
+            }
+        }
+    }
+    service.setExtraImageUrls(extraImageUrls); // danh sách ảnh phụ
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
     // Lưu service vào DB
     service = serviceRepository.save(service);
 
@@ -134,6 +188,7 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
 }
 
     @Override
+<<<<<<< HEAD
     public ServiceResponseDTO updateService(Long id, ServiceRequestDTO req) {
         Service service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
@@ -151,6 +206,41 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
         serviceRepository.save(service);
         return mapToDTO(service);
     }
+=======
+    @Transactional
+    public ServiceResponseDTO updateService(Long id, ServiceRequestDTO dto, MultipartFile imageFile) {
+        Service service = serviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        service.setName(dto.getName());
+        service.setDescription(dto.getDescription());
+        service.setPrice(dto.getPrice());
+        service.setLocation(dto.getLocation());
+        // ... cập nhật các trường khác từ dto
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String url = uploadImage(imageFile);
+            service.setImageUrl(url);
+        }
+
+        service = serviceRepository.save(service);
+        return mapToDTO(service);
+    }
+    private String uploadImage(MultipartFile file) {
+        // Ví dụ lưu local
+        String uploadDir = "/uploads/services/";
+        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        Path path = Paths.get(uploadDir + filename);
+        try {
+            Files.createDirectories(path.getParent());
+            file.transferTo(path.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image", e);
+        }
+        return "/uploads/services/" + filename; // URL có thể trả về frontend
+    }
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 
     @Override
     public List<ServiceResponseDTO> getServicesByTag(String tag) {
@@ -169,6 +259,10 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
     }
 
     private ServiceResponseDTO mapToDTO(Service service) {
+<<<<<<< HEAD
+=======
+        // Map itinerary
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
         List<ItineraryDTO> itineraryDTOs = new ArrayList<>();
         if (service.getItinerary() != null) {
             itineraryDTOs = service.getItinerary().stream()
@@ -180,6 +274,22 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
                     .toList();
         }
 
+<<<<<<< HEAD
+=======
+        // Map availability
+        List<ServiceAvailabilityDTO> availabilityDTOs = new ArrayList<>();
+        if (service.getAvailability() != null) {
+            availabilityDTOs = service.getAvailability().stream()
+                    .map(a -> ServiceAvailabilityDTO.builder()
+                            .id(a.getId())
+                            .date(a.getDate())
+                            .totalSlots(a.getTotalSlots())
+                            .bookedSlots(a.getBookedSlots())
+                            .build())
+                    .toList();
+        }
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
         return ServiceResponseDTO.builder()
                 .id(service.getId())
                 .name(service.getName())
@@ -188,21 +298,46 @@ public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile ima
                 .location(service.getLocation())
                 .minDays(service.getMinDays())
                 .maxDays(service.getMaxDays())
+<<<<<<< HEAD
+=======
+                .isExperience(service.getIsExperience())
+                .active(service.getActive())
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 .duration(service.getMinDays() + "-" + service.getMaxDays() + " ngày")
                 .minCapacity(service.getMinCapacity())
                 .maxCapacity(service.getMaxCapacity())
                 .capacity(service.getMinCapacity() + "-" + service.getMaxCapacity() + " người")
+<<<<<<< HEAD
                 .availableSlots(service.getAvailableSlots())
+=======
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 .averageRating(service.getAverageRating())
                 .totalReviews(service.getTotalReviews())
                 .tag(service.getTag())
                 .imageUrl(service.getImageUrl() != null ? service.getImageUrl()
+<<<<<<< HEAD
                         : "https://www.eclosio.ong/wp-content/uploads/2018/08/default.png")
                 .highlights(service.getHighlights())
                 .included(service.getIncluded())
                 .itinerary(itineraryDTOs)
+=======
+                        : "/uploads/services/default.png")
+                .extraImageUrls(service.getExtraImageUrls() != null ? service.getExtraImageUrls() : new ArrayList<>())
+                .highlights(service.getHighlights() != null ? service.getHighlights() : new ArrayList<>())
+                .included(service.getIncluded() != null ? service.getIncluded() : new ArrayList<>())
+                .itinerary(itineraryDTOs)
+                .extraFeePerPerson(service.getExtraFeePerPerson())
+                .maxExtraPeople(service.getMaxExtraPeople())
+                .allowExtraPeople(service.getAllowExtraPeople())
+                .requireAdditionalSiteIfOver(service.getRequireAdditionalSiteIfOver())
+                .availability(availabilityDTOs)
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 .build();
     }
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 }

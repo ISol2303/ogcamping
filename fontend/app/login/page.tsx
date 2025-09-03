@@ -1,8 +1,13 @@
 'use client';
 
 import type React from 'react';
+<<<<<<< HEAD
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+=======
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
 import { login } from '@/app/api/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +21,7 @@ import { signInWithPopup } from 'firebase/auth';
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+<<<<<<< HEAD
     email: '',
     password: '',
     remember: false,
@@ -24,6 +30,47 @@ export default function LoginPage() {
   // const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+=======
+    email: "",
+    password: "",
+    remember: false,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect"); // ?redirect=...
+
+  // Hàm điều hướng theo role (nếu không có redirect gốc)
+  const handleDashboardNavigation = (user: any) => {
+    const role = (user.role || "CUSTOMER").toString().toUpperCase();
+    if (role === "ADMIN") router.push("/admin");
+    else if (role === "STAFF") router.push("/staff");
+    else router.push("/dashboard");
+  };
+
+  // --- Xử lý khi backend redirect về /login/success?token=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (token) {
+      localStorage.setItem("authToken", token);
+
+      const savedRedirect = localStorage.getItem("redirectAfterLogin") || "/";
+      localStorage.removeItem("redirectAfterLogin");
+
+      // Xóa token khỏi URL
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      router.push(savedRedirect);
+    }
+  }, [router]);
+
+  // --- Login bằng email/password ---
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -36,6 +83,7 @@ export default function LoginPage() {
       });
 
       if (!response?.token || !response?.user?.email) {
+<<<<<<< HEAD
         console.log('Login response:', response);
         throw new Error('Dữ liệu phản hồi không hợp lệ từ máy chủ.');
       }
@@ -57,17 +105,41 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error('Lỗi đăng nhập:', err);
+=======
+        throw new Error("Dữ liệu phản hồi không hợp lệ từ máy chủ.");
+      }
+
+      const { token, user } = response;
+      const role = (user.role || "CUSTOMER").toString().toUpperCase();
+      const fullUser = { ...user, role };
+      const storage = formData.remember ? localStorage : sessionStorage;
+
+      storage.setItem("authToken", token);
+      storage.setItem("user", JSON.stringify(fullUser));
+
+      // Redirect nếu có ?redirect=..., nếu không → role-based
+      if (redirectParam) router.push(redirectParam);
+      else handleDashboardNavigation(fullUser);
+
+    } catch (err: any) {
+      console.error("Lỗi đăng nhập:", err);
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
       setError(
         err.response?.data?.error ||
         err.response?.data?.message ||
         err.message ||
+<<<<<<< HEAD
         'Đăng nhập thất bại. Vui lòng thử lại.'
+=======
+        "Đăng nhập thất bại. Vui lòng thử lại."
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
       );
     } finally {
       setIsLoading(false);
     }
   };
 
+<<<<<<< HEAD
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +159,15 @@ export default function LoginPage() {
   };
 
 
+=======
+  // --- Login bằng Google ---
+  const handleGoogleLogin = () => {
+    const savedRedirect = localStorage.getItem("redirectAfterLogin") || "/";
+    window.location.href = `http://localhost:8080/oauth2/authorization/google`;
+    // Backend sẽ redirect về /login/success?token=..., frontend sẽ đọc savedRedirect
+  };
+
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background decorations */}
@@ -212,9 +293,13 @@ export default function LoginPage() {
               <Button
                 variant="outline"
                 className="h-12 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+<<<<<<< HEAD
                 onClick={() => {
                   window.location.href = "http://localhost:8080/oauth2/authorization/google";
                 }}
+=======
+                onClick={handleGoogleLogin}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 disabled={isLoading}
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -237,7 +322,11 @@ export default function LoginPage() {
                 </svg>
                 Google
               </Button>
+<<<<<<< HEAD
               <Button
+=======
+              {/* <Button
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
                 variant="outline"
                 className="h-12 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
                 onClick={() => handleSocialLogin('facebook')}
@@ -247,7 +336,11 @@ export default function LoginPage() {
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
                 Facebook
+<<<<<<< HEAD
               </Button>
+=======
+              </Button> */}
+>>>>>>> 4b112d9 (Add or update frontend & backend code)
             </div>
 
             <div className="text-center">
