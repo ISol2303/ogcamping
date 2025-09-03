@@ -15,6 +15,9 @@ public class CustomerResponseDTO {
     private String email;
     private String phone;
     private String address;
+    private int bookings; // Added to match frontend Customer interface
+    private Double spent; // Changed to Double to allow null, matching frontend's optional spent
+    private String createdAt;
     public static class Builder {
         private Long id;
         private String firstName;
@@ -22,6 +25,7 @@ public class CustomerResponseDTO {
         private String email;
         private String phone;
         private String address;
+        
 
         public Builder id(Long id) {
             this.id = id;
@@ -68,6 +72,30 @@ public class CustomerResponseDTO {
     public static Builder builder() {
         return new Builder();
     }
+
+	public int getBookings() {
+		return bookings;
+	}
+
+	public void setBookings(int bookings) {
+		this.bookings = bookings;
+	}
+
+	public Double getSpent() {
+		return spent;
+	}
+
+	public void setSpent(Double spent) {
+		this.spent = spent;
+	}
+
+	public String getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(String createdAt) {
+		this.createdAt = createdAt;
+	}
 
 	public Long getId() {
 		return id;

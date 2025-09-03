@@ -18,6 +18,9 @@ interface RegisterRequest {
 interface DecodedToken {
   sub: string;
   roles?: string; // Single string as per JwtUtils.java
+  name?: string;
+  email?: string;
+  exp?: number;
   [key: string]: any;
 }
 
@@ -27,11 +30,20 @@ interface AuthResponse {
   email: string;
   name: string;
   role: string;
+  avatar?: string;
 }
+
+interface UserProfile {
+  email: string;
+  name: string;
+  role: string;
+  avatar?: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export const login = async (data: LoginRequest): Promise<AuthResponse> => {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     console.log('Sending login request to:', `${API_URL}/apis/v1/login`);
     console.log('Login payload:', { email: data.email, remember: data.remember });
 
@@ -52,7 +64,7 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     const role = payload?.role || 'CUSTOMER';
 
     if (!token || !email) {
-      throw new Error('Dữ liệu phản hồi không hợp lệ từ máy chủ: Thiếu token hoặc email.');
+      throw new Error('Dữ liệu phản hồi không hợp lệ: Thiếu token hoặc email.');
     }
 
     // Decode token to verify contents
@@ -60,6 +72,16 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     try {
       decoded = jwtDecode(token);
       console.log('Decoded JWT:', decoded);
+
+      // Validate token expiration
+      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+        throw new Error('Token đã hết hạn.');
+      }
+
+      // Validate role
+      if (!decoded.roles) {
+        throw new Error('Token không chứa thông tin vai trò.');
+      }
     } catch (e) {
       console.error('Failed to decode token:', {
         error: e,
@@ -69,28 +91,38 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     }
 
     const userId = decoded.sub;
-    const userRole = decoded.roles ? decoded.roles.replace('ROLE_', '') : role;
+    const userRole = decoded.roles.replace('ROLE_', '') || role;
+
+    // Fetch additional user profile data (e.g., avatar)
+    let userProfile: UserProfile = { email, name, role: userRole };
+    try {
+      const profile = await getUserProfile(token);
+      userProfile = { ...userProfile, ...profile };
+    } catch (e) {
+      console.warn('Failed to fetch user profile, using basic data:', e);
+    }
 
     // Store token and user data
     if (data.remember) {
       localStorage.setItem('authToken', token);
       localStorage.setItem('userId', userId);
-      localStorage.setItem('user', JSON.stringify({ email, name, role: userRole }));
+      localStorage.setItem('user', JSON.stringify(userProfile));
     }
     sessionStorage.setItem('authToken', token);
     sessionStorage.setItem('userId', userId);
-    sessionStorage.setItem('user', JSON.stringify({ email, name, role: userRole }));
+    sessionStorage.setItem('user', JSON.stringify(userProfile));
 
     console.log('Stored token:', token);
     console.log('Stored userId:', userId);
-    console.log('Stored user:', { email, name, role: userRole });
+    console.log('Stored user:', userProfile);
 
     return {
       token,
       tokenType,
-      email,
-      name,
-      role: userRole,
+      email: userProfile.email,
+      name: userProfile.name,
+      role: userProfile.role,
+      avatar: userProfile.avatar,
     };
   } catch (error: any) {
     console.error('Login error:', {
@@ -112,7 +144,6 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
 
 export const register = async (data: RegisterRequest): Promise<void> => {
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     await axios.post(`${API_URL}/apis/v1/register`, {
       name: data.name,
       email: data.email,
@@ -142,6 +173,35 @@ export const register = async (data: RegisterRequest): Promise<void> => {
 };
 
 export const socialLogin = (provider: 'google' | 'facebook') => {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-  window.location.href = `${API_URL}/oauth2/authorization/${provider}`;
+  const authUrl = `${API_URL}/oauth2/authorization/${provider}`;
+  console.log(`Redirecting to ${provider} OAuth2:`, authUrl);
+  window.location.href = authUrl;
+};
+
+
+export const getUserProfile = async (token: string): Promise<UserProfile> => {
+  try {
+    const response = await axios.get(`${API_URL}/apis/user`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 5000,
+    });
+    const { email, name, role, avatar } = response.data;
+    console.log('Fetched user profile:', { email, name, role, avatar });
+    return {
+      email: email || '',
+      name: name || 'Unknown User',
+      role: role ? role.replace('ROLE_', '') : 'CUSTOMER',
+      avatar: avatar || undefined,
+    };
+  } catch (error: any) {
+    console.error('Get user profile error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    throw new Error('Không thể lấy thông tin hồ sơ người dùng.');
+  }
 };

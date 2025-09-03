@@ -19,9 +19,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-	@Autowired
+    @Autowired
     private UserRepository userRepository;
-	@Autowired
+    @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
     @Override
@@ -90,7 +90,17 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 
+    @Override
+    public UserDTO getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return mapToDTO(user); // Use mapToDTO for consistency
+    }
 
     private UserDTO mapToDTO(User user) {
         return UserDTO.builder()
@@ -105,12 +115,4 @@ public class UserServiceImpl implements UserService {
                 .agreeMarketing(user.getAgreeMarketing())
                 .build();
     }
-
-	@Override
-	public User save(User user) {
-		// TODO Auto-generated method stub
-		return userRepository.save(user);
-	}
-
-	
 }

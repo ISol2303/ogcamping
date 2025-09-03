@@ -23,7 +23,14 @@ public class UserDTO {
     private LocalDate joinDate;
     private String status;
     private Boolean agreeMarketing;
+    private Double spent; // Changed to Double to allow null, but initialize to 0 in constructor
     
+	public Double getSpent() {
+		return spent;
+	}
+	public void setSpent(Double spent) {
+		this.spent = spent;
+	}
 	public Long getId() {
 		return id;
 	}
@@ -151,6 +158,10 @@ public class UserDTO {
         }
         public Builder avartar(String avartar) {
         	userDTO.setAvatar(avartar);
+        	return this;
+        }
+        public Builder spent(Double spent) {
+        	userDTO.setSpent(spent);
         	return this;
         }
 

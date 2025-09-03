@@ -1,4 +1,5 @@
 package com.mytech.backend.portal.models;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +57,11 @@ public class Customer {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Booking> bookings = new ArrayList<>();
+    @Column
+    private Double spent = 0.0; // Default to 0.0
 
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now(); // Auto-set creation time
 	public Long getId() {
 		return id;
 	}
@@ -120,8 +125,26 @@ public class Customer {
 	public void setBookings(List<Booking> bookings) {
 		this.bookings = bookings;
 	}
+	
 
-	 public static class Builder {
+	 public Double getSpent() {
+		return spent;
+	}
+
+	public void setSpent(Double spent) {
+		this.spent = spent;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+
+	public static class Builder {
 		    private Long id;
 		    private String firstName;
 		    private String lastName;
@@ -130,6 +153,7 @@ public class Customer {
 		    private String address;
 		    private User user;
 		    private List<Booking> bookings = new ArrayList<>();
+		    private LocalDateTime createdAt = LocalDateTime.now();
 		    
 		    public Builder id(Long id) {
 	            this.id = id;
@@ -163,6 +187,10 @@ public class Customer {
 	            this.bookings = bookings;
 	            return this;
 	        }
+		    public Builder createdAt(LocalDateTime createdAt) {
+	            this.createdAt = createdAt;
+	            return this;
+	        }
 		    public Customer build() {
 	            Customer customer = new Customer();
 	            customer.id = this.id;
@@ -173,6 +201,7 @@ public class Customer {
 	            customer.address = this.address;
 	            customer.user = this.user;
 	            customer.bookings = this.bookings;
+	            customer.createdAt = this.createdAt;
 	            return customer;
 	        }
 	}

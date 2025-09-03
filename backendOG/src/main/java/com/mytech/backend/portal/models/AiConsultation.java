@@ -1,9 +1,19 @@
 package com.mytech.backend.portal.models;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "ai_consultations")
@@ -35,8 +45,8 @@ public class AiConsultation extends AbstractEntity{
     private String preferences;
 
     @ManyToOne
-    @JoinColumn(name = "recommended_package_id")
-    private Package recommendedPackage;
+    @JoinColumn(name = "recommended_service_id")
+    private Service recommendedService;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -81,12 +91,12 @@ public class AiConsultation extends AbstractEntity{
 		this.preferences = preferences;
 	}
 
-	public Package getRecommendedPackage() {
-		return recommendedPackage;
+	public Service getRecommendedService() {
+		return recommendedService;
 	}
 
-	public void setRecommendedPackage(Package recommendedPackage) {
-		this.recommendedPackage = recommendedPackage;
+	public void setRecommendedService(Service recommendedService) {
+		this.recommendedService = recommendedService;
 	}
 
 	public LocalDateTime getCreatedAt() {

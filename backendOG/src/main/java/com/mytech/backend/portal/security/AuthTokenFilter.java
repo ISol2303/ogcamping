@@ -1,8 +1,8 @@
 package com.mytech.backend.portal.security;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +35,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-      String path = request.getServletPath();
-      System.out.println("------------shouldNotFilter------------" + path);
-      return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
+        String path = request.getServletPath();
+        System.out.println("------------shouldNotFilter------------" + path);
+        return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
     }
 
     @Override
@@ -51,21 +51,21 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
                 Claims claims = jwtUtils.getClaimsFromJwtToken(jwt);
-                List<String> roles = claims.get("roles", List.class); // Retrieve roles as a List
+                String role = claims.get("role", String.class); // Retrieve role as a single string
 
                 AppUserDetails userDetails = (AppUserDetails) userDetailsService.loadUserByUsername(username);
 
-                // Convert roles from JWT to Spring Security authorities
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-                        .collect(Collectors.toList());
+                // Convert single role to Spring Security authority
+                List<SimpleGrantedAuthority> authorities = role != null
+                        ? Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                        : Collections.emptyList();
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 System.out.println("subject: " + username);
-                System.out.println("claims roles: " + roles);
+                System.out.println("claims role: " + role);
                 System.out.println("userDetails roles: " + userDetails.roles());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);

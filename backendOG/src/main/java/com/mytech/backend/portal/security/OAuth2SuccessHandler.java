@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private UserRepository userRepository;
 	@Autowired
     private CustomerRepository customerRepository;
-
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
     @Value("${app.oauth2.redirect-success}")
     private String redirectSuccess;
 
@@ -64,14 +66,16 @@ public void onAuthenticationSuccess(HttpServletRequest request, HttpServletRespo
     // Tìm user theo email
     User user = userRepository.findByEmail(email).orElseGet(() -> {
         // --- 1. Tạo User ---
-        User newUser = User.builder()
-                .googleId(googleId)
-                .email(email)
-                .name(name)
-                .avatar(picture)
-                .role(User.Role.CUSTOMER)
-                .status(User.Status.ACTIVE)
-                .build();
+    	User newUser = User.builder()
+    	        .googleId(googleId)
+    	        .email(email)
+    	        .name(name)
+    	        .password(passwordEncoder.encode("oauth2-" + googleId))
+    	        .avatar(picture)
+    	        .phone("N/A") // 👈 Thêm dòng này
+    	        .role(User.Role.CUSTOMER)
+    	        .status(User.Status.ACTIVE)
+    	        .build();
         newUser = userRepository.save(newUser);
 
         // --- 2. Tạo Customer tương ứng ---

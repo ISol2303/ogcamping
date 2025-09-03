@@ -14,4 +14,5 @@ public interface BookingService {
     BookingResponseDTO reviewBooking(Long bookingId, ReviewRequestDTO req);
 	BookingResponseDTO checkInBooking(Long id);
 	BookingResponseDTO checkOutBooking(Long id);
+	List<BookingResponseDTO> getAllBookings();
 }

@@ -68,11 +68,11 @@ export default function LoginPage() {
       const normalizedRole = role.toUpperCase();
 
       if (normalizedRole === 'ADMIN') {
-        router.push('/admin');
+        router.push('/');
       } else if (normalizedRole === 'STAFF') {
-        router.push('/staff');
+        router.push('/');
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (err: any) {
       console.error('Lỗi đăng nhập:', {

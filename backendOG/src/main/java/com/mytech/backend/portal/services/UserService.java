@@ -13,4 +13,5 @@ public interface UserService {
     void deleteUser(Long id);
 	User findByEmail(String email);
 	User save(User user);
+	UserDTO getUserByEmail(String email);
 }

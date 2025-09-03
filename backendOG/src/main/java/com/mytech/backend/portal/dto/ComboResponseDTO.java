@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ComboResponseDTO {
-    private Long id;
+    private Long _id;
     private String name;
     private String description;
     private Double price;
@@ -48,7 +48,7 @@ public class ComboResponseDTO {
 
         public ComboResponseDTO build() {
             ComboResponseDTO comboResponseDTO = new ComboResponseDTO();
-            comboResponseDTO.id = this.id;
+            comboResponseDTO._id = this.id;
             comboResponseDTO.name = this.name;
             comboResponseDTO.description = this.description;
             comboResponseDTO.price = this.price;
@@ -62,11 +62,11 @@ public class ComboResponseDTO {
     }
 
 	public Long getId() {
-		return id;
+		return _id;
 	}
 
 	public void setId(Long id) {
-		this.id = id;
+		this._id = id;
 	}
 
 	public String getName() {
