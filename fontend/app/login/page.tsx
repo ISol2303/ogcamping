@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { login, socialLogin } from '@/app/api/auth';
+import { loginApi, socialLogin } from '@/app/api/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tent, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -52,11 +54,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await login({
+      const response = await loginApi({
         email: formData.email,
         password: formData.password,
         remember: formData.remember,
       });
+      
+      // cập nhật AuthContext ngay sau khi login thành công
+      login(response.token, {
+        email: response.email,
+        name: response.name,
+        role: response.role,
+      }, formData.remember);
 
       console.log('Login response:', response);
 

@@ -1,189 +1,51 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings, Bell, LogOut } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings } from "lucide-react"
 import Link from "next/link"
-import jwtDecode from "jwt-decode"
-import { getUserProfile } from "../app/api/auth"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu"
-
-interface JwtPayload {
-  sub?: string;
-  roles?: string;
-  name?: string;
-  email?: string;
-  exp?: number;
-}
+import { loginApi } from "../app/api/auth" // Import from auth.ts
+import Navbar from "@/components/NavBar"
 
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string; role: string; avatar?: string } | null>(null)
+  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [hydrated, setHydrated] = useState(false);
   const router = useRouter()
-  const pathname = usePathname()
-
-useEffect(() => {
-  const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-  if (!token) {
-    setIsLoggedIn(false);
-    setUser(null);
-    if (pathname !== '/login' && pathname !== '/register') {
-      router.push('/login');
-    }
-    return;
-  }
-
-  getUserProfile(token)
-    .then((profile) => {
-      setIsLoggedIn(true);
-      setUser(profile);
-      localStorage.setItem('user', JSON.stringify(profile));
-      sessionStorage.setItem('user', JSON.stringify(profile));
-    })
-    .catch((err) => {
-      console.error('Lỗi lấy user profile:', err.message);
-      handleLogout(); // token không hợp lệ -> logout
-    });
-}, [pathname]);
-
 
   // Handle logout
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
-      if (token) {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-        await fetch(`${API_URL}/apis/v1/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        console.log('Logged out from backend')
-      }
-    } catch (error) {
-      console.error('Error during logout:', error)
-    }
-
-    // Clear storage
+  const handleLogout = () => {
     localStorage.removeItem('authToken')
     localStorage.removeItem('user')
-    localStorage.removeItem('userId')
-    sessionStorage.removeItem('authToken')
-    sessionStorage.removeItem('user')
-    sessionStorage.removeItem('userId')
     setIsLoggedIn(false)
     setUser(null)
-    router.push('/')
   }
 
   // Handle dashboard navigation based on role
-  const handleDashboardNavigation = () => {
-    console.log('Navigating with user role:', user?.role)
-    if (!isLoggedIn || !user?.role) {
-      console.warn('No role or not logged in, redirecting to login')
-      router.push('/login')
-      return
-    }
-    if (user.role === 'ADMIN') {
+    const handleDashboardNavigation = () => {
+    if (user?.role === 'ADMIN') {
       router.push('/admin')
-    } else if (user.role === 'STAFF') {
+    } else if (user?.role === 'STAFF') {
       router.push('/staff')
-    } else {
+    } else if (user?.role === 'CUSTOMER') {
       router.push('/dashboard')
+    } else if (user?.role === 'GUEST') {
+      router.push('/dashboard')  // về HomePage
     }
   }
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-        {/* Header */}
-   <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative">
-              <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-            </div>
-            <span className="text-3xl font-bold text-green-600">OG Camping</span>
-          </Link>
-         <nav className="hidden md:flex items-center gap-8">
-            <Link
-              href="/services"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
-            >
-              Dịch vụ
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link
-              href="/equipment"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
-            >
-              Thuê thiết bị
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link
-              href="/about"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
-            >
-              Về chúng tôi
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
-            >
-              Liên hệ
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-          </nav>
-       <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="bg-white rounded-md shadow-lg border border-gray-200 p-2"
-                  >
-                    <DropdownMenuItem
-                      onClick={handleDashboardNavigation}
-                    >
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                    >
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="py-24 px-4 relative overflow-hidden">
+        {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>

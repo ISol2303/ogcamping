@@ -89,66 +89,6 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative">
-              <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-            </div>
-            <span className="text-3xl font-bold text-green-600">OG Camping</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/services" className="text-gray-600 hover:text-green-600 transition-colors">
-              Dịch vụ
-            </Link>
-            <Link href="/equipment" className="text-gray-600 hover:text-green-600 transition-colors">
-              Thuê thiết bị
-            </Link>
-            <Link href="/ai-consultant" className="text-gray-600 hover:text-green-600 transition-colors">
-              Tư vấn AI
-            </Link>
-            <Link href="/about" className="text-green-600 font-medium">
-              Về chúng tôi
-            </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-green-600 transition-colors">
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDashboardNavigation}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <section className="py-4 px-4 bg-gradient-to-r from-green-600 to-green-800 text-green-800">

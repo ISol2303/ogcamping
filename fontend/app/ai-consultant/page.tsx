@@ -7,92 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap, Settings } from "lucide-react"
 import Link from "next/link"
 import { login } from "../api/auth" // Import from auth.ts
-
-interface Message {
-  id: number
-  type: "user" | "bot"
-  content: string
-  timestamp: Date
-}
+import { useChat } from "@/context/ChatContext"
 
 export default function AIConsultantPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+  const { messages, addMessage, clearMessages } = useChat()
   const [inputMessage, setInputMessage] = useState("")
   const router = useRouter()
-
-  // Check login status on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUser(null)
-  }
-
-  // Handle dashboard navigation based on role
-  const handleDashboardNavigation = () => {
-    if (user?.role === 'ADMIN') {
-      router.push('/admin')
-    } else if (user?.role === 'STAFF') {
-      router.push('/staff')
-    } else {
-      router.push('/dashboard')
-    }
-  }
-
-  // Load chat history from localStorage on component mount
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("ai-chat-history")
-    if (savedMessages) {
-      const parsedMessages = JSON.parse(savedMessages)
-      // Convert timestamp strings back to Date objects
-      const messagesWithDates = parsedMessages.map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-      }))
-      setMessages(messagesWithDates)
-    } else {
-      // Default messages if no history
-      setMessages([
-        {
-          id: 1,
-          type: "bot",
-          content:
-            "Xin chào! Tôi là AI tư vấn của OG Camping. Tôi sẽ giúp bạn tìm ra gói dịch vụ cắm trại hoàn hảo nhất. Hãy cho tôi biết một số thông tin về chuyến đi của bạn nhé!",
-          timestamp: new Date(),
-        },
-        {
-          id: 2,
-          type: "bot",
-          content:
-            "Để tư vấn chính xác nhất, bạn có thể cho tôi biết:\n\n• Số người tham gia?\n• Thời gian dự kiến (bao nhiêu ngày)?\n• Ngân sách dự tính?\n• Loại địa điểm yêu thích (núi, biển, rừng...)?\n• Kinh nghiệm cắm trại của bạn?",
-          timestamp: new Date(),
-        },
-      ])
-    }
-  }, [])
-
-  // Save messages to localStorage whenever messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem("ai-chat-history", JSON.stringify(messages))
-    }
-  }, [messages])
 
   const quickQuestions = [
     "Tôi muốn đi cắm trại 2-3 ngày với gia đình",
@@ -102,145 +25,33 @@ export default function AIConsultantPage() {
     "Gói nào có giá dưới 2 triệu?",
   ]
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
 
-    const newUserMessage = {
-      id: messages.length + 1,
-      type: "user" as const,
-      content: inputMessage,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, newUserMessage])
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
-        id: messages.length + 2,
-        type: "bot" as const,
-        content: generateAIResponse(inputMessage),
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiResponse])
-    }, 1000)
-
+    // user message
+    addMessage({ type: "user", content: inputMessage })
+    const userText = inputMessage
     setInputMessage("")
-  }
 
-  const generateAIResponse = (userMessage: string) => {
-    // Simple AI response simulation
-    if (userMessage.toLowerCase().includes("gia đình")) {
-      return `Tuyệt vời! Dựa trên nhu cầu cắm trại gia đình của bạn, tôi khuyên bạn nên xem xét:
-
-🏕️ **Gói Cắm trại gia đình Đà Lạt** - 3.200.000đ
-• Thời gian: 2-4 ngày
-• Phù hợp: 6-10 người
-• Bao gồm: Lều lớn, hoạt động trẻ em, BBQ
-• Đánh giá: 4.7/5 ⭐
-
-Gói này có nhiều hoạt động an toàn cho trẻ em và không gian rộng rãi. Bạn có muốn tôi tư vấn thêm về chi tiết không?`
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText }),
+      })
+      const data = await res.json()
+      addMessage({ type: "bot", content: data.reply })
+    } catch (err) {
+      addMessage({ type: "bot", content: "Xin lỗi, AI hiện không phản hồi." })
     }
-
-    if (userMessage.toLowerCase().includes("mới bắt đầu")) {
-      return `Với người mới bắt đầu, tôi khuyên bạn nên chọn:
-
-🌊 **Gói Cắm trại bãi biển Phú Quốc** - 1.800.000đ
-• Thời gian: 1-2 ngày (phù hợp để làm quen)
-• Có hướng dẫn viên kinh nghiệm
-• Thiết bị đầy đủ, không cần chuẩn bị gì
-• Hoạt động đa dạng: lặn, BBQ
-
-Đây là lựa chọn tuyệt vời để bắt đầu hành trình cắm trại của bạn!`
-    }
-
-    return `Cảm ơn bạn đã chia sẻ! Dựa trên thông tin này, tôi sẽ phân tích và đưa ra những gợi ý phù hợp nhất. Bạn có thể cung cấp thêm thông tin về ngân sách và số người tham gia để tôi tư vấn chính xác hơn không?`
   }
 
-  const handleQuickQuestion = (question: string) => {
-    setInputMessage(question)
-  }
-
-  const clearChatHistory = () => {
-    localStorage.removeItem("ai-chat-history")
-    setMessages([
-      {
-        id: 1,
-        type: "bot",
-        content:
-          "Xin chào! Tôi là AI tư vấn của OG Camping. Tôi sẽ giúp bạn tìm ra gói dịch vụ cắm trại hoàn hảo nhất. Hãy cho tôi biết một số thông tin về chuyến đi của bạn nhé!",
-        timestamp: new Date(),
-      },
-    ])
+  const handleQuickQuestion = (q: string) => {
+    setInputMessage(q)
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative">
-              <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-            </div>
-            <span className="text-3xl font-bold text-green-600">OG Camping</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/services" className="text-gray-600 hover:text-green-600 transition-colors">
-              Dịch vụ
-            </Link>
-            <Link href="/equipment" className="text-gray-600 hover:text-green-600 transition-colors">
-              Thuê thiết bị
-            </Link>
-            <Link href="/ai-consultant" className="text-green-600 font-medium">
-              Tư vấn AI
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-green-600 transition-colors">
-              Về chúng tôi
-            </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-green-600 transition-colors">
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDashboardNavigation}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                >
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild className="bg-green-600 hover:bg-green-700 text-white border-0">
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Page Header */}
         <div className="text-center mb-8">
@@ -298,7 +109,7 @@ Gói này có nhiều hoạt động an toàn cho trẻ em và không gian rộn
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={clearChatHistory}
+                      onClick={clearMessages}
                       className="text-black hover:bg-green-600"
                     >
                       Xóa lịch sử

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import jwtDecode from 'jwt-decode';
+import {jwtDecode} from 'jwt-decode';
 
 interface LoginRequest {
   email: string;
@@ -17,7 +17,7 @@ interface RegisterRequest {
 
 interface DecodedToken {
   sub: string;
-  roles?: string; // Single string as per JwtUtils.java
+  role?: string; // backend của em trả "role"
   name?: string;
   email?: string;
   exp?: number;
@@ -42,58 +42,52 @@ interface UserProfile {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-export const login = async (data: LoginRequest): Promise<AuthResponse> => {
+export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
   try {
     console.log('Sending login request to:', `${API_URL}/apis/v1/login`);
     console.log('Login payload:', { email: data.email, remember: data.remember });
 
     const response = await axios.post(`${API_URL}/apis/v1/login`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       timeout: 5000,
     });
 
     console.log('Login response:', response.data);
     const payload = response.data;
 
-    const token = payload?.token;
-    const tokenType = payload?.tokenType || 'Bearer';
-    const email = payload?.email;
-    const name = payload?.name || 'Unknown User';
-    const role = payload?.role || 'CUSTOMER';
+    let token: string = payload?.token;
+    const tokenType: string = payload?.tokenType || 'Bearer';
+    const email: string = payload?.email;
+    const name: string = payload?.fullname || payload?.name || 'Unknown User';
+    const role: string = payload?.role || 'CUSTOMER';
 
     if (!token || !email) {
       throw new Error('Dữ liệu phản hồi không hợp lệ: Thiếu token hoặc email.');
     }
 
-    // Decode token to verify contents
+    // Nếu token lỡ kèm "Bearer ", cắt ra
+    if (token.startsWith('Bearer ')) {
+      token = token.split(' ')[1];
+    }
+
+    // Decode token để kiểm tra
     let decoded: DecodedToken;
     try {
-      decoded = jwtDecode(token);
+      decoded = jwtDecode<DecodedToken>(token);
       console.log('Decoded JWT:', decoded);
 
-      // Validate token expiration
       if (decoded.exp && decoded.exp * 1000 < Date.now()) {
         throw new Error('Token đã hết hạn.');
       }
-
-      // Validate role
-      if (!decoded.roles) {
-        throw new Error('Token không chứa thông tin vai trò.');
-      }
     } catch (e) {
-      console.error('Failed to decode token:', {
-        error: e,
-        stack: (e as Error).stack,
-      });
+      console.error('Failed to decode token:', e);
       throw new Error('Token không hợp lệ từ máy chủ.');
     }
 
     const userId = decoded.sub;
-    const userRole = decoded.roles.replace('ROLE_', '') || role;
+    const userRole = decoded.role?.replace('ROLE_', '') || role;
 
-    // Fetch additional user profile data (e.g., avatar)
+    // Gọi API lấy thêm profile
     let userProfile: UserProfile = { email, name, role: userRole };
     try {
       const profile = await getUserProfile(token);
@@ -101,8 +95,8 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
     } catch (e) {
       console.warn('Failed to fetch user profile, using basic data:', e);
     }
-
-    // Store token and user data
+    
+    // Lưu vào storage
     if (data.remember) {
       localStorage.setItem('authToken', token);
       localStorage.setItem('userId', userId);
@@ -155,15 +149,7 @@ export const register = async (data: RegisterRequest): Promise<void> => {
       timeout: 5000,
     });
   } catch (error: any) {
-    console.error('Register error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      headers: error.response?.headers,
-      responseBody: error.response?.data ? JSON.stringify(error.response.data, null, 2) : 'No response body',
-      axiosError: JSON.stringify(error, Object.getOwnPropertyNames(error), 2),
-      stack: error.stack,
-    });
+    console.error('Register error:', error);
     throw new Error(
       error.response?.data?.error ||
       error.response?.data?.message ||
@@ -177,7 +163,6 @@ export const socialLogin = (provider: 'google' | 'facebook') => {
   console.log(`Redirecting to ${provider} OAuth2:`, authUrl);
   window.location.href = authUrl;
 };
-
 
 export const getUserProfile = async (token: string): Promise<UserProfile> => {
   try {
@@ -197,11 +182,7 @@ export const getUserProfile = async (token: string): Promise<UserProfile> => {
       avatar: avatar || undefined,
     };
   } catch (error: any) {
-    console.error('Get user profile error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    console.error('Get user profile error:', error);
     throw new Error('Không thể lấy thông tin hồ sơ người dùng.');
   }
 };
