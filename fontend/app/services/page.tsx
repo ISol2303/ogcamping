@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings } from "lucide-react"
+import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { login } from "../api/auth" // Import from auth.ts
 import { getServices, Service } from "../api/serviceApi"
@@ -18,7 +18,9 @@ export default function ServicesPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const router = useRouter()
-
+  const handleGoToCart = () => {
+    router.push("/cart");
+  };
   // Check login status on component mount
   useEffect(() => {
     const token = localStorage.getItem('authToken')
@@ -55,94 +57,66 @@ export default function ServicesPage() {
     };
     fetchServices();
   }, []);
-  // const services = [
-  //   {
-  //     id: 1,
-  //     name: "Cắm trại núi cao Sapa",
-  //     location: "Sapa, Lào Cai",
-  //     duration: "2-3 ngày",
-  //     capacity: "4-6 người",
-  //     price: 2500000,
-  //     rating: 4.8,
-  //     reviews: 124,
-  //     image: "mountain",
-  //     tags: ["Núi", "Trekking", "Phổ biến"],
-  //     availability: "Còn 3 slot",
-  //     description:
-  //       "Trải nghiệm cắm trại trên núi cao với view tuyệt đẹp, bao gồm lều, thực phẩm và hướng dẫn viên chuyên nghiệp",
-  //   },
-  //   {
-  //     id: 2,
-  //     name: "Cắm trại bãi biển Phú Quốc",
-  //     location: "Phú Quốc, Kiên Giang",
-  //     duration: "1-2 ngày",
-  //     capacity: "2-4 người",
-  //     price: 1800000,
-  //     rating: 4.9,
-  //     reviews: 89,
-  //     image: "beach",
-  //     tags: ["Biển", "Lặn", "Mới"],
-  //     availability: "Còn 5 slot",
-  //     description: "Cắm trại bên bờ biển với hoạt động lặn ngắm san hô, BBQ hải sản tươi ngon",
-  //   },
-  //   {
-  //     id: 3,
-  //     name: "Cắm trại gia đình Đà Lạt",
-  //     location: "Đà Lạt, Lâm Đồng",
-  //     duration: "2-4 ngày",
-  //     capacity: "6-10 người",
-  //     price: 3200000,
-  //     rating: 4.7,
-  //     reviews: 156,
-  //     image: "family",
-  //     tags: ["Gia đình", "Trẻ em", "Ưu đãi"],
-  //     availability: "Còn 2 slot",
-  //     description: "Gói dành cho gia đình với nhiều hoạt động vui chơi, an toàn cho trẻ em",
-  //   },
-  //   {
-  //     id: 4,
-  //     name: "Cắm trại rừng Cát Tiên",
-  //     location: "Cát Tiên, Đồng Nai",
-  //     duration: "3-4 ngày",
-  //     capacity: "4-8 người",
-  //     price: 2800000,
-  //     rating: 4.6,
-  //     reviews: 78,
-  //     image: "forest",
-  //     tags: ["Rừng", "Động vật", "Khám phá"],
-  //     availability: "Hết chỗ",
-  //     description: "Khám phá thiên nhiên hoang dã, quan sát động vật trong môi trường tự nhiên",
-  //   },
-  //   {
-  //     id: 5,
-  //     name: "Cắm trại thác Sekumpul",
-  //     location: "Bali, Indonesia",
-  //     duration: "3-5 ngày",
-  //     capacity: "2-6 người",
-  //     price: 4500000,
-  //     rating: 4.9,
-  //     reviews: 203,
-  //     image: "waterfall",
-  //     tags: ["Thác nước", "Quốc tế", "Premium"],
-  //     availability: "Còn 4 slot",
-  //     description: "Tour quốc tế đến thác nước nổi tiếng Bali với dịch vụ cao cấp",
-  //   },
-  //   {
-  //     id: 6,
-  //     name: "Cắm trại sa mạc Mũi Né",
-  //     location: "Mũi Né, Bình Thuận",
-  //     duration: "1-2 ngày",
-  //     capacity: "2-4 người",
-  //     price: 1500000,
-  //     rating: 4.5,
-  //     reviews: 67,
-  //     image: "desert",
-  //     tags: ["Sa mạc", "Hoàng hôn", "Độc đáo"],
-  //     availability: "Còn 6 slot",
-  //     description: "Trải nghiệm cắm trại trên đồi cát với hoàng hôn tuyệt đẹp",
-  //   },
-  // ]
+  //filter
+  const [search, setSearch] = useState("");
+  const [location, setLocation] = useState("all");
+  const [people, setPeople] = useState("");
+  const [price, setPrice] = useState<[number, number]>([0, 5000000]);
+  function normalize(str: string) {
+    return str
+      .normalize("NFD") // tách chữ + dấu
+      .replace(/[\u0300-\u036f]/g, "") // xoá dấu
+      .toLowerCase();
+  }
 
+  // Lọc data dựa trên state filter
+  const filteredServices = useMemo(() => {
+    return services.filter(item => {
+      function normalize(str: string) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      }
+
+      const matchSearch =
+        search === "" ||
+        (() => {
+          const searchNorm = normalize(search);
+          const name = item.name.toLowerCase();
+          const location = item.location.toLowerCase();
+
+          // So khớp có dấu
+          if (name.includes(search.toLowerCase()) || location.includes(search.toLowerCase())) {
+            return true;
+          }
+
+          // So khớp không dấu
+          return (
+            normalize(item.name).includes(searchNorm) ||
+            normalize(item.location).includes(searchNorm)
+          );
+        })();
+
+
+      const matchLocation =
+        location === "all" ||
+        item.location.toLowerCase() === location.toLowerCase();
+
+      const matchPeople =
+        people === "" ||
+        (() => {
+          const [min, max] = people.split("-").map(Number);
+          return (
+            (item.minCapacity <= max && item.maxCapacity >= min)
+          );
+        })();
+
+      const matchPrice = item.price >= price[0] && item.price <= price[1];
+
+      return matchSearch && matchLocation && matchPeople && matchPrice;
+    });
+  }, [search, location, people, price, services]);
+  const uniqueLocations = Array.from(
+    new Set(services.map((s) => s.location))
+  );
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -176,6 +150,9 @@ export default function ServicesPage() {
             {isLoggedIn ? (
               <>
                 <span className="text-gray-800 font-medium">{user?.name}</span>
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -200,6 +177,9 @@ export default function ServicesPage() {
                 <Button asChild>
                   <Link href="/register">Đăng ký</Link>
                 </Button>
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
               </>
             )}
           </div>
@@ -210,7 +190,7 @@ export default function ServicesPage() {
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Dịch vụ cắm trại</h1>
-          <p className="text-gray-600 text-lg">Khám phá các gói dịch vụ cắm trại đa dạng, từ núi cao đến bãi biển</p>
+          <p className="text-gray-600 text-lg">Khám phá các gói dịch vụ cắm trại đa dạng, góc nhìn ven hồ và rừng cây xanh</p>
         </div>
 
         {/* Filters */}
@@ -223,33 +203,42 @@ export default function ServicesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
+              {/* Tìm kiếm */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Tìm kiếm</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input className="pl-10" placeholder="Tìm theo tên, địa điểm..." />
+                  <Input
+                    className="pl-10"
+                    placeholder="Tìm theo tên, địa điểm..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                 </div>
               </div>
+
+              {/* Địa điểm */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Địa điểm</label>
-                <Select>
+                <Select value={location} onValueChange={setLocation}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn địa điểm" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-                    <SelectItem value="sapa">Sapa</SelectItem>
-                    <SelectItem value="phuquoc">Phú Quốc</SelectItem>
-                    <SelectItem value="dalat">Đà Lạt</SelectItem>
-                    <SelectItem value="cattien">Cát Tiên</SelectItem>
-                    <SelectItem value="bali">Bali</SelectItem>
-                    <SelectItem value="muine">Mũi Né</SelectItem>
+                    {uniqueLocations.map((loc) => (
+                      <SelectItem key={loc} value={loc.toLowerCase()}>
+                        {loc}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Số người */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Số người</label>
-                <Select>
+                <Select value={people} onValueChange={setPeople}>
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn số người" />
                   </SelectTrigger>
@@ -257,24 +246,32 @@ export default function ServicesPage() {
                     <SelectItem value="2-4">2-4 người</SelectItem>
                     <SelectItem value="4-6">4-6 người</SelectItem>
                     <SelectItem value="6-10">6-10 người</SelectItem>
+                    <SelectItem value="10-20">10-20 người</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Giá */}
               <div>
                 <label className="text-sm font-medium mb-2 block">Giá (VND)</label>
-                <Slider defaultValue={[0, 5000000]} max={5000000} step={100000} />
+                <Slider
+                  value={price}
+                  onValueChange={(val) => setPrice(val as [number, number])}
+                  max={5000000}
+                  step={100000}
+                />
+
                 <div className="flex justify-between text-sm text-gray-600 mt-2">
-                  <span>0</span>
-                  <span>5,000,000</span>
+                  <span>{price[0].toLocaleString()}</span>
+                  <span>{price[1].toLocaleString()}</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-
         {/* Services List */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => {
+          {filteredServices.map((service) => {
             const tags = service.tag ? [service.tag] : [];
             let duration = "";
             if (service.minDays != null && service.maxDays != null) {
@@ -301,56 +298,97 @@ export default function ServicesPage() {
                 <div className="h-48 bg-gradient-to-br from-green-400 to-green-600 relative overflow-hidden">
                   <div className="absolute inset-0 bg-black/20">
                     <img
-                      src={service.imageUrl ? `http://localhost:8080${service.imageUrl}` : "https://www.shutterstock.com/image-vector/default-ui-image-placeholder-wireframes-600nw-1037719192.jpg"}
+                      src={
+                        service.imageUrl
+                          ? `http://localhost:8080${service.imageUrl}`
+                          : "https://www.shutterstock.com/image-vector/default-ui-image-placeholder-wireframes-600nw-1037719192.jpg"
+                      }
                       alt="background"
                       className="w-full h-full object-cover"
                     />
-
                   </div>
 
-                  {/* Ví dụ: dùng tag để chọn icon */}
                   {/* Icon phía trên bên phải dựa trên tag */}
-                  {tags.includes("POPULAR") && <Mountain className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                  {tags.includes("NEW") && <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                  {tags.includes("DISCOUNT") && <Users className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
+                  {tags.includes("POPULAR") && (
+                    <Mountain className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />
+                  )}
+                  {tags.includes("NEW") && (
+                    <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />
+                  )}
+                  {tags.includes("DISCOUNT") && (
+                    <Users className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />
+                  )}
 
-                  <div className="absolute bottom-4 left-4 text-white">
+                  <div className="absolute bottom-0 left-0 right-0 text-white">
                     {/* Badge dựa trên tag */}
                     {tags.includes("POPULAR") && (
-                      <Badge className="mb-2 bg-red-500 hover:bg-red-600 text-white">Phổ biến</Badge>
+                      <Badge className="mb-2 mx-3 bg-red-500 hover:bg-red-600 text-white">
+                        Phổ biến
+                      </Badge>
                     )}
                     {tags.includes("NEW") && (
-                      <Badge className="mb-2 bg-blue-500 hover:bg-blue-600 text-white">Mới</Badge>
+                      <Badge className="mb-2 mx-3 bg-blue-500 hover:bg-blue-600 text-white">
+                        Mới
+                      </Badge>
                     )}
                     {tags.includes("DISCOUNT") && (
-                      <Badge className="mb-2 bg-green-500 hover:bg-green-600 text-white">Ưu đãi</Badge>
+                      <Badge className="mb-2 mx-3 bg-green-500 hover:bg-green-600 text-white">
+                        Ưu đãi
+                      </Badge>
                     )}
 
-                    <h3 className="text-lg font-bold">{service.name}</h3>
-                    <p className="text-sm opacity-90">{service.location}</p>
+                    <div className="bg-black/40 p-2 w-full">
+                      <h3 className="text-lg font-bold mx-3">{service.name}</h3>
+                      <p className="text-sm opacity-90 mx-3">{service.location}</p>
+                    </div>
                   </div>
-
                 </div>
                 <CardHeader>
-                  <CardTitle className="text-lg">{service.name}</CardTitle>
-                  <CardDescription>{service.description}</CardDescription>
+                  <CardDescription
+                    className="line-clamp-2 mb-4"
+                    style={{
+                      height: "48px",
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                  >
+                    {service.description}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4 ">
+                <CardContent className="flex flex-col h-full min-h-[200px]">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-semibold">{service.averageRating || 0}</span>
-                      <span className="text-sm text-gray-500">({service.totalReviews || 0})</span>
+                      <span className="text-sm text-gray-500">
+                        ({service.totalReviews || 0})
+                      </span>
                     </div>
                     <Badge variant="secondary">{availability}</Badge>
                   </div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm text-gray-600">
-                      {duration && <p><Calendar className="inline w-4 h-4 mr-2" />{duration}</p>}
-                      {capacity && <p><Users className="inline w-4 h-4 mr-2" />{capacity}</p>}
-                      <p><MapPin className="inline w-4 h-4 mr-2" />{service.location}</p>
+                    <div
+                      className="text-sm text-gray-600"
+                      style={{ minHeight: "72px" }}
+                    >
+                      <p className={duration ? "mb-1" : "hidden"}>
+                        <Calendar className="inline w-4 h-4 mr-2" />
+                        {duration}
+                      </p>
+                      <p className={capacity ? "mb-1" : "hidden"}>
+                        <Users className="inline w-4 h-4 mr-2" />
+                        {capacity}
+                      </p>
+                      <p>
+                        <MapPin className="inline w-4 h-4 mr-2" />
+                        {service.location}
+                      </p>
                     </div>
-                    <span className="text-2xl font-bold text-green-600">{service.price.toLocaleString("vi-VN")}đ</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {service.price.toLocaleString("vi-VN")}đ
+                    </span>
                   </div>
                   <Button className="w-full mt-2" asChild>
                     <Link href={`/services/${service.id}`}>Xem chi tiết</Link>
@@ -360,6 +398,7 @@ export default function ServicesPage() {
             );
           })}
         </div>
+
 
 
         {/* Custom Service CTA */}

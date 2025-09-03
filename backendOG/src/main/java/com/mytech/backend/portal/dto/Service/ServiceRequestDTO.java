@@ -15,16 +15,21 @@ public class ServiceRequestDTO {
     private String description;
     private Double price;
     private String location;
+    private Boolean isExperience;
     private Integer minDays;
     private Integer maxDays;
     private Integer minCapacity;
     private Integer maxCapacity;
-    private Integer availableSlots;
-    private String duration;       // VD: "2-3 ngày"
-    private String capacity;       // VD: "4-6 người"
-    private ServiceTag tag;            // POPULAR / NEW / DISCOUNT
-    private List<String> highlights; // danh sách điểm nổi bật
-    private List<String> included;   // danh sách dịch vụ bao gồm
-    private List<ItineraryDTO> itinerary; // lịch trình
+    private Boolean allowExtraPeople;
+    private Double extraFeePerPerson;
+    private Integer maxExtraPeople;
+    private Boolean requireAdditionalSiteIfOver;
+    private Integer defaultSlotsPerDay;
+    private String duration;
+    private String capacity;
+    private ServiceTag tag;         // POPULAR / NEW / DISCOUNT
+    private List<String> highlights;
+    private List<String> included;
+    private List<ItineraryDTO> itinerary;
 }
 

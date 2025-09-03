@@ -13,9 +13,13 @@ public class WebConfig implements WebMvcConfigurer {
     }
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // URL public: /uploads/services/**
-        // Thư mục trên server: C:/ogcamping/uploads/services/
+        // Services
         registry.addResourceHandler("/uploads/services/**")
                 .addResourceLocations("file:///C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services/");
+
+        // Combos
+        registry.addResourceHandler("/uploads/combos/**")
+                .addResourceLocations("file:///C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/combos/");
     }
+
 }

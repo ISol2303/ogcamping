@@ -1,6 +1,7 @@
 package com.mytech.backend.portal.models;
 
 import com.mytech.backend.portal.models.Customer.Customer;
+import com.mytech.backend.portal.models.Wishlist.WishlistItem;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -79,4 +82,6 @@ public class User {
     }
     @Column(name = "google_Id", nullable = true)
     private String googleId;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WishlistItem> wishlist = new ArrayList<>();
 }

@@ -29,38 +29,36 @@ public class ServiceController {
 
     // GET /services/{id} → chi tiết service
     @GetMapping("/{id}")
-    public ResponseEntity<ServiceResponseDTO> getServiceById(@PathVariable(name = "id") Long id) {
+    public ResponseEntity<ServiceResponseDTO> getServiceById(@PathVariable("id") Long id) {
         ServiceResponseDTO service = serviceService.getServiceById(id);
         return ResponseEntity.ok(service);
     }
 
-
-    // POST /services → tạo mới
-//    @PostMapping
-//    public ResponseEntity<ServiceResponseDTO> createService(@RequestBody ServiceRequestDTO req) {
-//        ServiceResponseDTO service = serviceService.createService(req);
-//        return ResponseEntity.ok(service);
-//    }
-
+    // POST /services → tạo mới service (có thể kèm file ảnh)
     @PostMapping
     public ResponseEntity<ServiceResponseDTO> createService(
             @RequestPart("service") String serviceJson,
-            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestPart(value = "extraImages", required = false) MultipartFile[] extraImages
     ) throws IOException {
-        // Chuyển JSON string thành DTO
         ServiceRequestDTO dto = new ObjectMapper().readValue(serviceJson, ServiceRequestDTO.class);
-        ServiceResponseDTO response = serviceService.createService(dto, imageFile);
+        ServiceResponseDTO response = serviceService.createService(dto, imageFile, extraImages);
         return ResponseEntity.ok(response);
     }
 
 
-    // PUT /services/{id} → cập nhật
+    // PUT /services/{id} → cập nhật service
     @PutMapping("/{id}")
-    public ResponseEntity<ServiceResponseDTO> updateService(@PathVariable Long id,
-                                                            @RequestBody ServiceRequestDTO req) {
-        ServiceResponseDTO service = serviceService.updateService(id, req);
-        return ResponseEntity.ok(service);
+    public ResponseEntity<ServiceResponseDTO> updateService(
+            @PathVariable Long id,
+            @RequestPart("service") String serviceJson,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+    ) throws IOException {
+        ServiceRequestDTO dto = new ObjectMapper().readValue(serviceJson, ServiceRequestDTO.class);
+        ServiceResponseDTO response = serviceService.updateService(id, dto, imageFile); // ✅ đúng
+        return ResponseEntity.ok(response);
     }
+
 
     // DELETE /services/{id} → xóa (soft delete)
     @DeleteMapping("/{id}")
@@ -69,10 +67,11 @@ public class ServiceController {
         return ResponseEntity.noContent().build();
     }
 
-    // GET /services/tag/{tag} → filter theo tag
+    // GET /services/tag/{tag} → lọc theo tag (POPULAR / NEW / DISCOUNT)
     @GetMapping("/tag/{tag}")
     public ResponseEntity<List<ServiceResponseDTO>> getServicesByTag(@PathVariable String tag) {
         List<ServiceResponseDTO> services = serviceService.getServicesByTag(tag);
         return ResponseEntity.ok(services);
     }
 }
+

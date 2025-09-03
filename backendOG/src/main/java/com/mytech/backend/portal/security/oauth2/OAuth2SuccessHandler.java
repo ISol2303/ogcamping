@@ -31,22 +31,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Value("${app.oauth2.redirect-success}")
     private String redirectSuccess;
-
-//    @Override
-//    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-//                                        Authentication authentication) throws IOException, ServletException {
-//        DefaultOAuth2User principal = (DefaultOAuth2User) authentication.getPrincipal();
-//
-//        String email = (String) principal.getAttributes().get("email");
-//
-//        String token = jwtUtils.generateToken(email, principal.getAttributes());
-//
-//        String targetUrl = UriComponentsBuilder.fromHttpUrl(redirectSuccess)
-//                .queryParam("token", token)
-//                .build().toUriString();
-//
-//        getRedirectStrategy().sendRedirect(request, response, targetUrl);
-//    }
 @Override
 public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                     Authentication authentication) throws IOException {

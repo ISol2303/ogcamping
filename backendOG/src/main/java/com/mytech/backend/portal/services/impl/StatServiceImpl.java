@@ -25,9 +25,11 @@ public class StatServiceImpl implements StatService {
 
     @Override
     public List<StatDTO> getStats(String period) {
-//        TODO: Implement actual logic based on period parameter (e.g., filter by date range)
+        // TODO: Filter theo period nếu cần (ví dụ: tháng, tuần, ngày)
+
         double revenue = bookingRepository.findAll().stream()
-                .mapToDouble(booking -> booking.getService().getPrice() != null ? booking.getService().getPrice() : 0.0)
+                .flatMap(booking -> booking.getItems().stream()) // đi qua tất cả BookingItem
+                .mapToDouble(item -> item.getPrice() != null ? item.getPrice() : 0.0)
                 .sum();
 
         return Arrays.asList(

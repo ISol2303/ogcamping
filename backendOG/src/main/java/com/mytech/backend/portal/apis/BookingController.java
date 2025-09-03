@@ -25,16 +25,18 @@ public class BookingController {
     }
 
 
-
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable Long id) {
+    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable("id") Long id) {
         return ResponseEntity.ok(bookingService.getBooking(id));
     }
 
+
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<BookingResponseDTO>> getCustomerBookings(@PathVariable Long customerId) {
+    public ResponseEntity<List<BookingResponseDTO>> getCustomerBookings(
+            @PathVariable("customerId") Long customerId) {
         return ResponseEntity.ok(bookingService.getBookingsByCustomer(customerId));
     }
+
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<BookingResponseDTO> cancelBooking(@PathVariable Long id) {

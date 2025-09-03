@@ -10,6 +10,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "bookings")
@@ -24,12 +26,6 @@ public class Booking {
 	@JoinColumn(name = "customer_id", nullable = false)
 	private Customer customer;
 
-	@ManyToOne
-	@JoinColumn(name = "service_id", nullable = false)
-	private Service service;
-
-	@ManyToOne @JoinColumn(name="combo_id")
-	private Combo combo;  // null nếu là booking 1 service đơn
 
 	private LocalDate checkInDate;
 	private LocalDate checkOutDate;
@@ -42,6 +38,8 @@ public class Booking {
 	private Integer rating; //1-5
 	private String feedback;
 
+	@Column(name = "total_price")
+	private Long totalPrice; // ✅ lưu vào DB
 
 	@OneToOne(mappedBy="booking", cascade=CascadeType.ALL, orphanRemoval=true)
 	private Payment payment;
@@ -49,26 +47,31 @@ public class Booking {
 	@CreationTimestamp
 	@Column(nullable=false, updatable=false)
 	private LocalDateTime createdAt;
+	@OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<BookingItem> items = new ArrayList<>();
 
-	public Double getTotalPrice() {
-		double total = 0.0;
 
-		if (this.getService() != null) {
-			total += this.getService().getPrice();
+	public Long calculateTotalPrice() {
+		long total = 0L;
+
+		for (BookingItem item : items) {
+			double base = item.getPrice() * item.getQuantity();
+
+			// Nếu là SERVICE → tính phụ phí extraPeople
+			if (item.getService() != null && this.numberOfPeople != null) {
+				Service service = item.getService();
+				if (this.numberOfPeople > service.getMaxCapacity() && Boolean.TRUE.equals(service.getAllowExtraPeople())) {
+					int extra = this.numberOfPeople - service.getMaxCapacity();
+					int limitedExtra = Math.min(extra, service.getMaxExtraPeople() != null ? service.getMaxExtraPeople() : extra);
+					base += limitedExtra * (service.getExtraFeePerPerson() != null ? service.getExtraFeePerPerson() : 0);
+				}
+			}
+
+			total += Math.round(base);
 		}
-
-		if (this.getCombo() != null) {
-			total += this.getCombo().getPrice();
-		}
-
-//		// Nếu có thêm phụ phí / discount / số lượng người
-//		if (this.getExtraFee() != null) {
-//			total += this.getExtraFee();
-//		}
-//		if (this.getDiscount() != null) {
-//			total -= this.getDiscount();
-//		}
 
 		return total;
 	}
+
 }
+

@@ -7,9 +7,8 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ currentStep }: StepIndicatorProps) {
   const steps = [
-    { id: 1, name: "Thông tin gói" },
-    { id: 2, name: "Setup gói" },
-    { id: 3, name: "Xác nhận" },
+    { id: 1, name: "Thông tin dịch vụ" },
+    { id: 2, name: "Xác nhận" },
   ]
 
   return (

@@ -9,13 +9,13 @@ export type Service = {
   minCapacity: number;
   maxCapacity: number;
   active: boolean;
-  tag: string | null;
+  tag: ServiceTag;
   averageRating: number | null;
   totalReviews: number | null;
   availableSlots: number;
   imageUrl?: string; // nếu có hình ảnh
 };
-
+type ServiceTag = "NEW" | "POPULAR" | "DISCOUNT";
 export const getServices = async (): Promise<Service[]> => {
   try {
     const res = await fetch(`http://localhost:8080/apis/v1/services`);

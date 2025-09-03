@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ItineraryItem } from '../admin/services/new/components/package-confirmation';
 
 export interface User {
   _id: string;
@@ -37,11 +38,33 @@ export interface PackageFormData {
   food_type: string;
   tent_type: string;
   activities: string;
-  max_people: string;
-  available_slots: string;
-  price: string;
+  max_people: number;
+  available_slots: number;
+  price: number;
   description: string;
+
+  tag: ServiceTag;  // chỉ cho phép giá trị trong union
+  duration: string;
+  capacity: string;
+  isExperience: boolean;
+  minDays: number;
+  maxDays: number;
+  peoplePerSession: number;
+
+  minCapacity: number;
+  maxCapacity: number;
+  defaultSlotsPerDay: number;
+
+  allowExtraPeople: boolean;
+  extraFeePerPerson: number;
+  maxExtraPeople: number;
+
+  highlights: [];
+  included: [];
+  itinerary: ItineraryItem[];
 }
+
+type ServiceTag = "NEW" | "DISCOUNT" | "POPULAR" | "";
 
 export const fetchUser = async (): Promise<User> => {
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -160,9 +183,9 @@ export const submitPackage = async (
     if (formData.food_type) packageFormData.append('food_type', formData.food_type);
     if (formData.tent_type) packageFormData.append('tent_type', formData.tent_type);
     if (formData.activities) packageFormData.append('activities', formData.activities);
-    packageFormData.append('max_people', formData.max_people);
-    packageFormData.append('available_slots', formData.available_slots);
-    packageFormData.append('price', formData.price);
+    packageFormData.append('max_people', String(formData.max_people));
+    packageFormData.append('available_slots', String(formData.available_slots));
+    packageFormData.append('price', String(formData.price));
     if (formData.description) packageFormData.append('description', formData.description);
     if (image) packageFormData.append('image', image);
 
