@@ -78,6 +78,22 @@ public class UserServiceImpl implements UserService {
         user = userRepository.save(user);
         return mapToDTO(user);
     }
+    @Override
+    public UserDTO updateProfile(Long id, UserDTO userDTO) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        if (userDTO.getName() != null) user.setName(userDTO.getName());
+        if (userDTO.getPhone() != null) user.setPhone(userDTO.getPhone());
+        if (userDTO.getAvatar() != null) user.setAvatar(userDTO.getAvatar());
+        if (userDTO.getEmail() != null && !userDTO.getEmail().equals(user.getEmail())) {
+            user.setEmail(userDTO.getEmail());
+        }
+
+        user = userRepository.save(user);
+        return mapToDTO(user);
+    }
+
 
     @Override
     public void deleteUser(Long id) {

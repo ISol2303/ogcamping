@@ -68,7 +68,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {isLoggedIn && user ? (
             <>
-              <span className="text-gray-800 font-medium">{user.name}</span>
+              <Link href="/profile">{user.name}</Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">

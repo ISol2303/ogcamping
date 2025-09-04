@@ -110,6 +110,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingResponseDTO> getBookingsByCustomer(Long customerId) {
+    	System.out.println(">>> find bookings for customerId: " + customerId);
         return bookingRepository.findByCustomerId(customerId)
                 .stream()
                 .map(this::mapToDTO)

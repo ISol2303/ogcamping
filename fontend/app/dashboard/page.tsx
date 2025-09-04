@@ -23,6 +23,7 @@ import {
   Star,
 } from 'lucide-react';
 import Link from 'next/link';
+import { log } from 'console';
 
 interface Booking {
   _id: string;
@@ -67,8 +68,9 @@ export default function DashboardPage() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
         // Fetch user data
-        const userResponse = await axios.get('http://localhost:8080/apis/v1/users');
+        const userResponse = await axios.get('http://localhost:8080/apis/v1/users/me');
         setUser(userResponse.data);
+        console.log('User: ', userResponse.data);
 
         // Fetch stats
         const statsResponse = await axios.get('http://localhost:8080/stats');

@@ -3,6 +3,8 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {jwtDecode} from 'jwt-decode'
+import { useAuth } from "@/context/AuthContext";
+import { getUserProfile } from '@/app/api/auth';
 
 interface JwtPayload {
   role?: string
@@ -13,6 +15,7 @@ interface JwtPayload {
 export default function LoginSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { login } = useAuth();
 
   useEffect(() => {
     const token = searchParams.get('token')
@@ -20,34 +23,24 @@ export default function LoginSuccessPage() {
       router.push('/login?error=missing_token')
       return
     }
-
+     (async () => {
     try {
-      // Decode JWT to get role
-      const decoded: JwtPayload = jwtDecode(token)
-      console.log('Decoded JWT:', decoded)
+      // ✅ gọi API backend để lấy thêm thông tin user
+      const profile = await getUserProfile(token);
 
-      // Validate token and role
-      if (!decoded.role) {
-        throw new Error('Token không chứa thông tin vai trò.')
-      }
+      // ✅ update context ngay với dữ liệu đầy đủ
+      login(token, {
+        email: profile.email,
+        name: profile.name,
+        role: profile.role,
+      });
 
-      // Store token and userId
-      localStorage.setItem('authToken', token)
-      localStorage.setItem('userId', decoded.sub || '1')
-
-      // Redirect based on role
-      const role = decoded.role.toUpperCase()
-      if (role === 'ADMIN') {
-        router.push('/')
-      } else if (role === 'STAFF') {
-        router.push('/')
-      } else {
-        router.push('/')
-      }
-    } catch (err: any) {
-      console.error('Error decoding token:', err.message)
-      router.push('/login?error=invalid_token')
+      router.push("/");
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      router.push("/login?error=invalid_token");
     }
+    })();
   }, [router, searchParams])
 
   return (

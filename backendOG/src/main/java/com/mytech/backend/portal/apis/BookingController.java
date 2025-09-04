@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.mytech.backend.portal.dto.BookingRequestDTO;
 import com.mytech.backend.portal.dto.BookingResponseDTO;
+import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.services.BookingService;
+import com.mytech.backend.portal.services.UserService;
 
 @RestController
 @RequestMapping("/apis/v1/bookings")
@@ -23,10 +27,14 @@ public class BookingController {
 
     @Autowired
     private BookingService bookingService;
+    
+    @Autowired
+    private UserService userService;
 
     // Lấy tất cả booking của 1 customer
     @GetMapping("/customer/{customerId}")
     public List<BookingResponseDTO> getBookingsByCustomer(@PathVariable Long customerId) {
+    	System.out.println(">>> customerId: " + customerId);
         return bookingService.getBookingsByCustomer(customerId);
     }
 
@@ -34,6 +42,12 @@ public class BookingController {
     @GetMapping("/{id}")
     public BookingResponseDTO getBookingById(@PathVariable Long id) {
         return bookingService.getBooking(id);
+    }
+    //Lấy bookings của user hiện tại
+    @GetMapping("/user")
+    public List<BookingResponseDTO> getBookingsForCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        UserDTO user = userService.getUserByEmail(userDetails.getUsername());
+        return bookingService.getBookingsByCustomer(user.getId());
     }
 
     // Tạo booking (cần truyền customerId + request)
