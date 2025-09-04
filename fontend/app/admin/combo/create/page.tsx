@@ -303,10 +303,23 @@ export default function CreateComboPage() {
 
     console.log(formDataToSend);
 
-    const response = await fetch("http://localhost:8080/apis/v1/combos", {
-      method: "POST",
-      body: formDataToSend,
-    })
+    try {
+      const response = await fetch("http://localhost:8080/apis/v1/combos", {
+        method: "POST",
+        body: formDataToSend,
+      })
+
+      if (!response.ok) throw new Error("Tạo combo thất bại")
+
+      // Lưu trạng thái thành công vào sessionStorage
+      sessionStorage.setItem("comboSuccess", "1")
+
+      // Redirect bình thường
+      router.push("/admin/combo")
+    } catch (error) {
+      console.error("Error creating combo:", error)
+      alert("Có lỗi xảy ra khi tạo combo")
+    }
   }
 
 

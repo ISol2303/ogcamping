@@ -53,7 +53,7 @@ public class ComboController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ComboResponseDTO> getOne(@PathVariable Long id) {
+    public ResponseEntity<ComboResponseDTO> getOne(@PathVariable("id") Long id) {
         return ResponseEntity.ok(comboService.getCombo(id));
     }
 

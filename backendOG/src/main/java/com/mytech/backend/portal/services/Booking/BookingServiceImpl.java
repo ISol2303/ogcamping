@@ -19,6 +19,7 @@ import com.mytech.backend.portal.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -39,6 +40,7 @@ public class BookingServiceImpl implements BookingService {
     private final CustomerRepository customerRepository;
     private final ServiceAvailabilityRepository serviceAvailabilityRepository;
     private final EquipmentRepository equipmentRepository;
+    private final BookingItemRepository bookingItemRepository;
 
     @Override
     @Transactional
@@ -276,6 +278,48 @@ public class BookingServiceImpl implements BookingService {
         return mapToDTO(booking);
     }
 
+    @Override
+    public long getConfirmedBookingsForCombo(Long comboId) {
+        return bookingItemRepository.countByComboAndBookingStatus(
+                comboId,
+                BookingStatus.CONFIRMED
+        );
+    }
+    @Override
+    public long getRevenueByCombo(Long comboId) {
+        return bookingItemRepository.getTotalRevenueByComboAndStatus(
+                comboId, BookingStatus.CONFIRMED
+        );
+    }
+
+    @Override
+    public long getMonthlyRevenueByCombo(Long comboId) {
+        return bookingItemRepository.getMonthlyRevenueByComboAndStatus(
+                comboId, BookingStatus.CONFIRMED
+        );
+    }
+    public BigDecimal getTotalSavings(Long comboId) {
+        Combo combo = comboRepository.findById(comboId)
+                .orElseThrow(() -> new RuntimeException("Combo not found"));
+
+        long confirmedCount = bookingItemRepository.countByComboIdAndBookingStatus(
+                comboId,
+                BookingStatus.CONFIRMED
+        );
+
+        if (combo.getOriginalPrice() == null || combo.getPrice() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // Convert Double -> BigDecimal để trừ
+        BigDecimal savingPerBooking = BigDecimal.valueOf(combo.getOriginalPrice())
+                .subtract(BigDecimal.valueOf(combo.getPrice()));
+
+        return savingPerBooking.multiply(BigDecimal.valueOf(confirmedCount));
+    }
+    public long getTotalConfirmedBookingsFromAllCombos() {
+        return bookingItemRepository.countAllConfirmedComboBookings();
+    }
 
     // Mapper Booking -> DTO
     private BookingResponseDTO mapToDTO(Booking booking) {

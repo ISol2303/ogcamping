@@ -41,7 +41,6 @@ import {
   Percent,
 } from "lucide-react"
 import Link from "next/link"
-
 interface ComboItem {
   id: number
   name: string
@@ -63,13 +62,11 @@ interface Combo {
   rating: number
   reviewCount: number
   image: string
-  status: string
-  services: ComboItem[]
-  equipment: ComboItem[]
-  food: ComboItem[]
+  active: boolean
+  items: { serviceId: number; serviceName: string; quantity: number }[];
+  equipment: string[];
+  foods: string[];
   highlights: string[]
-  included: string[]
-  notIncluded: string[]
   tags: string[]
   location: string
   bookingCount: number
@@ -109,68 +106,76 @@ export default function ComboDetailPage() {
 
   useEffect(() => {
     fetchComboData()
+    console.log(combo);
   }, [comboId])
-
   const fetchComboData = async () => {
     try {
       setLoading(true)
-      // In production, this would fetch from API
-      const response = await fetch(`/apis/v1/combo?id=${comboId}`)
-      const data = await response.json()
 
-      if (data.success && data.data.length > 0) {
-        const comboData = data.data.find((c: Combo) => c.id === Number.parseInt(comboId))
-        setCombo(comboData)
-
-        // Mock additional data
-        const mockReviews: Review[] = [
-          {
-            id: 1,
-            customerName: "Nguyễn Văn A",
-            rating: 5,
-            comment:
-              "Combo tuyệt vời! Tiết kiệm được nhiều tiền và dịch vụ rất chất lượng. Thiết bị đầy đủ, đồ ăn ngon.",
-            date: "2024-01-18",
-            avatar: "/avatar1.png",
-          },
-          {
-            id: 2,
-            customerName: "Trần Thị B",
-            rating: 4,
-            comment: "Gói combo rất đáng giá. Chỉ có điều thời tiết hơi lạnh nhưng thiết bị giữ ấm rất tốt.",
-            date: "2024-01-16",
-            avatar: "/avatar2.png",
-          },
-          {
-            id: 3,
-            customerName: "Lê Văn C",
-            rating: 5,
-            comment:
-              "Lần đầu đặt combo nhưng rất hài lòng. Mọi thứ đều được chuẩn bị chu đáo, không phải lo lắng gì cả!",
-            date: "2024-01-14",
-            avatar: "/avatar3.png",
-          },
-        ]
-
-        const mockBookingStats: BookingStats = {
-          totalBookings: comboData?.bookingCount || 89,
-          monthlyBookings: 12,
-          revenue: (comboData?.price || 0) * (comboData?.bookingCount || 0),
-          monthlyRevenue: (comboData?.price || 0) * 12,
-          averageRating: comboData?.rating || 4.8,
-          completionRate: 98.5,
-          totalSavings: (comboData?.originalPrice - comboData?.price) * (comboData?.bookingCount || 0),
-        }
-
-        setReviews(mockReviews)
-        setBookingStats(mockBookingStats)
+      const response = await fetch(`http://localhost:8080/apis/v1/combos/${comboId}`)
+      if (!response.ok) {
+        throw new Error("Không thể fetch combo")
       }
+
+      const comboData: Combo = await response.json()
+      setCombo(comboData)
+      // Lấy tổng số booking confirmed
+
+      // Mock reviews
+      const mockReviews: Review[] = [
+        {
+          id: 1,
+          customerName: "Nguyễn Văn A",
+          rating: 5,
+          comment:
+            "Combo tuyệt vời! Tiết kiệm được nhiều tiền và dịch vụ rất chất lượng. Thiết bị đầy đủ, đồ ăn ngon.",
+          date: "2024-01-18",
+          avatar: "/avatar1.png",
+        },
+        {
+          id: 2,
+          customerName: "Trần Thị B",
+          rating: 4,
+          comment: "Gói combo rất đáng giá. Chỉ có điều thời tiết hơi lạnh nhưng thiết bị giữ ấm rất tốt.",
+          date: "2024-01-16",
+          avatar: "/avatar2.png",
+        },
+        {
+          id: 3,
+          customerName: "Lê Văn C",
+          rating: 5,
+          comment:
+            "Lần đầu đặt combo nhưng rất hài lòng. Mọi thứ đều được chuẩn bị chu đáo, không phải lo lắng gì cả!",
+          date: "2024-01-14",
+          avatar: "/avatar3.png",
+        },
+      ]
+      const confirmedRes = await fetch(`http://localhost:8080/apis/v1/bookings/${comboId}/confirmed-count`)
+      const confirmedCount = await confirmedRes.json()
+      const revenueRes = await fetch(`http://localhost:8080/apis/v1/bookings/${comboId}/revenue`)
+      const revenueData = await revenueRes.json()
+      const savingsResponse = await fetch(`http://localhost:8080/apis/v1/bookings/${comboId}/savings`)
+      const savingsData = await savingsResponse.json()
+      // Mock booking stats
+      const mockBookingStats: BookingStats = {
+        totalBookings: confirmedCount || 0,
+        monthlyBookings: savingsData.confirmedBookings, // nếu cần thì gọi API riêng
+        revenue: revenueData.totalRevenue || 0,
+        monthlyRevenue: revenueData.monthlyRevenue || 0,
+        averageRating: comboData.rating || 4.8,
+        completionRate: 98.5,
+        totalSavings: savingsData.totalSavings || 0,
+      }
+
+      setReviews(mockReviews)
+      setBookingStats(mockBookingStats)
     } catch (error) {
       console.error("Error fetching combo data:", error)
     } finally {
       setLoading(false)
     }
   }
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -187,14 +192,12 @@ export default function ComboDetailPage() {
     })
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: boolean) => {
     switch (status) {
-      case "active":
+      case true:
         return <Badge className="bg-green-100 text-green-800 border-0">Hoạt động</Badge>
-      case "inactive":
+      case false:
         return <Badge className="bg-gray-100 text-gray-800 border-0">Tạm dừng</Badge>
-      case "draft":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-0">Bản nháp</Badge>
       default:
         return <Badge variant="secondary">Không xác định</Badge>
     }
@@ -217,11 +220,19 @@ export default function ComboDetailPage() {
 
   const getItemCounts = () => {
     if (!combo) return { serviceCount: 0, equipmentCount: 0, foodCount: 0 }
-    const serviceCount = combo.services?.filter((s) => s.included).length || 0
-    const equipmentCount = combo.equipment?.filter((e) => e.included).length || 0
-    const foodCount = combo.food?.filter((f) => f.included).length || 0
+
+    // Đếm dịch vụ (số item trong mảng items)
+    const serviceCount = combo.items?.length || 0
+
+    // Đếm số thiết bị
+    const equipmentCount = combo.equipment?.length || 0
+
+    // Đếm số món ăn
+    const foodCount = combo.foods?.length || 0
+
     return { serviceCount, equipmentCount, foodCount }
   }
+
 
   if (loading) {
     return (
@@ -354,7 +365,7 @@ export default function ComboDetailPage() {
               <span className="font-semibold">{combo.rating}</span>
               <span className="text-gray-600">({combo.reviewCount} đánh giá)</span>
             </div>
-            {getStatusBadge(combo.status)}
+            {getStatusBadge(combo.active)}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 text-sm">
                 <Briefcase className="w-4 h-4 text-blue-600" />
@@ -413,13 +424,23 @@ export default function ComboDetailPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Tiết kiệm cho KH</p>
-                    <p className="text-3xl font-bold text-gray-900">{formatPrice(bookingStats.totalSavings)}</p>
-                    <p className="text-sm text-green-600">Từ combo này</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {formatPrice(bookingStats.totalSavings || 0)}
+                    </p>
+                    <p className="text-sm text-green-600">
+                      {bookingStats.totalSavings && combo.originalPrice && combo.originalPrice > 0
+                        ? `Tiết kiệm ${(
+                          (bookingStats.totalSavings / combo.originalPrice) *
+                          100
+                        ).toFixed(0)}% / booking`
+                        : ""}
+                    </p>
                   </div>
                   <Percent className="w-8 h-8 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
+
 
             <Card className="border-0 shadow-lg">
               <CardContent className="p-6">
@@ -481,7 +502,7 @@ export default function ComboDetailPage() {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Bao gồm:</h4>
                     <ul className="space-y-1">
-                      {combo.included.map((item, index) => (
+                      {combo.highlights.map((item, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm">
                           <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                           <span className="text-gray-700">{item}</span>
@@ -489,7 +510,7 @@ export default function ComboDetailPage() {
                       ))}
                     </ul>
                   </div>
-
+                  {/* 
                   {combo.notIncluded.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Không bao gồm:</h4>
@@ -502,7 +523,7 @@ export default function ComboDetailPage() {
                         ))}
                       </ul>
                     </div>
-                  )}
+                  )} */}
 
                   <div className="text-sm text-gray-500 pt-4 border-t">
                     <p>Tạo: {formatDate(combo.createdAt)}</p>
@@ -525,13 +546,13 @@ export default function ComboDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {combo.services
-                      .filter((s) => s.included)
+                    {combo.items
+                      .filter((s) => s.serviceId)
                       .map((service) => (
-                        <div key={service.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                        <div key={service.serviceId} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                           <div>
-                            <div className="font-medium text-gray-900">{service.name}</div>
-                            <div className="text-sm text-gray-600">{formatPrice(service.price)}</div>
+                            <div className="font-medium text-gray-900">{service.serviceName}</div>
+                            {/* <div className="text-sm text-gray-600">{formatPrice(service.price)}</div> */}
                           </div>
                           <CheckCircle className="w-5 h-5 text-green-600" />
                         </div>
@@ -550,22 +571,18 @@ export default function ComboDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {combo.equipment
-                      .filter((e) => e.included)
-                      .map((equipment) => (
-                        <div
-                          key={equipment.id}
-                          className="flex items-center justify-between p-3 bg-purple-50 rounded-lg"
-                        >
-                          <div>
-                            <div className="font-medium text-gray-900">{equipment.name}</div>
-                            <div className="text-sm text-gray-600">
-                              {formatPrice(equipment.price)} x {equipment.quantity}
-                            </div>
-                          </div>
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                    {combo.equipment?.map((eq, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-purple-50 rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-900">{eq}</div>
+                          <div className="text-sm text-gray-600">Số lượng: 1</div>
                         </div>
-                      ))}
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -580,19 +597,18 @@ export default function ComboDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {combo.food
-                      .filter((f) => f.included)
-                      .map((food) => (
-                        <div key={food.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                          <div>
-                            <div className="font-medium text-gray-900">{food.name}</div>
-                            <div className="text-sm text-gray-600">
-                              {formatPrice(food.price)} x {food.quantity}
-                            </div>
-                          </div>
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                    {combo.foods?.map((food, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium text-gray-900">{food}</div>
+                          <div className="text-sm text-gray-600">Số lượng: 1</div>
                         </div>
-                      ))}
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -623,9 +639,8 @@ export default function ComboDetailPage() {
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Star
                                 key={star}
-                                className={`w-4 h-4 ${
-                                  star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                                }`}
+                                className={`w-4 h-4 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                  }`}
                               />
                             ))}
                             <span className="text-sm text-gray-600 ml-1">({review.rating}/5)</span>

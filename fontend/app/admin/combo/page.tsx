@@ -71,6 +71,7 @@ interface Combo {
   updatedAt: string
 }
 
+import { useSearchParams } from "next/navigation"
 export default function ComboManagement() {
   const [combos, setCombos] = useState<Combo[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,12 +80,28 @@ export default function ComboManagement() {
   const [locationFilter, setLocationFilter] = useState("all")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [selectedCombo, setSelectedCombo] = useState<Combo | null>(null)
+  const [totalBookings, setTotalBookings] = useState<number>(0)
+  const [showMessage, setShowMessage] = useState(false)
 
-  // Fetch combos from API
   useEffect(() => {
     fetchCombos()
+    fetchTotalBookings()
+    const success = sessionStorage.getItem("comboSuccess")
+    if (success) {
+      setShowMessage(true)
+      sessionStorage.removeItem("comboSuccess") // xoá ngay để tránh hiển thị lại khi reload
+    }
   }, [])
-
+  const fetchTotalBookings = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/apis/v1/bookings/countAllBookingsByAllCombo")
+      if (!response.ok) throw new Error("Failed to fetch total bookings")
+      const data = await response.json()
+      setTotalBookings(data) // API trả về kiểu số (long)
+    } catch (error) {
+      console.error("Error fetching total bookings:", error)
+    }
+  }
   const fetchCombos = async () => {
     try {
       setLoading(true)
@@ -247,6 +264,11 @@ export default function ComboManagement() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {showMessage && (
+          <div className="mb-4 p-3 rounded bg-green-100 text-green-800 font-medium">
+            Tạo combo thành công!
+          </div>
+        )}
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Combo</h1>
@@ -288,10 +310,7 @@ export default function ComboManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tổng Booking</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {combos.reduce((sum, combo) => sum + (combo.bookingCount ?? 0), 0)}
-
-                  </p>
+                  <p className="text-3xl font-bold text-gray-900">{totalBookings}</p>
                   <p className="text-sm text-green-600">Từ combo</p>
                 </div>
                 <Users className="w-8 h-8 text-purple-600" />
