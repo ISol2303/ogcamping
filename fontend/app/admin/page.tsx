@@ -75,7 +75,7 @@ import {
   ApiError,
   fetchUser,
 } from '../api/admin';
-import jwtDecode from 'jwt-decode';
+import {jwtDecode} from 'jwt-decode';
 
 interface Stat {
   title: string;

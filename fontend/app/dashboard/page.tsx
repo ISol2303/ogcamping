@@ -22,7 +22,7 @@ import {
   MessageCircle,
   Star,
 } from 'lucide-react';
-import jwt_decode from 'jwt-decode';
+import {jwtDecode} from 'jwt-decode';
 import Link from 'next/link';
 interface Payment {
   id: number;
@@ -152,7 +152,7 @@ export default function DashboardPage() {
         }
 
         // 2. Decode JWT để lấy email
-        const decoded: JwtPayload = jwt_decode(token);
+        const decoded: JwtPayload = jwtDecode(token);
         if (!decoded.sub) throw new Error("Email không hợp lệ trong token");
 
         // 3. Set Authorization header
