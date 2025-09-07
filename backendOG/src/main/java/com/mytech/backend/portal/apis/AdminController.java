@@ -7,11 +7,13 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.mytech.backend.portal.services.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,18 +38,10 @@ import com.mytech.backend.portal.dto.ServiceResponseDTO;
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.services.AdminService;
-import com.mytech.backend.portal.services.AreaService;
-import com.mytech.backend.portal.services.BookingService;
-import com.mytech.backend.portal.services.CategoryService;
-import com.mytech.backend.portal.services.GearService;
-import com.mytech.backend.portal.services.LocationService;
-import com.mytech.backend.portal.services.PromotionService;
-import com.mytech.backend.portal.services.ServiceService;
-import com.mytech.backend.portal.services.UserService;
 
 @RestController
 @RequestMapping("/apis/v1/admin")
+@PreAuthorize("hasRole('ADMIN')")
 @CrossOrigin(origins = "http://localhost:3000")
 public class AdminController {
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
@@ -231,6 +225,41 @@ public class AdminController {
             throw new RuntimeException("Failed to create service: " + e.getMessage(), e);
         }
     }
+    private PackageService packageService;
+
+    @GetMapping("/user/{id}")
+    public ResponseEntity<UserDTO> fetchUser(@PathVariable Long id) {
+        UserDTO user = userService.findById(id);
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<List<StatDTO>> fetchStats(@RequestParam String period) {
+        return ResponseEntity.ok(adminService.getStats(period));
+    }
+
+//    @GetMapping("/bookings")
+//    public ResponseEntity<List<BookingDTO>> fetchBookings() {
+//        return ResponseEntity.ok(bookingService.getBookings());
+//    }
+
+
+//
+//    @PostMapping("/staff")
+//    public ResponseEntity<UserDTO> createStaff(@RequestBody CreateStaffRequest request) {
+//        UserDTO dto = new UserDTO();
+//        dto.setName(request.getName());
+//        dto.setEmail(request.getEmail());
+//        dto.setPhone(request.getPhone());
+//        dto.setPassword(request.getPassword()); // encode trong service
+//        dto.setRole("STAFF");
+//        dto.setDepartment(request.getDepartment());
+//        dto.setJoinDate(request.getJoinDate());
+//        dto.setStatus(request.getStatus().name()); // nếu request.getStatus() là enum
+//        return ResponseEntity.ok(userService.createUser(dto));
+//    }
+
+    
 
     @GetMapping("/gears")
     public ResponseEntity<List<GearDTO>> fetchEquipment() {

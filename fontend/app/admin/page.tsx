@@ -62,7 +62,6 @@ import {
   checkBooking,
   createService,
   deleteService,
-  createEquipment,
   fetchCurrentUser,
   ApiError,
 } from '../api/admin';
@@ -172,7 +171,9 @@ interface Equipment {
   available: number;
   pricePerDay: number;
   total: number;
-  status: 'available' | 'out_of_stock';
+  status: 'AVAILABLE' | 'OUT_OF_STOCK'; // Updated to match package.ts
+  image?: string;
+  createdAt?: string;
 }
 
 interface Customer {
@@ -253,8 +254,8 @@ const statusMap: { [key: string]: string } = {
   cancelled: 'Đã hủy',
   active: 'Hoạt động',
   inactive: 'Không hoạt động',
-  available: 'Có sẵn',
-  out_of_stock: 'Hết hàng',
+  AVAILABLE: 'Có sẵn', // Updated
+  OUT_OF_STOCK: 'Hết hàng', // Updated
   sufficient: 'Đủ',
   low: 'Số lượng thấp',
   expired: 'Hết hạn',
@@ -294,7 +295,7 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case 'confirmed':
     case 'active':
-    case 'available':
+    case 'AVAILABLE': // Updated
     case 'sufficient':
       return <Badge className="bg-green-100 text-green-800">{translatedStatus}</Badge>;
     case 'completed':
@@ -304,7 +305,7 @@ const getStatusBadge = (status: string) => {
       return <Badge className="bg-yellow-100 text-yellow-800">{translatedStatus}</Badge>;
     case 'cancelled':
     case 'inactive':
-    case 'out_of_stock':
+    case 'OUT_OF_STOCK': // Updated
       return <Badge className="bg-red-100 text-red-800">{translatedStatus}</Badge>;
     case 'low':
       return <Badge className="bg-orange-100 text-orange-800">{translatedStatus}</Badge>;
@@ -315,8 +316,6 @@ const getStatusBadge = (status: string) => {
       return <Badge variant="secondary">{translatedStatus}</Badge>;
   }
 };
-
-
 
 const createNotification = async (token: string, notification: { title: string; content: string; recipient: string }) => {
   // Giả lập API call
@@ -454,7 +453,7 @@ export default function AdminDashboard() {
     quantityInStock: 0,
     available: 0,
     pricePerDay: 0,
-    status: 'available' as 'available' | 'out_of_stock',
+    status: 'AVAILABLE' as 'AVAILABLE' | 'OUT_OF_STOCK', // Updated
   });
   const [equipmentImageFile, setEquipmentImageFile] = useState<File | null>(null);
   const [notificationFormData, setNotificationFormData] = useState({
@@ -497,12 +496,12 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (window.location.pathname.includes('/dang-nhap')) return;
+        if (window.location.pathname.includes('/login')) return;
 
         let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         if (!token) {
           setHasRedirected(true);
-          router.push('/dang-nhap?error=khong-co-token');
+          router.push('/login?error=khong-co-token');
           return;
         }
 
@@ -513,7 +512,7 @@ export default function AdminDashboard() {
           setHasRedirected(true);
           localStorage.removeItem('authToken');
           sessionStorage.removeItem('authToken');
-          router.push('/dang-nhap?error=token-khong-hop-le');
+          router.push('/login?error=token-khong-hop-le');
           return;
         }
 
@@ -531,7 +530,7 @@ export default function AdminDashboard() {
           setHasRedirected(true);
           localStorage.removeItem('authToken');
           sessionStorage.removeItem('authToken');
-          router.push('/dang-nhap?error=khong-co-quyen');
+          router.push('/login?error=khong-co-quyen');
           return;
         }
 
@@ -674,7 +673,7 @@ export default function AdminDashboard() {
         setBookings(validateArray(bookingsData, 'đặt chỗ'));
         setStaff(validateArray(staffData, 'nhân viên'));
         setServices(validateArray(servicesData, 'dịch vụ'));
-        setEquipment(validateArray(equipmentData, 'thiết bị'));
+        setEquipment(validateArray(equipmentData, 'thiết bị')); // Line 677
         setCustomers(validateArray(customersData, 'khách hàng'));
         setLocations(validateArray(locationsData, 'địa điểm'));
         setInventory(validateArray(inventoryData, 'kho'));
@@ -708,7 +707,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        router.push('/dang-nhap');
+        router.push('/login');
         return;
       }
       await checkBooking(token, bookingId, action);
@@ -716,7 +715,7 @@ export default function AdminDashboard() {
       setBookings(bookingsData.filter((item) => item._id && typeof item._id === 'string'));
     } catch (error: any) {
       const apiError = error as ApiError;
-      setError(apiError.message || ` not ${action === 'checkin' ? 'nhận phòng' : 'trả phòng'}`);
+      setError(apiError.message || `Không thể ${action === 'checkin' ? 'nhận phòng' : 'trả phòng'}`);
     }
   };
 
@@ -724,7 +723,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        router.push('/dang-nhap');
+        router.push('/login');
         return;
       }
       await deleteService(token, serviceId);
@@ -748,7 +747,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        router.push('/dang-nhap');
+        router.push('/login');
         return;
       }
       // Giả lập API call để cập nhật trạng thái báo cáo
@@ -767,7 +766,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        router.push('/dang-nhap');
+        router.push('/login');
         return;
       }
       await createNotification(token, notificationFormData);
@@ -939,7 +938,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>Tổng quan hoạt động</CardTitle>
-                      <CardDescription>Thông tin tổng quan về doanh thu, đặt chỗ và báo cáo</CardDescription>
+                      <CardDescription>Thông tin tổng quan về doanh thu, đặt chỗ</CardDescription>
                     </div>
                     <Dialog open={isCreateNotificationOpen} onOpenChange={setIsCreateNotificationOpen}>
                       <DialogTrigger asChild>
@@ -1127,143 +1126,12 @@ export default function AdminDashboard() {
                       <CardTitle>Quản lý Nhân viên</CardTitle>
                       <CardDescription>Quản lý đội ngũ nhân viên</CardDescription>
                     </div>
-                    <Dialog open={isCreateStaffOpen} onOpenChange={setIsCreateStaffOpen}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-green-600 hover:bg-green-700 text-white">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Thêm nhân viên
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Thêm nhân viên mới</DialogTitle>
-                          <DialogDescription>Điền thông tin nhân viên</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="name" className="text-right">Họ tên</Label>
-                            <Input
-                              id="name"
-                              value={staffFormData.name}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, name: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="email" className="text-right">Email</Label>
-                            <Input
-                              id="email"
-                              value={staffFormData.email}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="password" className="text-right">Mật khẩu</Label>
-                            <Input
-                              id="password"
-                              type="password"
-                              value={staffFormData.password}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, password: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="phone" className="text-right">Số điện thoại</Label>
-                            <Input
-                              id="phone"
-                              value={staffFormData.phone}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, phone: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="role" className="text-right">Vai trò</Label>
-                            <Select
-                              value={staffFormData.role}
-                              onValueChange={(value) =>
-                                setStaffFormData({ ...staffFormData, role: value as 'staff' | 'manager' | 'guide' })
-                              }
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Chọn vai trò" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="staff">Nhân viên</SelectItem>
-                                <SelectItem value="manager">Quản lý</SelectItem>
-                                <SelectItem value="guide">Hướng dẫn viên</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="department" className="text-right">Phòng ban</Label>
-                            <Input
-                              id="department"
-                              value={staffFormData.department}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, department: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="joinDate" className="text-right">Ngày tham gia</Label>
-                            <Input
-                              id="joinDate"
-                              type="date"
-                              value={staffFormData.joinDate}
-                              onChange={(e) => setStaffFormData({ ...staffFormData, joinDate: e.target.value })}
-                              className="col-span-3"
-                            />
-                          </div>
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="status" className="text-right">Trạng thái</Label>
-                            <Select
-                              value={staffFormData.status}
-                              onValueChange={(value) =>
-                                setStaffFormData({ ...staffFormData, status: value as 'active' | 'inactive' })
-                              }
-                            >
-                              <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Chọn trạng thái" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="active">Hoạt động</SelectItem>
-                                <SelectItem value="inactive">Không hoạt động</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const token = localStorage.getItem('authToken');
-                              if (!token) {
-                                router.push('/dang-nhap');
-                                return;
-                              }
-                              await createStaff(token, staffFormData);
-                              setIsCreateStaffOpen(false);
-                              setStaffFormData({
-                                name: '',
-                                email: '',
-                                phone: '',
-                                password: '',
-                                role: 'staff',
-                                department: '',
-                                joinDate: new Date().toISOString().split('T')[0],
-                                status: 'active',
-                              });
-                              const staffData = await fetchStaff(token);
-                              setStaff(staffData.filter((item) => item._id && typeof item._id === 'string'));
-                            } catch (error: any) {
-                              const apiError = error as ApiError;
-                              setError(apiError.message || 'Không thể thêm nhân viên');
-                            }
-                          }}
-                        >
-                          Thêm nhân viên
-                        </Button>
-                      </DialogContent>
-                    </Dialog>
+                     <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+                      <Link href="/admin/staff/new">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Thêm thiết bị
+                      </Link>
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1317,75 +1185,75 @@ export default function AdminDashboard() {
               </Card>
             </TabsContent>
 
-          <TabsContent value="services">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Quản lý Dịch vụ</CardTitle>
-                    <CardDescription>Quản lý các dịch vụ cắm trại</CardDescription>
+            <TabsContent value="services">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Quản lý Dịch vụ</CardTitle>
+                      <CardDescription>Quản lý các dịch vụ cắm trại</CardDescription>
+                    </div>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+                      <Link href="/admin/services/new">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Thêm dịch vụ
+                      </Link>
+                    </Button>
                   </div>
-                  <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
-                    <Link href="/admin/services/new">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Thêm dịch vụ
-                    </Link>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tên dịch vụ</TableHead>
-                      <TableHead>Giá</TableHead>
-                      <TableHead>Địa điểm</TableHead>
-                      <TableHead>Đánh giá</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead>Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {services.length > 0 ? (
-                      services.map((service, index) => (
-                        <TableRow key={service._id || `service-${index}`}>
-                          <TableCell className="font-medium">{service.name}</TableCell>
-                          <TableCell>{service.price.toLocaleString('vi-VN')} VNĐ</TableCell>
-                          <TableCell>{service.location}</TableCell>
-                          <TableCell>{service.averageRating} ({service.totalReviews} đánh giá)</TableCell>
-                          <TableCell>{getStatusBadge('available')}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-600 hover:text-red-800"
-                                onClick={() => handleDeleteService(service._id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên dịch vụ</TableHead>
+                        <TableHead>Giá</TableHead>
+                        <TableHead>Địa điểm</TableHead>
+                        <TableHead>Đánh giá</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead>Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {services.length > 0 ? (
+                        services.map((service, index) => (
+                          <TableRow key={service._id || `service-${index}`}>
+                            <TableCell className="font-medium">{service.name}</TableCell>
+                            <TableCell>{service.price.toLocaleString('vi-VN')} VNĐ</TableCell>
+                            <TableCell>{service.location}</TableCell>
+                            <TableCell>{service.averageRating} ({service.totalReviews} đánh giá)</TableCell>
+                            <TableCell>{getStatusBadge('available')}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-800"
+                                  onClick={() => handleDeleteService(service._id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center">
+                            Không có dữ liệu dịch vụ
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center">
-                          Không có dữ liệu dịch vụ
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="equipment">
               <Card>

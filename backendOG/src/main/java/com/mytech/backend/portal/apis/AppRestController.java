@@ -1,6 +1,5 @@
 package com.mytech.backend.portal.apis;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +19,7 @@ import com.mytech.backend.portal.dto.SignUpRequest;
 import com.mytech.backend.portal.jwt.JwtUtils;
 import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.services.UserService;
+
 
 @RestController
 @RequestMapping("/apis/**")

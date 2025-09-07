@@ -1,6 +1,10 @@
 package com.mytech.backend.portal.apis;
 
 import java.util.List;
+
+import com.mytech.backend.portal.dto.StatDTO;
+import com.mytech.backend.portal.services.StatService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,8 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mytech.backend.portal.dto.StatDTO;
-import com.mytech.backend.portal.services.StatService;
 
 @RestController
 @RequestMapping("/apis/v1/stats")

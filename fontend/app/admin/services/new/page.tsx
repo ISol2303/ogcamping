@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PackageFormData, Gear, GearSelection, Category, AreaData as Area } from '@/app/api/package';
-import { fetchGears, fetchCategories, fetchAreas, createPackage, fetchCurrentUser } from '@/app/api/admin';
+import { fetchGears, fetchCategories, fetchAreas, createService, fetchUser } from '@/app/api/admin';
 import PackageInfoForm from './components/package-info-form';
-import PackageSetupForm from './components/package-setup-form';
 import PackageConfirmation from './components/package-confirmation';
 import { StepIndicator } from './components/step-indicator';
 import { Button } from '@/components/ui/button';
@@ -18,30 +17,46 @@ interface ApiError {
   data: any;
   message: string;
 }
-
 export default function NewPackagePage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PackageFormData>({
-    name: '',
-    location: '',
-    days: '',
-    food_type: '',
-    tent_type: '',
-    activities: '',
-    max_people: '',
-    available_slots: '',
-    price: '',
-    description: '',
-    status: (arg0: string, status: any) => {}, // Default function for status
-    category: (arg0: string, category: any) => {}, // Default function for category
-    duration: '', // Add default value for duration
+    name: "",
+    location: "",
+    days: "",           // nếu đây là string input, để "" (nếu là số thì đổi thành 0)
+    food_type: "",
+    tent_type: "",
+    activities: "",
+    max_people: 0,      // số → mặc định 0
+    available_slots: 0, // số → mặc định 0
+    price: 0,           // số → mặc định 0
+    description: "",
+
+    // bổ sung các field mới theo DTO đã nói
+    tag: "",                 // "POPULAR" | "NEW" | "DISCOUNT" | ""
+    duration: "",            // "2-3 ngày"
+    capacity: "",            // "4-6 người"
+    isExperience: false,
+    minDays: 1,
+    maxDays: 1,
+    peoplePerSession: 1,
+
+    minCapacity: 0,
+    maxCapacity: 0,
+    defaultSlotsPerDay: 0,
+
+    allowExtraPeople: false,
+    extraFeePerPerson: 0,
+    maxExtraPeople: 0,
+
+    highlights: [],      // ⚠️ phải là mảng
+    included: [],        // ⚠️ phải là mảng
+    itinerary: [],       // ⚠️ phải là mảng các object
   });
-  const [image, setImage] = useState<File | null>(null);
+
+  const [images, setImages] = useState<File[]>([]);
+  const [extraImages, setExtraImages] = useState<string[]>([]);
   const [gearSelections, setGearSelections] = useState<GearSelection[]>([]);
-  const [gears, setGears] = useState<Gear[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
@@ -57,12 +72,12 @@ export default function NewPackagePage() {
       }
 
       try {
-        const user = await fetchCurrentUser(token, 1); // TODO: Replace with token decode
+        const user = await fetchUser(token, 1); // TODO: Replace with token decode
         setUserId(Number(user._id));
       } catch (err: any) {
         const status = err.status || 500;
         const message = err.message || 'Failed to fetch user';
-        console.error('Error fetching user:', { status, message });
+        // console.error('Error fetching user:', { status, message });
         setError(message);
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
@@ -91,13 +106,10 @@ export default function NewPackagePage() {
           fetchAreas(token),
         ]);
 
-        setGears(gearsData);
-        setCategories(categoriesData);
-        setAreas(areasData);
       } catch (err: any) {
         const status = err.status || 500;
         const message = err.message || 'Failed to fetch data';
-        console.error('Error fetching data:', { status, message });
+        // console.error('Error fetching data:', { status, message });
         if (status === 401 || status === 403) {
           setError('Unauthorized. Please log in again.');
           localStorage.removeItem('authToken');
@@ -115,24 +127,87 @@ export default function NewPackagePage() {
   }, [router]);
 
   // Handle navigation to the next step
-  const handleNext = () => {
-    if (currentStep === 1) {
-      // Validate required fields for step 1
-      if (!formData.name || !formData.location || !formData.days || !formData.max_people || !formData.available_slots || !formData.price) {
-        setError('Please fill in all required fields.');
-        return;
+  const validateStep1 = () => {
+    const {
+      name,
+      location,
+      price,
+      tag,
+      isExperience,
+      minDays,
+      maxDays,
+      peoplePerSession,
+      minCapacity,
+      maxCapacity,
+      allowExtraPeople,
+      extraFeePerPerson,
+      maxExtraPeople,
+    } = formData;
+
+    // Required cơ bản
+    if (!name || !location || !price) {
+      return 'Vui lòng nhập đầy đủ Tên gói, Địa điểm và Giá.';
+    }
+
+    if (Number(price) < 0) {
+      return 'Giá phải lớn hơn hoặc bằng 0.';
+    }
+
+    // Nếu KHÔNG phải trải nghiệm thì bắt buộc nhập minDays và maxDays
+    if (!isExperience) {
+      if (!minDays || !maxDays) {
+        return 'Vui lòng nhập số ngày tối thiểu và tối đa.';
       }
-      if (Number(formData.days) < 1 || Number(formData.max_people) < 1 || Number(formData.available_slots) < 1 || Number(formData.price) < 0) {
-        setError('Days, max people, and available slots must be at least 1, and price must be non-negative.');
-        return;
+      if (Number(minDays) < 1 || Number(maxDays) < Number(minDays)) {
+        return 'Số ngày tối thiểu phải ≥ 1 và nhỏ hơn hoặc bằng số ngày tối đa.';
       }
-    } else if (currentStep === 2) {
-      // Validate gear selections for step 2
-      if (gearSelections.some((selection) => !selection.gear_id)) {
-        setError('Please select a gear for all selections.');
-        return;
+      // Validate capacity
+      if (!minCapacity || !maxCapacity) {
+        return 'Vui lòng nhập số người tối thiểu, tối đa';
+      }
+      if (Number(minCapacity) < 1 || Number(maxCapacity) < Number(minCapacity)) {
+        return 'Sức chứa tối thiểu phải ≥ 1 và nhỏ hơn hoặc bằng sức chứa tối đa.';
+      }
+    } else {
+      // Nếu là trải nghiệm thì bắt buộc nhập peoplePerSession
+      if (!peoplePerSession || Number(peoplePerSession) < 1) {
+        return 'Vui lòng nhập số người / lượt hợp lệ.';
       }
     }
+
+
+
+    // Nếu cho phép thêm người thì validate phụ thu
+    if (allowExtraPeople) {
+      if (!extraFeePerPerson || Number(extraFeePerPerson) <= 0) {
+        return 'Phí phụ thu / người phải > 0.';
+      }
+      if (!maxExtraPeople || Number(maxExtraPeople) < 1) {
+        return 'Số người vượt tối đa phải ≥ 1.';
+      }
+    }
+    // ✅ Validate ít nhất 1 ảnh
+    if (!images || images.length === 0) {
+      return 'Vui lòng chọn ít nhất 1 ảnh minh họa.';
+    }
+
+    return null;
+  };
+
+  const handleNext = () => {
+    let errorMsg: string | null = null;
+
+    if (currentStep === 1) {
+      errorMsg = validateStep1();
+    }
+    // nếu có step 2, 3 thì validate tương tự
+    // else if (currentStep === 2) { ... }
+
+    if (errorMsg) {
+      setError(errorMsg);
+      return;
+    }
+
     setError(null);
     setCurrentStep((prev) => Math.min(prev + 1, 3));
   };
@@ -151,22 +226,14 @@ export default function NewPackagePage() {
       router.push('/login');
       return;
     }
-
-    // Validate all required fields
-    if (!formData.name || !formData.location || !formData.days || !formData.max_people || !formData.available_slots || !formData.price) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
     try {
       setIsLoading(true);
       setError(null);
-      await createPackage(token, formData, image, gearSelections);
+      await createService(token, formData, images, gearSelections);
       router.push('/admin/services');
     } catch (err: any) {
       const status = err.status || 500;
-      const message = err.message || 'Failed to create package';
-      console.error('Error creating package:', { status, message });
+      const message = err.message || 'Failed to create service';
       setError(message);
     } finally {
       setIsLoading(false);
@@ -181,7 +248,9 @@ export default function NewPackagePage() {
       </div>
     );
   }
-
+  const handleCancel = () => {
+    router.back(); // quay về trang trước
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -208,43 +277,34 @@ export default function NewPackagePage() {
               <PackageInfoForm
                 formData={formData}
                 setFormData={setFormData}
-                image={image}
-                setImage={setImage}
+                images={images}
+                setImages={setImages}
               />
             )}
             {currentStep === 2 && (
-              <PackageSetupForm
-                gears={gears}
-                gearSelections={gearSelections}
-                setGearSelections={setGearSelections}
-                onBack={handleBack}
-                onNext={handleNext}
-                categories={categories}
-                areas={areas}
-              />
-            )}
-            {currentStep === 3 && (
               <PackageConfirmation
                 formData={formData}
-                image={image}
-                gearSelections={gearSelections}
-                gears={gears}
+                images={images}
               />
             )}
 
+
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
+              <Button variant="destructive" onClick={handleCancel} disabled={isLoading}>
+                Huỷ
+              </Button>
               {currentStep > 1 && (
                 <Button variant="outline" onClick={handleBack} disabled={isLoading}>
                   Quay lại
                 </Button>
               )}
-              {currentStep < 3 && (
+              {currentStep < 2 && (
                 <Button onClick={handleNext} disabled={isLoading}>
                   Tiếp theo
                 </Button>
               )}
-              {currentStep === 3 && (
+              {currentStep === 2 && (
                 <Button onClick={handleSubmit} disabled={isLoading}>
                   {isLoading ? (
                     <>

@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
-import { jwtDecode } from 'jwt-decode';
+import {jwtDecode} from 'jwt-decode';
 
 // Import interfaces from package.ts
-import { Category, AreaData } from './package';
+import { Category, AreaData, Equipment } from './package';
 type Period = 'daily' | 'weekly' | 'monthly' | 'yearly';
 // Define interfaces for request and response data
 interface Stat {
@@ -83,27 +83,15 @@ interface ServiceRequest {
   itinerary: ItineraryDTO[];
 }
 
-interface Equipment {
-  _id: string;
-  name: string;
-  category: string;
-  area: string;
-  description: string;
-  quantityInStock: number;
-  available: number;
-  pricePerDay: number;
-  total: number;
-  status: 'available' | 'out_of_stock';
-}
 
 interface Customer {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-    bookings: number;
-    spent: number;
-    created_at: string;
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  bookings: number;
+  spent: number;
+  created_at: string;
 }
 
 interface User {
@@ -457,40 +445,10 @@ export const fetchStaff = async (token: string): Promise<Staff[]> => {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 10000,
     });
-    const staffData = response.data;
-    console.debug('fetchStaff response:', {
-      status: response.status,
-      data: staffData,
-      headers: response.headers,
-    });
-    
-    if (!Array.isArray(staffData)) {
-      console.warn('fetchStaff: Expected an array, received:', staffData);
-      throw new Error('Invalid staff data: Expected an array');
-    }
-
-    // Map response to ensure correct field types
-    const mappedStaff: Staff[] = staffData.map((item: any) => ({
-      _id: String(item.id || item._id),
-      name: item.name || 'Unknown',
-      email: item.email || '',
-      phone: item.phone || '',
-      role: ['staff', 'manager', 'guide'].includes(item.role?.toLowerCase()) 
-            ? item.role.toLowerCase() 
-            : 'staff',
-      department: item.department || '',
-      joinDate: item.joinDate || new Date().toISOString().split('T')[0],
-      status: ['active', 'inactive'].includes(item.status?.toLowerCase()) 
-              ? item.status.toLowerCase() 
-              : 'active',
-    }));
-
-    console.debug('Mapped staff:', mappedStaff);
-    return mappedStaff;
+    return response.data;
   } catch (error: any) {
-    const isAxiosError = axios.isAxiosError(error);
-    const status = isAxiosError ? error.response?.status || 500 : 500;
-    const data = isAxiosError ? error.response?.data || {} : {};
+    const status = error.response?.status || 500;
+    const data = error.response?.data || {};
     let message = data.error || data.message || error.message || 'Failed to fetch staff';
 
     if (status === 401) {
@@ -509,16 +467,14 @@ export const fetchStaff = async (token: string): Promise<Staff[]> => {
       status,
       message,
       data,
-      errorMessage: error.message || 'No error message',
-      errorCode: error.code || 'No error code',
-      stack: error.stack || 'No stack trace',
-      response: isAxiosError && error.response ? {
+      error: error.message,
+      stack: error.stack,
+      response: error.response ? {
         status: error.response.status,
         data: error.response.data,
         headers: error.response.headers,
       } : null,
     });
-
     throw { status, data, message } as ApiError;
   }
 };
@@ -721,7 +677,28 @@ export const fetchEquipment = async (token: string): Promise<Equipment[]> => {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 10000,
     });
-    return response.data;
+
+    const gears = response.data;
+    if (!Array.isArray(gears)) {
+      throw new Error('Invalid gears data: Expected an array');
+    }
+
+    const mapped: Equipment[] = gears.map((g: any) => ({
+      _id: String(g.id || g._id),
+      name: g.name || '',
+      category: typeof g.category === 'string' ? g.category : String(g.category || ''),
+      area: typeof g.area === 'string' ? g.area : String(g.area || ''),
+      description: g.description || '',
+      quantityInStock: Number(g.quantityInStock || 0),
+      available: Number(g.available || 0),
+      pricePerDay: Number(g.pricePerDay || 0),
+      total: Number(g.total || 0),
+      status: (String(g.status || 'AVAILABLE').toUpperCase() === 'OUT_OF_STOCK') ? 'OUT_OF_STOCK' : 'AVAILABLE',
+      image: g.image,
+      createdAt: g.createdAt,
+    }));
+
+    return mapped;
   } catch (error: any) {
     const isAxiosError = axios.isAxiosError(error);
     const status = isAxiosError ? error.response?.status || 500 : 500;
@@ -757,12 +734,23 @@ export const fetchEquipment = async (token: string): Promise<Equipment[]> => {
     throw { status, data, message } as ApiError;
   }
 };
+
 /**
  * Create equipment
  */
-export const createEquipment = async (token: string, p0: { total: number; name: string; category: string; area: string; description: string; quantityInStock: number; available: number; pricePerDay: number; status: "available" | "out_of_stock"; }, equipmentImageFile: File | null, formData: FormData): Promise<Equipment> => {
+export const createEquipment = async (
+  token: string,
+  equipmentData: CreateGearRequest,
+  imageFile: File | null
+): Promise<Equipment> => {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const formData = new FormData();
+    formData.append('gear', JSON.stringify(equipmentData));
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     const response = await axios.post(`${API_URL}/apis/v1/admin/gears`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -770,29 +758,10 @@ export const createEquipment = async (token: string, p0: { total: number; name: 
       },
       timeout: 10000,
     });
-    const equipmentData = response.data;
-    console.debug('createEquipment response:', {
-      status: response.status,
-      data: equipmentData,
-    });
-    return {
-      _id: String(equipmentData.id || equipmentData._id),
-      name: equipmentData.name || '',
-      category: equipmentData.category || '',
-      area: equipmentData.area || '',
-      description: equipmentData.description || '',
-      quantityInStock: equipmentData.quantityInStock || 0,
-      available: equipmentData.available || 0,
-      pricePerDay: equipmentData.pricePerDay || 0,
-      total: equipmentData.total || 0,
-      status: ['available', 'out_of_stock', 'maintenance'].includes(equipmentData.status?.toLowerCase())
-        ? equipmentData.status.toLowerCase()
-        : 'available',
-    };
+    return response.data;
   } catch (error: any) {
-    const isAxiosError = axios.isAxiosError(error);
-    const status = isAxiosError ? error.response?.status || 500 : 500;
-    const data = isAxiosError ? error.response?.data || {} : {};
+    const status = error.response?.status || 500;
+    const data = error.response?.data || {};
     let message = data.error || data.message || error.message || 'Failed to create equipment';
 
     if (status === 401) {
@@ -811,19 +780,18 @@ export const createEquipment = async (token: string, p0: { total: number; name: 
       status,
       message,
       data,
-      errorMessage: error.message || 'No error message',
-      errorCode: error.code || 'No error code',
-      stack: error.stack || 'No stack trace',
-      response: isAxiosError && error.response ? {
+      error: error.message,
+      stack: error.stack,
+      response: error.response ? {
         status: error.response.status,
         data: error.response.data,
         headers: error.response.headers,
       } : null,
     });
-
     throw { status, data, message } as ApiError;
   }
 };
+
 /**
  * Delete equipment
  */
@@ -871,65 +839,44 @@ export const deleteEquipment = async (token: string, equipmentId: string): Promi
  * Fetch customers
  */
 export const fetchCustomers = async (token: string): Promise<Customer[]> => {
-    try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const response = await axios.get(`${API_URL}/apis/v1/admin/customers`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000,
-        });
+  try {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const response = await axios.get(`${API_URL}/apis/v1/admin/customers`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000,
+    });
+    return response.data;
+  } catch (error: any) {
+    const status = error.response?.status || 500;
+    const data = error.response?.data || {};
+    let message = data.error || data.message || error.message || 'Failed to fetch customers';
 
-        const customers = response.data;
-        if (!Array.isArray(customers)) {
-            console.warn('fetchCustomers: Expected an array, received:', customers);
-            throw new Error('Invalid customers data: Expected an array');
-        }
-
-        const mappedCustomers: Customer[] = customers.map((user: any) => ({
-            _id: String(user.id), // Convert Long to string
-            name: user.name || 'Unknown',
-            email: user.email || '',
-            phone: user.phone || '',
-            bookings: user.bookings || 0,
-            spent: user.spent != null ? user.spent : 0,
-            created_at: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
-        }));
-
-        console.debug('Mapped customers:', mappedCustomers);
-        return mappedCustomers;
-    } catch (error: any) {
-        const isAxiosError = axios.isAxiosError(error);
-        const status = isAxiosError ? error.response?.status || 500 : 500;
-        const data = isAxiosError ? error.response?.data || {} : {};
-        let message = data.error || data.message || error.message || 'Failed to fetch customers';
-
-        if (status === 401) {
-            message = 'Xác thực thất bại. Vui lòng đăng nhập lại.';
-        } else if (status === 403) {
-            message = 'Bạn không có quyền truy cập. Vui lòng kiểm tra vai trò.';
-        } else if (status === 404) {
-            message = 'Không tìm thấy danh sách khách hàng.';
-        } else if (error.code === 'ERR_NETWORK') {
-            message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
-        } else if (status === 500) {
-            message = 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
-        }
-
-        console.error('Error fetching customers:', {
-            status,
-            message,
-            data,
-            errorMessage: error.message || 'No error message',
-            errorCode: error.code || 'No error code',
-            stack: error.stack || 'No stack trace',
-            response: isAxiosError && error.response ? {
-                status: error.response.status,
-                data: error.response.data,
-                headers: error.response.headers,
-            } : null,
-        });
-
-        throw { status, data, message } as ApiError;
+    if (status === 401) {
+      message = 'Xác thực thất bại. Vui lòng đăng nhập lại.';
+    } else if (status === 403) {
+      message = 'Bạn không có quyền truy cập. Vui lòng kiểm tra vai trò.';
+    } else if (status === 404) {
+      message = 'Không tìm thấy danh sách khách hàng.';
+    } else if (error.code === 'ERR_NETWORK') {
+      message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    } else if (status === 500) {
+      message = 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
     }
+
+    console.error('Error fetching customers:', {
+      status,
+      message,
+      data,
+      error: error.message,
+      stack: error.stack,
+      response: error.response ? {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+      } : null,
+    });
+    throw { status, data, message } as ApiError;
+  }
 };
 
 /**

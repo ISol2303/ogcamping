@@ -3,6 +3,13 @@ package com.mytech.backend.portal.apis;
 
 import java.time.LocalDate;
 
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.Status;
+import lombok.Data;
+
+import java.time.LocalDate;
+
+@Data
 public class CreateStaffRequest {
     private String name;
     private String email;

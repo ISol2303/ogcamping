@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tent, Users, Award, Heart, Sparkles, Settings } from "lucide-react"
 import Link from "next/link"
-import { login } from "../api/auth" // Import from auth.ts
 
 export default function AboutPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)

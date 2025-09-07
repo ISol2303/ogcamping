@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap, Settings } from "lucide-react"
 import Link from "next/link"
-import { login } from "../api/auth" // Import from auth.ts
 import { useChat } from "@/context/ChatContext"
 
 export default function AIConsultantPage() {

@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tent, Phone, Mail, MapPin, Clock, MessageCircle, Send, CheckCircle, Sparkles, Settings } from "lucide-react"
 import Link from "next/link"
-import { login } from "../api/auth" // Import from auth.ts
 
 export default function ContactPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)

@@ -108,13 +108,13 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md relative z-10">
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 group">
             <div className="relative">
               <img
                 src="/ai-avatar.jpg"
                 className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
-                alt="OG Camping Logo"
               />
               <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
             </div>
