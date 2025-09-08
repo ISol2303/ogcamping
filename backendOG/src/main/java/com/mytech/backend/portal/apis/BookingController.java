@@ -1,71 +1,107 @@
 package com.mytech.backend.portal.apis;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import com.mytech.backend.portal.dto.Booking.BookingRequestDTO;
+import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
+import com.mytech.backend.portal.dto.Rating.ReviewRequestDTO;
+import com.mytech.backend.portal.models.Booking.BookingStatus;
+import com.mytech.backend.portal.models.Combo.Combo;
+import com.mytech.backend.portal.repositories.BookingItemRepository;
+import com.mytech.backend.portal.repositories.ComboRepository;
+import com.mytech.backend.portal.services.Booking.BookingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.mytech.backend.portal.dto.BookingRequestDTO;
-import com.mytech.backend.portal.dto.BookingResponseDTO;
-import com.mytech.backend.portal.services.BookingService;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/apis/v1/bookings")
+@RequiredArgsConstructor
 public class BookingController {
+    private final BookingService bookingService;
+    private final ComboRepository comboRepository;
+    private final BookingItemRepository bookingItemRepository;
 
-    @Autowired
-    private BookingService bookingService;
-
-    // Lấy tất cả booking của 1 customer
-    @GetMapping("/customer/{customerId}")
-    public List<BookingResponseDTO> getBookingsByCustomer(@PathVariable Long customerId) {
-        return bookingService.getBookingsByCustomer(customerId);
+    @PostMapping
+    public ResponseEntity<BookingResponseDTO> placeBooking(
+            @RequestParam(name = "customerId") Long customerId,
+            @RequestBody BookingRequestDTO req) {
+        return ResponseEntity.ok(bookingService.placeBooking(customerId, req));
     }
 
-    // Lấy booking theo id
+
     @GetMapping("/{id}")
-    public BookingResponseDTO getBookingById(@PathVariable Long id) {
-        return bookingService.getBooking(id);
+    public ResponseEntity<BookingResponseDTO> getBooking(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(bookingService.getBooking(id));
     }
 
-    // Tạo booking (cần truyền customerId + request)
-    @PostMapping("/{customerId}")
-    public ResponseEntity<BookingResponseDTO> createBooking(
-            @PathVariable Long customerId,
-            @RequestBody BookingRequestDTO bookingRequest) {
-        return ResponseEntity.ok(bookingService.placeBooking(customerId, bookingRequest));
+
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<BookingResponseDTO>> getCustomerBookings(
+            @PathVariable("customerId") Long customerId) {
+        return ResponseEntity.ok(bookingService.getBookingsByCustomer(customerId));
     }
 
-    // Hủy booking
-    @PutMapping("/{id}/cancel")
+
+    @PostMapping("/{id}/cancel")
     public ResponseEntity<BookingResponseDTO> cancelBooking(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.cancelBooking(id));
     }
 
-    // Check-in
-    @PutMapping("/{id}/checkin")
-    public ResponseEntity<BookingResponseDTO> checkInBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.checkInBooking(id));
+    @PostMapping("/{id}/review")
+    public ResponseEntity<BookingResponseDTO> reviewBooking(
+            @PathVariable Long id,
+            @RequestBody ReviewRequestDTO req) {
+        return ResponseEntity.ok(bookingService.reviewBooking(id, req));
     }
 
-    // Check-out
-    @PutMapping("/{id}/checkout")
-    public ResponseEntity<BookingResponseDTO> checkOutBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.checkOutBooking(id));
+    @GetMapping("/{comboId}/confirmed-count")
+    public ResponseEntity<Long> getConfirmedBookingCount(@PathVariable("comboId") Long comboId) {
+        long count = bookingService.getConfirmedBookingsForCombo(comboId);
+        return ResponseEntity.ok(count);
+    }
+    @GetMapping("/{comboId}/revenue")
+    public ResponseEntity<Map<String, Long>> getRevenue(@PathVariable("comboId") Long comboId) {
+        long totalRevenue = bookingService.getRevenueByCombo(comboId);
+        long monthlyRevenue = bookingService.getMonthlyRevenueByCombo(comboId);
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("totalRevenue", totalRevenue);
+        result.put("monthlyRevenue", monthlyRevenue);
+
+        return ResponseEntity.ok(result);
+    }
+    @GetMapping("/{comboId}/savings")
+    public ResponseEntity<Map<String, Object>> getTotalSavings(@PathVariable("comboId") Long comboId) {
+        Combo combo = comboRepository.findById(comboId)
+                .orElseThrow(() -> new RuntimeException("Combo not found"));
+
+        long confirmedCount = bookingItemRepository.countByComboIdAndBookingStatus(
+                comboId,
+                BookingStatus.CONFIRMED
+        );
+
+        BigDecimal savingPerBooking = (combo.getOriginalPrice() != null && combo.getPrice() != null)
+                ? BigDecimal.valueOf(combo.getOriginalPrice()).subtract(BigDecimal.valueOf(combo.getPrice()))
+                : BigDecimal.ZERO;
+
+        BigDecimal totalSavings = bookingService.getTotalSavings(comboId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("comboId", comboId);
+        response.put("confirmedBookings", confirmedCount);
+        response.put("savingPerBooking", savingPerBooking);
+        response.put("totalSavings", totalSavings);
+
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/countAllBookingsByAllCombo")
+    public ResponseEntity<Long> getTotalConfirmedComboBookings() {
+        long total = bookingService.getTotalConfirmedBookingsFromAllCombos();
+        return ResponseEntity.ok(total);
     }
 
-    // Xóa booking
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
-        bookingService.cancelBooking(id); // hoặc tạo method deleteBooking trong serviceImpl
-        return ResponseEntity.noContent().build();
-    }
 }

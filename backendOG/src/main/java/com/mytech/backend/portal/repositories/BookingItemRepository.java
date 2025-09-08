@@ -1,10 +1,11 @@
 package com.mytech.backend.portal.repositories;
 
-import com.mytech.backend.portal.models.Booking.BookingItem;
-import com.mytech.backend.portal.models.Booking.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.mytech.backend.portal.models.Booking.BookingItem;
+import com.mytech.backend.portal.models.Booking.BookingStatus;
 
 public interface BookingItemRepository extends JpaRepository<BookingItem, Long> {
 

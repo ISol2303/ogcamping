@@ -1,6 +1,5 @@
 package com.mytech.backend.portal.models.Booking;
 
-import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Payment.Payment;
 import com.mytech.backend.portal.models.Service.Service;

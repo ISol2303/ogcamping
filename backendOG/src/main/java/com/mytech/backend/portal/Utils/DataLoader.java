@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,7 +29,7 @@ public class DataLoader {
     private final ServiceRepository serviceRepo;
     private final BookingRepository bookingRepo;
     private final ComboRepository comboRepo;
-
+    BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     @Bean
     CommandLineRunner seed(UserRepository userRepository, ServiceAvailabilityRepository serviceAvailabilityRepository) {
         return args -> {
@@ -36,11 +37,11 @@ public class DataLoader {
 
             // --- 1. Tạo User + Customer ---
             User u1 = userRepository.save(User.builder()
-                    .name("Nguyen An")
-                    .email("an@example.com")
-                    .password("123456")
+                    .name("ADMIN")
+                    .email("admin@gmail.com")
+                    .password(passwordEncoder.encode("123456"))
                     .phone("0909123456")
-                    .role(User.Role.CUSTOMER)
+                    .role(User.Role.ADMIN)
                     .status(User.Status.ACTIVE)
                     .build());
 
@@ -58,7 +59,7 @@ public class DataLoader {
             User u2 = userRepository.save(User.builder()
                     .name("Tran Binh")
                     .email("binh@example.com")
-                    .password("123456")
+                    .password(passwordEncoder.encode("123456"))
                     .phone("0909988776")
                     .role(User.Role.CUSTOMER)
                     .status(User.Status.ACTIVE)
@@ -78,7 +79,7 @@ public class DataLoader {
             User u3 = userRepository.save(User.builder()
                     .name("Le Cuong")
                     .email("cuong@example.com")
-                    .password("123456")
+                    .password(passwordEncoder.encode("123456"))
                     .phone("0912345678")
                     .role(User.Role.CUSTOMER)
                     .status(User.Status.ACTIVE)
@@ -97,7 +98,7 @@ public class DataLoader {
             User u4 = userRepository.save(User.builder()
                     .name("Pham Dung")
                     .email("dung@example.com")
-                    .password("123456")
+                    .password(passwordEncoder.encode("123456"))
                     .phone("0933445566")
                     .role(User.Role.CUSTOMER)
                     .status(User.Status.ACTIVE)
@@ -231,9 +232,9 @@ public class DataLoader {
                     .price(350_000.0)
                     .location("Thanh Hóa")
                     .active(true)
-                            .allowExtraPeople(true)
-                            .extraFeePerPerson(200000.0)
-                            .maxExtraPeople(3)
+                    .allowExtraPeople(true)
+                    .extraFeePerPerson(200000.0)
+                    .maxExtraPeople(3)
                     .imageUrl("/uploads/services/thuyen.jpg")
                     .build());
             // --- 3. Tạo Booking mẫu ---
@@ -266,6 +267,9 @@ public class DataLoader {
                     .description("Combo gia đình: Camping Sapa + Glamping Hạ Long + Buffet BBQ + Trekking Tour")
                     .price(3_000_000.0)
                     .active(true)
+                    .minDays(1).maxDays(3)
+                    .maxPeople(8)
+                    .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo adventureCombo = Combo.builder()
@@ -273,6 +277,9 @@ public class DataLoader {
                     .description("Combo phiêu lưu: Glamping biển Phú Quốc + Tour kayak Vịnh Hạ Long + Trekking Tour Sapa")
                     .price(2_800_000.0)
                     .active(true)
+                    .minDays(3).maxDays(4)
+                    .maxPeople(4)
+                    .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo natureCombo = Combo.builder()
@@ -280,6 +287,9 @@ public class DataLoader {
                     .description("Combo thiên nhiên: Camping hồ Ba Bể + Glamping núi Bà Nà + Buffet nướng Đà Lạt")
                     .price(2_500_000.0)
                     .active(true)
+                    .minDays(2).maxDays(3)
+                    .maxPeople(7)
+                    .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo beachCombo = Combo.builder()
@@ -287,6 +297,9 @@ public class DataLoader {
                     .description("Combo biển: Glamping biển Phú Quốc + Buffet hải sản Nha Trang + Camping đồi cát Mũi Né")
                     .price(3_200_000.0)
                     .active(true)
+                    .minDays(2).maxDays(3)
+                    .maxPeople(10)
+                    .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo mountainCombo = Combo.builder()
@@ -294,6 +307,9 @@ public class DataLoader {
                     .description("Combo núi: Glamping đồng cỏ Cát Tiên + Tour leo núi Fansipan + Camping rừng thông Đà Lạt")
                     .price(2_700_000.0)
                     .active(true)
+                    .minDays(1).maxDays(3)
+                    .maxPeople(2)
+                    .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo riverCombo = Combo.builder()
@@ -301,6 +317,9 @@ public class DataLoader {
                     .description("Combo sông nước: Tour chèo thuyền Cửu Chân + Camping hồ Ba Bể + Buffet BBQ ngoài trời")
                     .price(1_800_000.0)
                     .active(true)
+                    .minDays(1).maxDays(3)
+                    .maxPeople(8)
+                    .location("Củ Chi, TP.HCM")
                     .build();
             // --- 5. Tạo ComboItem ---
             ComboItem item1 = ComboItem.builder().combo(familyCombo).service(s1).quantity(1).build();

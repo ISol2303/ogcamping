@@ -41,114 +41,166 @@ public class ServiceServiceImpl implements ServiceService {
                 .orElseThrow(() -> new RuntimeException("Service not found"));
         return mapToDTO(service);
     }
-@Override
-public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile imageFile, MultipartFile[] extraImages   ) throws IOException {
-    // Tạo entity Service
-    Service service = Service.builder()
-            .name(req.getName())
-            .description(req.getDescription())
-            .price(req.getPrice())
-            .location(req.getLocation())
-            .minDays(req.getMinDays())
-            .maxDays(req.getMaxDays())
-            .minCapacity(req.getMinCapacity())
-            .maxCapacity(req.getMaxCapacity())
-            .active(true)
-            .isExperience(false)
-            .defaultSlotsPerDay(req.getDefaultSlotsPerDay())
-            .averageRating(0.0)
-            .totalReviews(0)
-            .duration(req.getDuration())
-            .capacity(req.getCapacity())
-            .tag(ServiceTag.valueOf(req.getTag().name()))
-            .highlights(req.getHighlights() != null ? req.getHighlights() : new ArrayList<>())
-            .included(req.getIncluded() != null ? req.getIncluded() : new ArrayList<>())
-            .build();
+    @Override
+    public ServiceResponseDTO createService(ServiceRequestDTO req, MultipartFile imageFile, MultipartFile[] extraImages   ) throws IOException {
+        // Tạo entity Service
+        Service service = Service.builder()
+                .name(req.getName())
+                .description(req.getDescription())
+                .price(req.getPrice())
+                .location(req.getLocation())
+                .minDays(req.getMinDays())
+                .maxDays(req.getMaxDays())
+                .minCapacity(req.getMinCapacity())
+                .maxCapacity(req.getMaxCapacity())
+                .active(true)
+                .isExperience(false)
+                .defaultSlotsPerDay(req.getDefaultSlotsPerDay())
+                .averageRating(0.0)
+                .totalReviews(0)
+                .duration(req.getDuration())
+                .capacity(req.getCapacity())
+                .tag(ServiceTag.valueOf(req.getTag().name()))
+                .highlights(req.getHighlights() != null ? req.getHighlights() : new ArrayList<>())
+                .included(req.getIncluded() != null ? req.getIncluded() : new ArrayList<>())
+                .build();
 
-    // Lưu ảnh nếu có
-//    if (imageFile != null && !imageFile.isEmpty()) {
-//        String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
-//        Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
-//        if (!Files.exists(uploadPath)) {
-//            Files.createDirectories(uploadPath);
-//        }
-//        Path filePath = uploadPath.resolve(fileName);
-//        imageFile.transferTo(filePath.toFile());
-//
-//        service.setImageUrl("/uploads/services/" + fileName); // đường dẫn relative
-//    }
-// 1. Lưu ảnh chính
-    if (imageFile != null && !imageFile.isEmpty()) {
-        String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
-        Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
-        if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
-        Path filePath = uploadPath.resolve(fileName);
-        imageFile.transferTo(filePath.toFile());
-        service.setImageUrl("/uploads/services/" + fileName);
-    }
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+            Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+            if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(fileName);
+            imageFile.transferTo(filePath.toFile());
+            service.setImageUrl("/uploads/services/" + fileName);
+        }
 
 // 2. Lưu ảnh phụ
-    List<String> extraImageUrls = new ArrayList<>();
-    if (extraImages != null) {
-        for (MultipartFile file : extraImages) {
-            if (!file.isEmpty()) {
-                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
-                if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
-                Path filePath = uploadPath.resolve(fileName);
-                file.transferTo(filePath.toFile());
-                extraImageUrls.add("/uploads/services/" + fileName);
+        List<String> extraImageUrls = new ArrayList<>();
+        if (extraImages != null) {
+            for (MultipartFile file : extraImages) {
+                if (!file.isEmpty()) {
+                    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                    Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+                    if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+                    Path filePath = uploadPath.resolve(fileName);
+                    file.transferTo(filePath.toFile());
+                    extraImageUrls.add("/uploads/services/" + fileName);
+                }
             }
         }
-    }
-    service.setExtraImageUrls(extraImageUrls); // danh sách ảnh phụ
+        service.setExtraImageUrls(extraImageUrls); // danh sách ảnh phụ
 
-    // Lưu service vào DB
-    service = serviceRepository.save(service);
-
-    // Lưu itinerary nếu có
-    if (req.getItinerary() != null) {
-        final Service finalService = service; // biến final
-        List<ItineraryItem> items = req.getItinerary().stream().map(i -> {
-            return ItineraryItem.builder()
-                    .day(i.getDay())
-                    .title(i.getTitle())
-                    .activities(i.getActivities())
-                    .service(finalService) // dùng biến final
-                    .build();
-        }).toList();
-        if (service.getItinerary() == null) {
-            service.setItinerary(new ArrayList<>());
-        }
-        service.getItinerary().addAll(items);
+        // Lưu service vào DB
         service = serviceRepository.save(service);
+
+        // Lưu itinerary nếu có
+        if (req.getItinerary() != null) {
+            final Service finalService = service; // biến final
+            List<ItineraryItem> items = req.getItinerary().stream().map(i -> {
+                return ItineraryItem.builder()
+                        .day(i.getDay())
+                        .title(i.getTitle())
+                        .activities(i.getActivities())
+                        .service(finalService) // dùng biến final
+                        .build();
+            }).toList();
+            if (service.getItinerary() == null) {
+                service.setItinerary(new ArrayList<>());
+            }
+            service.getItinerary().addAll(items);
+            service = serviceRepository.save(service);
+        }
+
+
+        // Trả về DTO
+        return mapToDTO(service);
     }
-
-
-    // Trả về DTO
-    return mapToDTO(service);
-}
 
     @Override
     @Transactional
-    public ServiceResponseDTO updateService(Long id, ServiceRequestDTO dto, MultipartFile imageFile) {
+    public ServiceResponseDTO updateService(Long id,
+                                            ServiceRequestDTO req,
+                                            MultipartFile imageFile,
+                                            MultipartFile[] extraImages) throws IOException {
+
+        // 1. Tìm service cần cập nhật
         Service service = serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
 
-        service.setName(dto.getName());
-        service.setDescription(dto.getDescription());
-        service.setPrice(dto.getPrice());
-        service.setLocation(dto.getLocation());
-        // ... cập nhật các trường khác từ dto
+        // 2. Cập nhật các trường cơ bản
+        service.setName(req.getName());
+        service.setDescription(req.getDescription());
+        service.setPrice(req.getPrice());
+        service.setLocation(req.getLocation());
+        service.setMinDays(req.getMinDays());
+        service.setMaxDays(req.getMaxDays());
+        service.setMinCapacity(req.getMinCapacity());
+        service.setMaxCapacity(req.getMaxCapacity());
+        service.setDefaultSlotsPerDay(req.getDefaultSlotsPerDay());
+        service.setDuration(req.getDuration());
+        service.setCapacity(req.getCapacity());
+        service.setTag(ServiceTag.valueOf(req.getTag().name()));
+        service.setHighlights(req.getHighlights() != null ? req.getHighlights() : new ArrayList<>());
+        service.setIncluded(req.getIncluded() != null ? req.getIncluded() : new ArrayList<>());
 
+        // 3. Cập nhật ảnh chính (nếu có ảnh mới)
         if (imageFile != null && !imageFile.isEmpty()) {
-            String url = uploadImage(imageFile);
-            service.setImageUrl(url);
+            String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+            Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+            if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(fileName);
+            imageFile.transferTo(filePath.toFile());
+            service.setImageUrl("/uploads/services/" + fileName);
         }
 
+        // 4. Cập nhật ảnh phụ
+        List<String> extraImageUrls = new ArrayList<>();
+        if (extraImages != null) {
+            for (MultipartFile file : extraImages) {
+                if (!file.isEmpty()) {
+                    String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                    Path uploadPath = Paths.get("C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services");
+                    if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
+                    Path filePath = uploadPath.resolve(fileName);
+                    file.transferTo(filePath.toFile());
+                    extraImageUrls.add("/uploads/services/" + fileName);
+                }
+            }
+        }
+        service.setExtraImageUrls(extraImageUrls);
+
+        // 5. Cập nhật itinerary
+        if (req.getItinerary() != null) {
+            // Xóa toàn bộ itinerary cũ
+            if (service.getItinerary() != null) {
+                service.getItinerary().clear();
+            } else {
+                service.setItinerary(new ArrayList<>());
+            }
+
+            // Thêm itinerary mới
+            List<ItineraryItem> items = new ArrayList<>();
+            for (ItineraryDTO i : req.getItinerary()) {
+                ItineraryItem item = ItineraryItem.builder()
+                        .day(i.getDay())
+                        .title(i.getTitle())
+                        .activities(i.getActivities())
+                        .service(service)
+                        .build();
+                items.add(item);
+            }
+
+            service.getItinerary().addAll(items);
+        }
+
+        // 6. Lưu thay đổi vào DB
         service = serviceRepository.save(service);
+
+        // 7. Trả về DTO
         return mapToDTO(service);
     }
+
+
     private String uploadImage(MultipartFile file) {
         // Ví dụ lưu local
         String uploadDir = "/uploads/services/";

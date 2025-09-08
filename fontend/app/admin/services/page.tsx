@@ -8,10 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { fetchUser, fetchServices } from '../../api/admin';
+import { fetchCurrentUser, fetchServices } from '../../api/admin';
 import jwtDecode from 'jwt-decode';
 import { PackageFormData } from '@/app/api/package';
-import { Service } from '../page';
+import { Service } from '@/app/api/serviceApi';
 
 
 
@@ -30,7 +30,7 @@ export default function ServicesPage() {
           return;
         }
 
-        const userData = await fetchUser(token, 1);
+        const userData = await fetchCurrentUser(token, 1);
         if (userData.token) {
           if (localStorage.getItem('authToken')) {
             localStorage.setItem('authToken', userData.token);

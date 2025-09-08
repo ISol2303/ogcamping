@@ -29,11 +29,5 @@ public class AreaDTO {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public AreaDTO(Long id, String name, String description) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.description = description;
-	}
-    
+
 }

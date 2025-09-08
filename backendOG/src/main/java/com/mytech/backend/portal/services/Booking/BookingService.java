@@ -13,9 +13,13 @@ public interface BookingService {
     List<BookingResponseDTO> getBookingsByCustomer(Long customerId);
     BookingResponseDTO cancelBooking(Long bookingId);
     BookingResponseDTO reviewBooking(Long bookingId, ReviewRequestDTO req);
+    //combo
     long getConfirmedBookingsForCombo(Long comboId);
     long getMonthlyRevenueByCombo(Long comboId);
     long getRevenueByCombo(Long comboId);
     BigDecimal getTotalSavings(Long comboId);
     long getTotalConfirmedBookingsFromAllCombos();
+    //service
+//    List<BookingGetByServiceDTO> getBookingsByService(Long serviceId);
+//    BookingStatsDTO getStatsByService(Long serviceId);
 }

@@ -1,9 +1,9 @@
 package com.mytech.backend.portal.services.Wishlist;
 
 import com.mytech.backend.portal.dto.Wishlist.WishlistItemDTO;
+import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Service.Service;
-import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.models.Wishlist.WishlistItem;
 import com.mytech.backend.portal.models.Wishlist.WishlistType;
 import com.mytech.backend.portal.repositories.ComboRepository;

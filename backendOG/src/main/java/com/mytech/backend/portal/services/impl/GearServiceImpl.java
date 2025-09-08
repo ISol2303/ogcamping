@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mytech.backend.portal.dto.GearDTO;
+import com.mytech.backend.portal.models.Area.AreaName;
+import com.mytech.backend.portal.models.Category.CategoryName;
 import com.mytech.backend.portal.models.Gear;
+import com.mytech.backend.portal.models.Gear.GearStatus;
 import com.mytech.backend.portal.repositories.GearRepository;
 import com.mytech.backend.portal.services.GearService;
 
@@ -53,4 +56,18 @@ public class GearServiceImpl implements GearService {
     public void deleteGear(Long id) {
         gearRepository.deleteById(id);
     }
+    
+    
+    //Rỗng
+	@Override
+	public List<GearDTO> findAll() {
+		
+		return null;
+	}
+	//Rỗng
+	@Override
+	public List<GearDTO> searchGears(String name, CategoryName category, AreaName area, GearStatus status) {
+		
+		return null;
+	}
 }

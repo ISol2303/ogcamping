@@ -1,43 +1,27 @@
 package com.mytech.backend.portal.apis;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.mytech.backend.portal.dto.*;
+import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
+import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
+import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.services.*;
+import com.mytech.backend.portal.services.Booking.BookingService;
+import com.mytech.backend.portal.services.Service.ServiceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.mytech.backend.portal.dto.AreaDTO;
-import com.mytech.backend.portal.dto.BookingResponseDTO;
-import com.mytech.backend.portal.dto.CategoryDTO;
-import com.mytech.backend.portal.dto.CreateGearRequest;
-import com.mytech.backend.portal.dto.GearDTO;
-import com.mytech.backend.portal.dto.LocationDTO;
-import com.mytech.backend.portal.dto.PromotionDTO;
-import com.mytech.backend.portal.dto.ServiceRequestDTO;
-import com.mytech.backend.portal.dto.ServiceResponseDTO;
-import com.mytech.backend.portal.dto.StatDTO;
-import com.mytech.backend.portal.dto.UserDTO;
-import com.mytech.backend.portal.models.User;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/apis/v1/admin")
@@ -94,17 +78,17 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/bookings")
-    public ResponseEntity<List<BookingResponseDTO>> fetchAllBookings() {
-        logger.info("Fetching all bookings");
-        try {
-            List<BookingResponseDTO> bookings = bookingService.getAllBookings();
-            return ResponseEntity.ok(bookings);
-        } catch (Exception e) {
-            logger.error("Error fetching bookings: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch bookings: " + e.getMessage(), e);
-        }
-    }
+//    @GetMapping("/bookings")
+//    public ResponseEntity<List<BookingResponseDTO>> fetchAllBookings() {
+//        logger.info("Fetching all bookings");
+//        try {
+//            List<BookingResponseDTO> bookings = bookingService.getAllBookings();
+//            return ResponseEntity.ok(bookings);
+//        } catch (Exception e) {
+//            logger.error("Error fetching bookings: {}", e.getMessage(), e);
+//            throw new RuntimeException("Failed to fetch bookings: " + e.getMessage(), e);
+//        }
+//    }
 
     @GetMapping("/bookings/{id}")
     public ResponseEntity<BookingResponseDTO> fetchBooking(@PathVariable Long id) {
@@ -122,37 +106,37 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/bookings/{id}/checkin")
-    public ResponseEntity<BookingResponseDTO> checkInBooking(@PathVariable Long id) {
-        logger.info("Checking in booking with ID: {}", id);
-        try {
-            BookingResponseDTO updatedBooking = bookingService.checkInBooking(id);
-            if (updatedBooking == null) {
-                logger.warn("Booking not found for check-in with ID: {}", id);
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(updatedBooking);
-        } catch (Exception e) {
-            logger.error("Error checking in booking with ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Failed to check in booking: " + e.getMessage(), e);
-        }
-    }
-
-    @PostMapping("/bookings/{id}/checkout")
-    public ResponseEntity<BookingResponseDTO> checkOutBooking(@PathVariable Long id) {
-        logger.info("Checking out booking with ID: {}", id);
-        try {
-            BookingResponseDTO updatedBooking = bookingService.checkOutBooking(id);
-            if (updatedBooking == null) {
-                logger.warn("Booking not found for check-out with ID: {}", id);
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(updatedBooking);
-        } catch (Exception e) {
-            logger.error("Error checking out booking with ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Failed to check out booking: " + e.getMessage(), e);
-        }
-    }
+//    @PostMapping("/bookings/{id}/checkin")
+//    public ResponseEntity<BookingResponseDTO> checkInBooking(@PathVariable Long id) {
+//        logger.info("Checking in booking with ID: {}", id);
+//        try {
+//            BookingResponseDTO updatedBooking = bookingService.checkInBooking(id);
+//            if (updatedBooking == null) {
+//                logger.warn("Booking not found for check-in with ID: {}", id);
+//                return ResponseEntity.notFound().build();
+//            }
+//            return ResponseEntity.ok(updatedBooking);
+//        } catch (Exception e) {
+//            logger.error("Error checking in booking with ID {}: {}", id, e.getMessage(), e);
+//            throw new RuntimeException("Failed to check in booking: " + e.getMessage(), e);
+//        }
+//    }
+//
+//    @PostMapping("/bookings/{id}/checkout")
+//    public ResponseEntity<BookingResponseDTO> checkOutBooking(@PathVariable Long id) {
+//        logger.info("Checking out booking with ID: {}", id);
+//        try {
+//            BookingResponseDTO updatedBooking = bookingService.checkOutBooking(id);
+//            if (updatedBooking == null) {
+//                logger.warn("Booking not found for check-out with ID: {}", id);
+//                return ResponseEntity.notFound().build();
+//            }
+//            return ResponseEntity.ok(updatedBooking);
+//        } catch (Exception e) {
+//            logger.error("Error checking out booking with ID {}: {}", id, e.getMessage(), e);
+//            throw new RuntimeException("Failed to check out booking: " + e.getMessage(), e);
+//        }
+//    }
 
     @GetMapping("/staff")
     public ResponseEntity<List<UserDTO>> fetchStaff() {
@@ -166,7 +150,7 @@ public class AdminController {
                         dto.setName(u.getName());
                         dto.setEmail(u.getEmail());
                         dto.setPhone(u.getPhone());
-                        dto.setRole(User.Role.valueOf("STAFF"));
+                        dto.setRole(User.Role.STAFF.name());
                         dto.setDepartment(u.getDepartment());
                         dto.setJoinDate(u.getJoinDate());
                         dto.setStatus(u.getStatus() != null ? u.getStatus().toLowerCase() : "active");
@@ -189,7 +173,7 @@ public class AdminController {
             dto.setEmail(request.getEmail());
             dto.setPhone(request.getPhone());
             dto.setPassword(request.getPassword());
-            dto.setRole(User.Role.valueOf("STAFF")); // Convert String to User.Role enum
+            dto.setRole(User.Role.STAFF.name()); // Convert String to User.Role enum
             dto.setDepartment(request.getDepartment());
             dto.setJoinDate(request.getJoinDate());
             dto.setStatus(request.getStatus());
@@ -212,19 +196,19 @@ public class AdminController {
         }
     }
 
-    @PostMapping(value = "/services", consumes = "multipart/form-data")
-    public ResponseEntity<ServiceResponseDTO> createService(
-            @RequestPart("service") ServiceRequestDTO request,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
-        logger.info("Creating service: {}", request.getName());
-        try {
-            ServiceResponseDTO createdService = serviceService.createService(request, imageFile);
-            return ResponseEntity.ok(createdService);
-        } catch (Exception e) {
-            logger.error("Error creating service {}: {}", request.getName(), e.getMessage(), e);
-            throw new RuntimeException("Failed to create service: " + e.getMessage(), e);
-        }
-    }
+//    @PostMapping(value = "/services", consumes = "multipart/form-data")
+//    public ResponseEntity<ServiceResponseDTO> createService(
+//            @RequestPart("service") ServiceRequestDTO request,
+//            @RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+//        logger.info("Creating service: {}", request.getName());
+//        try {
+//            ServiceResponseDTO createdService = serviceService.createService(request, imageFile);
+//            return ResponseEntity.ok(createdService);
+//        } catch (Exception e) {
+//            logger.error("Error creating service {}: {}", request.getName(), e.getMessage(), e);
+//            throw new RuntimeException("Failed to create service: " + e.getMessage(), e);
+//        }
+//    }
     private PackageService packageService;
 
     @GetMapping("/user/{id}")
@@ -233,10 +217,10 @@ public class AdminController {
         return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/stats")
-    public ResponseEntity<List<StatDTO>> fetchStats(@RequestParam String period) {
-        return ResponseEntity.ok(adminService.getStats(period));
-    }
+//    @GetMapping("/stats")
+//    public ResponseEntity<List<StatDTO>> fetchStats(@RequestParam String period) {
+//        return ResponseEntity.ok(adminService.getStats(period));
+//    }
 
 //    @GetMapping("/bookings")
 //    public ResponseEntity<List<BookingDTO>> fetchBookings() {
@@ -336,7 +320,7 @@ public class AdminController {
         logger.info("Fetching all customers");
         try {
             List<UserDTO> customers = userService.getAllUsers().stream()
-                    .filter(userDTO -> userDTO.getRole() == User.Role.CUSTOMER)
+                    .filter(userDTO -> User.Role.valueOf(userDTO.getRole()) == User.Role.CUSTOMER)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(customers);
         } catch (Exception e) {

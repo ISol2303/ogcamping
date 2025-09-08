@@ -1,7 +1,8 @@
 package com.mytech.backend.portal.repositories;
 
-import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.Customer.Customer;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

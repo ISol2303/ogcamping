@@ -1,25 +1,21 @@
 package com.mytech.backend.portal.security.oauth2;
 
 import com.mytech.backend.portal.jwt.JwtUtils;
-import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component

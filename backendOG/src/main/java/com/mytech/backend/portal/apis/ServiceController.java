@@ -5,7 +5,6 @@ import com.mytech.backend.portal.dto.Service.ServiceRequestDTO;
 import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
 import com.mytech.backend.portal.services.Service.ServiceService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,12 +49,17 @@ public class ServiceController {
     // PUT /services/{id} → cập nhật service
     @PutMapping("/{id}")
     public ResponseEntity<ServiceResponseDTO> updateService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart("service") String serviceJson,
-            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestPart(value = "extraImages", required = false) MultipartFile[] extraImages
     ) throws IOException {
+        // parse JSON sang DTO
         ServiceRequestDTO dto = new ObjectMapper().readValue(serviceJson, ServiceRequestDTO.class);
-        ServiceResponseDTO response = serviceService.updateService(id, dto, imageFile); // ✅ đúng
+
+        // gọi service update
+        ServiceResponseDTO response = serviceService.updateService(id, dto, imageFile, extraImages);
+
         return ResponseEntity.ok(response);
     }
 

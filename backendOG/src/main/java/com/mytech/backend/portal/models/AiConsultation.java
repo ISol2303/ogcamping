@@ -2,6 +2,8 @@ package com.mytech.backend.portal.models;
 
 import java.time.LocalDateTime;
 
+import com.mytech.backend.portal.models.Service.Service;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

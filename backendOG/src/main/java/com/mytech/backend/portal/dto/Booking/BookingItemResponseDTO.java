@@ -1,12 +1,10 @@
 package com.mytech.backend.portal.dto.Booking;
 
-import com.mytech.backend.portal.models.Booking.ItemType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
+
+import com.mytech.backend.portal.models.Booking.ItemType;
 
 @Data
 @Builder

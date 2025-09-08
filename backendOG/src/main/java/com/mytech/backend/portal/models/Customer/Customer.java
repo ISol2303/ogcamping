@@ -1,4 +1,5 @@
 package com.mytech.backend.portal.models.Customer;
+
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.User;
 import jakarta.persistence.*;

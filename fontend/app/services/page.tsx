@@ -1,10 +1,6 @@
 "use client"
 
-<<<<<<< HEAD
-import { useState, useEffect } from "react"
-=======
 import { useState, useEffect, useMemo } from "react"
->>>>>>> hieu-clean
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -13,28 +9,18 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-<<<<<<< HEAD
-import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings } from "lucide-react"
-import Link from "next/link"
-import { login } from "../api/auth" // Import from auth.ts
-=======
 import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { login } from "../api/auth" // Import from auth.ts
 import { getServices, Service } from "../api/serviceApi"
->>>>>>> hieu-clean
 
 export default function ServicesPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const router = useRouter()
-<<<<<<< HEAD
-
-=======
   const handleGoToCart = () => {
     router.push("/cart");
   };
->>>>>>> hieu-clean
   // Check login status on component mount
   useEffect(() => {
     const token = localStorage.getItem('authToken')
@@ -63,99 +49,6 @@ export default function ServicesPage() {
       router.push('/dashboard')
     }
   }
-<<<<<<< HEAD
-
-  const services = [
-    {
-      id: 1,
-      name: "Cắm trại núi cao Sapa",
-      location: "Sapa, Lào Cai",
-      duration: "2-3 ngày",
-      capacity: "4-6 người",
-      price: 2500000,
-      rating: 4.8,
-      reviews: 124,
-      image: "mountain",
-      tags: ["Núi", "Trekking", "Phổ biến"],
-      availability: "Còn 3 slot",
-      description:
-        "Trải nghiệm cắm trại trên núi cao với view tuyệt đẹp, bao gồm lều, thực phẩm và hướng dẫn viên chuyên nghiệp",
-    },
-    {
-      id: 2,
-      name: "Cắm trại bãi biển Phú Quốc",
-      location: "Phú Quốc, Kiên Giang",
-      duration: "1-2 ngày",
-      capacity: "2-4 người",
-      price: 1800000,
-      rating: 4.9,
-      reviews: 89,
-      image: "beach",
-      tags: ["Biển", "Lặn", "Mới"],
-      availability: "Còn 5 slot",
-      description: "Cắm trại bên bờ biển với hoạt động lặn ngắm san hô, BBQ hải sản tươi ngon",
-    },
-    {
-      id: 3,
-      name: "Cắm trại gia đình Đà Lạt",
-      location: "Đà Lạt, Lâm Đồng",
-      duration: "2-4 ngày",
-      capacity: "6-10 người",
-      price: 3200000,
-      rating: 4.7,
-      reviews: 156,
-      image: "family",
-      tags: ["Gia đình", "Trẻ em", "Ưu đãi"],
-      availability: "Còn 2 slot",
-      description: "Gói dành cho gia đình với nhiều hoạt động vui chơi, an toàn cho trẻ em",
-    },
-    {
-      id: 4,
-      name: "Cắm trại rừng Cát Tiên",
-      location: "Cát Tiên, Đồng Nai",
-      duration: "3-4 ngày",
-      capacity: "4-8 người",
-      price: 2800000,
-      rating: 4.6,
-      reviews: 78,
-      image: "forest",
-      tags: ["Rừng", "Động vật", "Khám phá"],
-      availability: "Hết chỗ",
-      description: "Khám phá thiên nhiên hoang dã, quan sát động vật trong môi trường tự nhiên",
-    },
-    {
-      id: 5,
-      name: "Cắm trại thác Sekumpul",
-      location: "Bali, Indonesia",
-      duration: "3-5 ngày",
-      capacity: "2-6 người",
-      price: 4500000,
-      rating: 4.9,
-      reviews: 203,
-      image: "waterfall",
-      tags: ["Thác nước", "Quốc tế", "Premium"],
-      availability: "Còn 4 slot",
-      description: "Tour quốc tế đến thác nước nổi tiếng Bali với dịch vụ cao cấp",
-    },
-    {
-      id: 6,
-      name: "Cắm trại sa mạc Mũi Né",
-      location: "Mũi Né, Bình Thuận",
-      duration: "1-2 ngày",
-      capacity: "2-4 người",
-      price: 1500000,
-      rating: 4.5,
-      reviews: 67,
-      image: "desert",
-      tags: ["Sa mạc", "Hoàng hôn", "Độc đáo"],
-      availability: "Còn 6 slot",
-      description: "Trải nghiệm cắm trại trên đồi cát với hoàng hôn tuyệt đẹp",
-    },
-  ]
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-=======
   const [services, setServices] = useState<Service[]>([]);
   useEffect(() => {
     const fetchServices = async () => {
@@ -292,17 +185,12 @@ export default function ServicesPage() {
           </div>
         </div>
       </header>
->>>>>>> hieu-clean
 
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Dịch vụ cắm trại</h1>
-<<<<<<< HEAD
-          <p className="text-gray-600 text-lg">Khám phá các gói dịch vụ cắm trại đa dạng, từ núi cao đến bãi biển</p>
-=======
           <p className="text-gray-600 text-lg">Khám phá các gói dịch vụ cắm trại đa dạng, góc nhìn ven hồ và rừng cây xanh</p>
->>>>>>> hieu-clean
         </div>
 
         {/* Filters */}
@@ -315,22 +203,11 @@ export default function ServicesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
-<<<<<<< HEAD
-=======
               {/* Tìm kiếm */}
->>>>>>> hieu-clean
               <div>
                 <label className="text-sm font-medium mb-2 block">Tìm kiếm</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-<<<<<<< HEAD
-                  <Input className="pl-10" placeholder="Tìm theo tên, địa điểm..." />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Địa điểm</label>
-                <Select>
-=======
                   <Input
                     className="pl-10"
                     placeholder="Tìm theo tên, địa điểm..."
@@ -344,26 +221,11 @@ export default function ServicesPage() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Địa điểm</label>
                 <Select value={location} onValueChange={setLocation}>
->>>>>>> hieu-clean
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn địa điểm" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tất cả</SelectItem>
-<<<<<<< HEAD
-                    <SelectItem value="sapa">Sapa</SelectItem>
-                    <SelectItem value="phuquoc">Phú Quốc</SelectItem>
-                    <SelectItem value="dalat">Đà Lạt</SelectItem>
-                    <SelectItem value="cattien">Cát Tiên</SelectItem>
-                    <SelectItem value="bali">Bali</SelectItem>
-                    <SelectItem value="muine">Mũi Né</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Số người</label>
-                <Select>
-=======
                     {uniqueLocations.map((loc) => (
                       <SelectItem key={loc} value={loc.toLowerCase()}>
                         {loc}
@@ -377,7 +239,6 @@ export default function ServicesPage() {
               <div>
                 <label className="text-sm font-medium mb-2 block">Số người</label>
                 <Select value={people} onValueChange={setPeople}>
->>>>>>> hieu-clean
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn số người" />
                   </SelectTrigger>
@@ -385,17 +246,6 @@ export default function ServicesPage() {
                     <SelectItem value="2-4">2-4 người</SelectItem>
                     <SelectItem value="4-6">4-6 người</SelectItem>
                     <SelectItem value="6-10">6-10 người</SelectItem>
-<<<<<<< HEAD
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Giá (VND)</label>
-                <Slider defaultValue={[0, 5000000]} max={5000000} step={100000} />
-                <div className="flex justify-between text-sm text-gray-600 mt-2">
-                  <span>0</span>
-                  <span>5,000,000</span>
-=======
                     <SelectItem value="10-20">10-20 người</SelectItem>
                   </SelectContent>
                 </Select>
@@ -414,70 +264,11 @@ export default function ServicesPage() {
                 <div className="flex justify-between text-sm text-gray-600 mt-2">
                   <span>{price[0].toLocaleString()}</span>
                   <span>{price[1].toLocaleString()}</span>
->>>>>>> hieu-clean
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-<<<<<<< HEAD
-
-        {/* Services List */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service) => (
-            <Card key={service.id} className="hover:shadow-lg transition-shadow">
-              <div className="h-48 bg-gradient-to-br from-green-400 to-green-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-black/20"></div>
-                {service.image === "mountain" && <Mountain className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                {service.image === "beach" && <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                {service.image === "family" && <Users className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                {service.image === "forest" && <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                {service.image === "waterfall" && <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                {service.image === "desert" && <Tent className="absolute bottom-4 right-4 w-10 h-10 text-white/80" />}
-                <div className="absolute bottom-4 left-4 text-white">
-                  {service.tags.includes("Phổ biến") && (
-                    <Badge className="mb-2 bg-red-500 hover:bg-red-600 text-white">Phổ biến</Badge>
-                  )}
-                  {service.tags.includes("Mới") && (
-                    <Badge className="mb-2 bg-blue-500 hover:bg-blue-600 text-white">Mới</Badge>
-                  )}
-                  {service.tags.includes("Ưu đãi") && (
-                    <Badge className="mb-2 bg-green-500 hover:bg-green-600 text-white">Ưu đãi</Badge>
-                  )}
-                  <h3 className="text-lg font-bold">{service.name}</h3>
-                  <p className="text-sm opacity-90">{service.location}</p>
-                </div>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-lg">{service.name}</CardTitle>
-                <CardDescription>{service.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{service.rating}</span>
-                    <span className="text-sm text-gray-500">({service.reviews})</span>
-                  </div>
-                  <Badge variant="secondary">{service.availability}</Badge>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-gray-600">
-                    <p><Calendar className="inline w-4 h-4 mr-2" />{service.duration}</p>
-                    <p><Users className="inline w-4 h-4 mr-2" />{service.capacity}</p>
-                    <p><MapPin className="inline w-4 h-4 mr-2" />{service.location}</p>
-                  </div>
-                  <span className="text-2xl font-bold text-green-600">{service.price.toLocaleString("vi-VN")}đ</span>
-                </div>
-                <Button className="w-full" asChild>
-                  <Link href={`/services/${service.id}`}>Xem chi tiết</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-=======
         {/* Services List */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredServices.map((service) => {
@@ -610,7 +401,6 @@ export default function ServicesPage() {
 
 
 
->>>>>>> hieu-clean
         {/* Custom Service CTA */}
         <Card className="mt-12 bg-gradient-to-r from-green-600 to-green-700 text-back border-0 shadow-xl">
           <CardContent className="text-center py-12">

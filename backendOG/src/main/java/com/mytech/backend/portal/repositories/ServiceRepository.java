@@ -1,10 +1,7 @@
 package com.mytech.backend.portal.repositories;
 
 import com.mytech.backend.portal.models.Service.Service;
-
 import com.mytech.backend.portal.models.Service.ServiceTag;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

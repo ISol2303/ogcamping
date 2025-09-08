@@ -29,11 +29,6 @@ public class CategoryDTO {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public CategoryDTO(Long id, String name, String description) {
-		super();
-		this.id = id;
-		this.name = name;
-		this.description = description;
-	}
+
     
 }

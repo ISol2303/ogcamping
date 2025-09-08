@@ -2,8 +2,6 @@ package com.mytech.backend.portal.services.impl;
 
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
-import com.mytech.backend.portal.exceptions.ResourceAlreadyExistsException;
-import com.mytech.backend.portal.exceptions.ResourceNotFoundException;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.repositories.*;
@@ -22,18 +20,18 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-	@Autowired
+    @Autowired
     private UserRepository userRepository;
-	@Autowired
+    @Autowired
     private BCryptPasswordEncoder passwordEncoder;
-	@Autowired
-	private BookingRepository bookingRepository;
+    @Autowired
+    private BookingRepository bookingRepository;
 
-	@Autowired
-	private PackageRepository packageRepository;
+    @Autowired
+    private PackageRepository packageRepository;
 
-	@Autowired
-	private GearRepository gearRepository;
+    @Autowired
+    private GearRepository gearRepository;
     private final CustomerRepository customerRepo;
     @Autowired
     private CustomerRepository customerRepository;
@@ -167,21 +165,21 @@ public class UserServiceImpl implements UserService {
         return getUserById(id); // hoặc implement riêng
     }
 
-	@Override
-	public Collection<StatDTO> findAllStats() {
-	    long totalUsers = userRepository.count();
-	    long totalBookings = bookingRepository.count();
-	    long totalPackages = packageRepository.count();
-	    long totalGears = gearRepository.count();
+    @Override
+    public Collection<StatDTO> findAllStats() {
+        long totalUsers = userRepository.count();
+        long totalBookings = bookingRepository.count();
+        long totalPackages = packageRepository.count();
+        long totalGears = gearRepository.count();
 
-	    List<StatDTO> stats = new ArrayList<>();
-	    stats.add(new StatDTO("Total Users", totalUsers));
-	    stats.add(new StatDTO("Total Bookings", totalBookings));
-	    stats.add(new StatDTO("Total Packages", totalPackages));
-	    stats.add(new StatDTO("Total Gears", totalGears));
+        List<StatDTO> stats = new ArrayList<>();
+        stats.add(new StatDTO("Total Users", totalUsers));
+        stats.add(new StatDTO("Total Bookings", totalBookings));
+        stats.add(new StatDTO("Total Packages", totalPackages));
+        stats.add(new StatDTO("Total Gears", totalGears));
 
-	    return stats;
-	}
+        return stats;
+    }
 }
 
 
