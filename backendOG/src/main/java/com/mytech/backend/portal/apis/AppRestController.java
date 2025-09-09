@@ -22,7 +22,7 @@ import com.mytech.backend.portal.services.UserService;
 
 
 @RestController
-@RequestMapping("/apis/**")
+@RequestMapping("/apis")
 public class AppRestController {
 
     @Autowired
@@ -96,6 +96,7 @@ public class AppRestController {
         newUser.setPhone(signUpRequest.getPhone());
         newUser.setPassword(new BCryptPasswordEncoder().encode(signUpRequest.getPassword()));
         newUser.setRole(User.Role.CUSTOMER);
+        newUser.setAgreeMarketing(signUpRequest.getAgreeMarketing());
 
         userService.save(newUser);
 

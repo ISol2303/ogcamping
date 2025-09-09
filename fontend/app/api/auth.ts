@@ -87,24 +87,31 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
     const userId = decoded.sub;
     const userRole = decoded.role?.replace('ROLE_', '') || role;
 
-    // Gọi API lấy thêm profile
+    // ✅ SỬA 1: Lưu token và user cơ bản ngay lập tức (trước khi gọi API profile)
+    if (data.remember) {
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userId', userId);
+      localStorage.setItem('user', JSON.stringify({ email, name, role: userRole }));
+    }
+    sessionStorage.setItem('authToken', token);
+    sessionStorage.setItem('userId', userId);
+    sessionStorage.setItem('user', JSON.stringify({ email, name, role: userRole }));
+
+    // ✅ SỬA 2: Bây giờ mới gọi API lấy profile (có token rồi nên không bị lỗi lần đầu login)
+
     let userProfile: UserProfile = { email, name, role: userRole };
     try {
       const profile = await getUserProfile(token);
       userProfile = { ...userProfile, ...profile };
+
+      // cập nhật lại storage với profile đầy đủ
+      if (data.remember) {
+        localStorage.setItem('user', JSON.stringify(userProfile));
+      }
+      sessionStorage.setItem('user', JSON.stringify(userProfile));
     } catch (e) {
       console.warn('Failed to fetch user profile, using basic data:', e);
     }
-    
-    // Lưu vào storage
-    if (data.remember) {
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userId', userId);
-      localStorage.setItem('user', JSON.stringify(userProfile));
-    }
-    sessionStorage.setItem('authToken', token);
-    sessionStorage.setItem('userId', userId);
-    sessionStorage.setItem('user', JSON.stringify(userProfile));
 
     console.log('Stored token:', token);
     console.log('Stored userId:', userId);
@@ -135,6 +142,7 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
     );
   }
 };
+
 
 export const register = async (data: RegisterRequest): Promise<void> => {
   try {

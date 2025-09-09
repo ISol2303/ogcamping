@@ -66,6 +66,7 @@ public void onAuthenticationSuccess(HttpServletRequest request, HttpServletRespo
         return newUser;
     });
 
+
     // --- 3. Tạo JWT token ---
     String token = jwtUtils.generateToken(
             user.getEmail(),

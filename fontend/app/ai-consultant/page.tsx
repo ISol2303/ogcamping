@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import { useChat } from "@/context/ChatContext"
 export default function AIConsultantPage() {
   const { messages, addMessage, clearMessages } = useChat()
   const [inputMessage, setInputMessage] = useState("")
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
 
   const quickQuestions = [
@@ -48,7 +49,11 @@ export default function AIConsultantPage() {
   const handleQuickQuestion = (q: string) => {
     setInputMessage(q)
   }
-
+  useEffect(() => {
+  if (messagesContainerRef.current) {
+    messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+  }
+}, [messages])
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -118,7 +123,7 @@ export default function AIConsultantPage() {
               </CardHeader>
 
               {/* Messages */}
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"  ref={messagesContainerRef}>
                 {messages.map((message) => (
                   <div key={message.id} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                     <Avatar className="w-8 h-8 flex-shrink-0">

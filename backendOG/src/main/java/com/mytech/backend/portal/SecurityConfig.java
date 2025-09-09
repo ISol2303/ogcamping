@@ -51,19 +51,19 @@ public class SecurityConfig {
 	    source.registerCorsConfiguration("/**", configuration);
 	    return source;
 	  }
-//	@Bean
-//	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//		http.authorizeHttpRequests((authorite) -> authorite
-//				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
-//
-//		http.formLogin((form) -> form.defaultSuccessUrl("/"));
-//
-//		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-//
-//		http.csrf(csrf -> csrf.disable());
-//
-//		return http.build();
-//	}
+	@Bean
+	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.authorizeHttpRequests((authorite) -> authorite
+				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
+
+		http.formLogin((form) -> form.defaultSuccessUrl("/"));
+
+		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
+		http.csrf(csrf -> csrf.disable());
+
+		return http.build();
+	}
 @Bean
 @Order(1)
 SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
@@ -84,21 +84,24 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 }
 
 	// 2) Chain cho REST API (JWT stateless)
-	@Bean
-	@Order(2)
-	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-		http
-				.securityMatcher("/api/**", "/public/**")
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/public/**").permitAll()
-						.anyRequest().authenticated()
-				)
-				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.csrf(csrf -> csrf.disable());
+//	@Bean
+//	@Order(2)
+//	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+//	    http
+//	        .securityMatcher("/apis/**") // ✅ sửa lại cho đúng với controller
+//	        .authorizeHttpRequests(auth -> auth
+//	            .requestMatchers("/apis/v1/login", "/apis/v1/register", "/apis/test/**").permitAll()
+//	            .anyRequest().authenticated()
+//	        )
+//	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//	        .csrf(csrf -> csrf.disable());
+//	
+//	    // ✅ add JWT filter
+//	    http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+//	
+//	    return http.build();
+//	}
 
-		// TODO: add JWT filter trước UsernamePasswordAuthenticationFilter
-		return http.build();
-	}
 
 	// 3) Fallback (cho phép trang gốc, tĩnh…)
 	@Bean
