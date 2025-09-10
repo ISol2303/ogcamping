@@ -843,7 +843,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="flex-1">
-        <header className="border-b bg-white sticky top-0 z-50">
+        {/* <header className="border-b bg-white sticky top-0 z-50">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Tent className="h-8 w-8 text-green-600" />
@@ -865,7 +865,7 @@ export default function AdminDashboard() {
               </Button>
             </div>
           </div>
-        </header>
+        </header> */}
 
         <div className="container mx-auto px-4 py-8">
           {error && (

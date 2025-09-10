@@ -6,6 +6,8 @@ import ChatBot from "@/components/chat-bot"
 import { AuthProvider } from "@/context/AuthContext"
 import Navbar from "@/components/NavBar"
 import { ChatProvider } from "@/context/ChatContext"
+import AdminNavbar from "@/components/AdminNavbar"
+import ClientNavbarWrapper from "@/components/ClientNavbarWrapper"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,19 +21,15 @@ export const metadata: Metadata = {
     generator: 'v0.dev'
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+
   return (
-    <html lang="vi">
+     <html lang="vi">
       <body className={`${inter.variable} ${inter.className}`} suppressHydrationWarning>
         <AuthProvider>
           <ChatProvider>
-            <Navbar />
+            <ClientNavbarWrapper />
             {children}
-            <ChatBot />
           </ChatProvider>
         </AuthProvider>
       </body>
