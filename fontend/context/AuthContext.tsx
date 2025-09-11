@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 // Kiểu dữ liệu User
 type User = {
+  id: string;
   name: string;
   email: string;
   avatar?: string;

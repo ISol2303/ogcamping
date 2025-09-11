@@ -11,6 +11,9 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Image from "next/image"
+import axios from "axios"
+import { Textarea } from "@/components/ui/textarea"
+import Reviews from "@/components/ui/Reviews"
 interface Availability {
   id: number;
   date: string;
@@ -160,15 +163,15 @@ export default function ServiceDetailPage() {
     sessionStorage.removeItem('user');
     router.push('/login');
   };
-  const handleDashboardNavigation = () => {
-    if (user?.role === 'ADMIN') {
-      router.push('/admin')
-    } else if (user?.role === 'STAFF') {
-      router.push('/staff')
-    } else {
-      router.push('/dashboard')
-    }
-  }
+  // const handleDashboardNavigation = () => {
+  //   if (user?.role === 'ADMIN') {
+  //     router.push('/admin')
+  //   } else if (user?.role === 'STAFF') {
+  //     router.push('/staff')
+  //   } else {
+  //     router.push('/dashboard')
+  //   }
+  // }
   const handleGoToCart = () => {
     router.push("/cart");
   };
@@ -289,7 +292,7 @@ export default function ServiceDetailPage() {
     });
 
     router.push('/cart')
-  };
+  };  
   return (
     <div className="min-h-screen bg-gray-50">
 
@@ -450,45 +453,9 @@ export default function ServiceDetailPage() {
                 </Card>
               </TabsContent>
 
-              {/* <TabsContent value="reviews">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Đánh giá từ khách hàng</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                        <span className="font-semibold">{service.rating}</span>
-                        <span className="text-gray-500">({service.reviews.length} đánh giá)</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {service.reviews.map((review) => (
-                        <div key={review.id} className="border-b pb-4 last:border-b-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <Avatar>
-                                <AvatarFallback>{review.user.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <h4 className="font-medium">{review.user}</h4>
-                                <div className="flex items-center gap-1">
-                                  {[...Array(review.rating)].map((_, i) => (
-                                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                            <span className="text-sm text-gray-500">{review.date}</span>
-                          </div>
-                          <p className="text-gray-700">{review.comment}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent> */}
+              <TabsContent value="reviews">
+                      <Reviews serviceId={service.id} />
+              </TabsContent>
             </Tabs>
           </div>
 

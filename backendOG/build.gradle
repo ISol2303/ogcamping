@@ -13,7 +13,8 @@ java {
     }
 }
 tasks.withType(JavaCompile) {
-    options.compilerArgs << "-parameters"
+    options.compilerArgs += "-parameters"
+
 }
 
 repositories {

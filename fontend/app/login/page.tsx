@@ -55,6 +55,7 @@ export default function LoginPage() {
 
     try {
       const response = await loginApi({
+        // id
         email: formData.email,
         password: formData.password,
         remember: formData.remember,
@@ -62,11 +63,11 @@ export default function LoginPage() {
       
       // cập nhật AuthContext ngay sau khi login thành công
       login(response.token, {
+        id: response.id, // giữ nguyên id là string
         email: response.email,
         name: response.name,
         role: response.role,
       }, formData.remember);
-
       console.log('Login response:', response);
 
       if (!response?.token || !response?.email) {

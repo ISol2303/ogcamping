@@ -10,23 +10,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 
@@ -84,23 +82,26 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 }
 
 	// 2) Chain cho REST API (JWT stateless)
-//	@Bean
-//	@Order(2)
-//	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-//	    http
-//	        .securityMatcher("/apis/**") // ✅ sửa lại cho đúng với controller
-//	        .authorizeHttpRequests(auth -> auth
-//	            .requestMatchers("/apis/v1/login", "/apis/v1/register", "/apis/test/**").permitAll()
-//	            .anyRequest().authenticated()
-//	        )
-//	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//	        .csrf(csrf -> csrf.disable());
-//	
-//	    // ✅ add JWT filter
-//	    http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-//	
-//	    return http.build();
-//	}
+	@Bean
+	@Order(2)
+	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+	    http
+	        .securityMatcher("/apis/**") // Áp dụng cho tất cả API
+	        .authorizeHttpRequests(auth -> auth
+	        	.requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
+	        	.requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
+	            .requestMatchers("/apis/v1/login", "/apis/v1/register", "/apis/test/**", "/apis/v1/services/**").permitAll()
+	            .anyRequest().authenticated()
+	        )
+	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+	        .csrf(csrf -> csrf.disable())
+	    	.cors(Customizer.withDefaults());
+	
+	    // ✅ add JWT filter
+	    http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+	
+	    return http.build();
+	}
 
 
 	// 3) Fallback (cho phép trang gốc, tĩnh…)
@@ -117,18 +118,18 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	}
 
 
-	@Bean
-    CorsFilter corsFilter() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
-    }
+//	@Bean
+//    CorsFilter corsFilter() {
+//        CorsConfiguration config = new CorsConfiguration();
+//        config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
+//        config.addAllowedHeader("*");
+//        config.addAllowedMethod("*");
+//        config.setAllowCredentials(true);
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//        return new CorsFilter(source);
+//    }
 
 	@Bean
 	AuthTokenFilter authenticationJwtTokenFilter() {
