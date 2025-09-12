@@ -18,15 +18,18 @@ type Review = {
   customerName: string;
   rating: number;
   content: string;
+  images?: string[];
+  videos?: string[];
   createdAt: string;
 };
 
 export default function Reviews({ serviceId }: { serviceId: number }) {
-  const { user, isLoggedIn } = useAuth();
+  const { user, token, isLoggedIn } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState<number>(5);
-    
+  const [files, setFiles] = useState<File[]>([]);
+    console.log("sending token: ", token);
   // Lấy danh sách review
   const fetchReviews = async () => {
     try {
@@ -46,28 +49,44 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
     return;
   }
 
+  files.forEach((file) => {
+    console.log("Uploading:", file.name, file.type, file.size);
+  });
+
   try {
-    const token = localStorage.getItem("authToken"); // lấy token từ localStorage
-    await axios.post(
+    const formData = new FormData();
+    formData.append("rating", rating.toString());
+    formData.append("content", content);
+
+    // Thêm file ảnh / video
+    files.forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        formData.append("images", file); // key trùng với @RequestPart("images")
+      } else if (file.type.startsWith("video/")) {
+        formData.append("videos", file); // key trùng với @RequestPart("videos")
+      }
+    });
+    
+    const res = await axios.post(
       `http://localhost:8080/apis/v1/reviews/service/${serviceId}`,
-      {
-        rating,
-        content,
-        images: [],
-        videos: [],
-      },
+      formData,
       {
         headers: {
-          Authorization: `Bearer ${token}`, // gắn token vào header
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          // ❌ KHÔNG set Content-Type thủ công
+          // axios + FormData sẽ tự thêm boundary cho multipart
         },
       }
     );
 
-    console.log("Review submitted", { rating, content });
+    console.log("Review submitted", res.data);
 
-    setContent(""); // reset form
-    fetchReviews(); // reload list
+    // Reset form
+    setContent("");
+    setRating(5);
+    setFiles([]);
+
+    fetchReviews(); // reload danh sách review
   } catch (err) {
     console.error("Error submitting review:", err);
   }
@@ -128,6 +147,13 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
             >
               Gửi đánh giá
             </button>
+
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            />
           </div>
         )}
 
@@ -164,6 +190,33 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
                 </span>
               </div>
               <p className="text-gray-700">{review.content}</p>
+              {/* ✅ render ảnh */}
+              {review.images && review.images.length > 0 && (
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {review.images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={`http://localhost:8080${img}`}  // nếu BE trả "/uploads/..."
+                      alt={`review-img-${i}`}
+                      className="w-32 h-32 object-cover rounded"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* ✅ render video */}
+              {review.videos && review.videos.length > 0 && (
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {review.videos.map((vid, i) => (
+                    <video
+                      key={i}
+                      controls
+                      className="w-64 rounded"
+                      src={`http://localhost:8080${vid}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -11,7 +11,11 @@ import com.mytech.backend.portal.repositories.ServiceRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,6 +62,76 @@ public class ReviewServiceImpl implements ReviewService {
 
         return mapToResponse(review);
     }
+    
+
+    // ✅ Thêm mới: nhận MultipartFile (upload ảnh/video thật sự)
+    @Override
+    public ReviewResponseDTO createReviewWithFiles(
+            Long customerId,
+            Long serviceId,
+            Integer rating,
+            String content,
+            List<MultipartFile> images,
+            List<MultipartFile> videos) {
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+        com.mytech.backend.portal.models.Service.Service service =
+                serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new RuntimeException("Service not found"));
+
+        Review review = Review.builder()
+                .customer(customer)
+                .service(service)
+                .rating(rating != null ? rating : 5)
+                .content(content != null ? content : "")
+                .reply(null)
+                .build();
+
+        // ✅ Upload file & convert sang URL
+        List<String> imageUrls = new ArrayList<>();
+        if (images != null) {
+            for (MultipartFile img : images) {
+                imageUrls.add(saveFile(img, "reviews/images"));
+            }
+        }
+
+        List<String> videoUrls = new ArrayList<>();
+        if (videos != null) {
+            for (MultipartFile vid : videos) {
+                videoUrls.add(saveFile(vid, "reviews/videos"));
+            }
+        }
+
+        review.setImages(imageUrls);
+        review.setVideos(videoUrls);
+
+        reviewRepository.save(review);
+
+        return mapToResponse(review);
+    }
+
+    // ✅ Hàm helper để lưu file
+    private String saveFile(MultipartFile file, String subDir) {
+        try {
+            // ✅ Đường dẫn lưu file thực tế
+            String basePath = "D:/DANG/Git/ogcamping-git/ogcamping/backendOG/uploads/" + subDir;
+            File dir = new File(basePath);
+            if (!dir.exists()) dir.mkdirs();
+
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            File dest = new File(dir, fileName);
+
+            file.transferTo(dest);
+
+            // ✅ Trả về URL public trùng với ResourceHandler
+            return "/uploads/" + subDir + "/" + fileName;
+        } catch (IOException e) {
+            throw new RuntimeException("Error saving file", e);
+        }
+    }
+    
 
     @Override
     public List<ReviewResponseDTO> getReviewsForService(Long serviceId) {

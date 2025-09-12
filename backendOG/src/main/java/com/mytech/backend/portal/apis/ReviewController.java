@@ -4,9 +4,11 @@ package com.mytech.backend.portal.apis;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.mytech.backend.portal.dto.Review.ReviewRequestDTO;
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
@@ -25,25 +27,33 @@ public class ReviewController {
     
     private final UserService userService;
     // Tạo review mới
-    @PostMapping("/service/{serviceId}")
+    @PostMapping(value = "/service/{serviceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReviewResponseDTO> createReview(
             @PathVariable("serviceId") Long serviceId,
-            @RequestBody ReviewRequestDTO request,
+            @RequestPart("rating") String ratingStr,
+            @RequestPart("content") String content,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestPart(value = "videos", required = false) List<MultipartFile> videos,
             Authentication authentication) {
 
-        // Lấy email từ JWT (sub)
-        String email = authentication.getName();  
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        // Tìm user theo email
+        String email = authentication.getName();
         User user = userService.findByEmail(email);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Long customerId = user.getId();
+        int rating = Integer.parseInt(ratingStr);
 
-        return ResponseEntity.ok(reviewService.createReview(customerId, serviceId, request));
+        return ResponseEntity.ok(
+                reviewService.createReviewWithFiles(customerId, serviceId,rating, content, images, videos)
+        );
     }
+
 
     // Lấy review theo service
     @GetMapping("/service/{serviceId}")
