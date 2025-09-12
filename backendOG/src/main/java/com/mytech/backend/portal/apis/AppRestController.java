@@ -49,6 +49,7 @@ public class AppRestController {
             String token = jwtUtils.generateJwtToken(authentication);
 
             SignInResponse signInResponse = new SignInResponse();
+            signInResponse.setId(user.getId());
             signInResponse.setEmail(user.getEmail());
             signInResponse.setFullname(user.getName());
             signInResponse.setRole(user.getRole());

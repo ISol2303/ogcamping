@@ -31,25 +31,21 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
-//    @Override
-//    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-//      String path = request.getServletPath();
-//      System.out.println("------------shouldNotFilter------------" + path);
-//      return path.startsWith("/apis/v1/login") || path.startsWith("/apis/v1/register");
-//    }
-@Override
-protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-    String path = request.getServletPath();
-    System.out.println("------------shouldNotFilter------------" + path);
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+        System.out.println("------------shouldNotFilter------------" + path);
 
-    return path.startsWith("/apis/v1/login")
-            || path.startsWith("/apis/v1/register")
-            || path.startsWith("/oauth2")
-            || path.startsWith("/login");
-}
+        return path.startsWith("/apis/v1/login")
+                || path.startsWith("/apis/v1/register")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/login");
+    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         System.out.println("doFilterInternal::");
@@ -59,42 +55,60 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
                 Claims claims = jwtUtils.getClaimsFromJwtToken(jwt);
-                List<String> roles = claims.get("roles", List.class); // Retrieve roles as a List
 
-                AppUserDetails userDetails = (AppUserDetails) userDetailsService.loadUserByUsername(username);
+                Object rolesObj = claims.get("roles");
+                if (rolesObj == null) {
+                    rolesObj = claims.get("role");
+                }
 
-                // Convert roles from JWT to Spring Security authorities
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-                        .collect(Collectors.toList());
+                List<String> roles;
+                if (rolesObj instanceof String) {
+                    roles = List.of((String) rolesObj);
+                } else if (rolesObj instanceof List) {
+                    roles = (List<String>) rolesObj;
+                } else {
+                    roles = List.of(); // fallback
+                }
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, authorities);
+                AppUserDetails userDetails =
+                        (AppUserDetails) userDetailsService.loadUserByUsername(username);
+
+                // convert roles -> SimpleGrantedAuthority
+                List<SimpleGrantedAuthority> authorities = roles != null
+                        ? roles.stream()
+                               .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+                               .collect(Collectors.toList())
+                        : userDetails.getAuthorities().stream()
+                               .map(auth -> new SimpleGrantedAuthority(auth.getAuthority()))
+                               .collect(Collectors.toList());
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                authorities
+                        );
+
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                System.out.println("subject: " + username);
+                System.out.println("subject (username): " + username);
                 System.out.println("claims roles: " + roles);
-                System.out.println("userDetails roles: " + userDetails.roles());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            logger.error("Cannot set user authentication: {}", e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
     }
 
     private String parseJwt(HttpServletRequest request) {
-    	String headerAuth = request.getHeader("Authorization");
-    	if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-    	    String token = headerAuth.substring(7).trim();
-    	    if (token.startsWith("Bearer ")) { // Xóa Bearer thừa
-    	        token = token.substring(7).trim();
-    	    }
-    	    // validate token
-    	}
+        String headerAuth = request.getHeader("Authorization");
 
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7).trim(); // cắt "Bearer "
+        }
         return null;
     }
+    
 }

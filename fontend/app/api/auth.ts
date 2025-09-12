@@ -17,7 +17,7 @@ interface RegisterRequest {
 
 interface DecodedToken {
   sub: string;
-  role?: string; // backend của em trả "role"
+  role?: string; // backend trả "role"
   name?: string;
   email?: string;
   exp?: number;
@@ -26,6 +26,7 @@ interface DecodedToken {
 
 interface AuthResponse {
   token: string;
+  id: string;
   tokenType: string;
   email: string;
   name: string;
@@ -57,6 +58,7 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
 
     let token: string = payload?.token;
     const tokenType: string = payload?.tokenType || 'Bearer';
+    const id: string= payload?.id;     //thêm id
     const email: string = payload?.email;
     const name: string = payload?.fullname || payload?.name || 'Unknown User';
     const role: string = payload?.role || 'CUSTOMER';
@@ -120,6 +122,7 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
     return {
       token,
       tokenType,
+      id: userId,
       email: userProfile.email,
       name: userProfile.name,
       role: userProfile.role,

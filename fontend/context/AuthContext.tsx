@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 // Kiểu dữ liệu User
 type User = {
+  id: string;
   name: string;
   email: string;
   avatar?: string;
@@ -12,6 +13,7 @@ type User = {
 // Kiểu dữ liệu cho context
 type AuthContextType = {
   user: User | null;                  // Thông tin user đang đăng nhập
+  token: string | null;               // Lưu token vào context
   isLoggedIn: boolean;                // Trạng thái đăng nhập
   login: (token: string, user: User, remember?: boolean) => void; // Hàm login
   logout: () => void;                 // Hàm logout
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Provider để bọc toàn bộ app (thường đặt trong layout.tsx)
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Khi app load lại → check localStorage/sessionStorage xem có token + user không
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (token && userData) {
       setUser(JSON.parse(userData));
       setIsLoggedIn(true);
+      setToken(token);
     }
   }, []);
 
@@ -49,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       sessionStorage.setItem("user", JSON.stringify(userData));
     }
     setUser(userData);
+    setToken(token);
     setIsLoggedIn(true);
   };
 
@@ -59,11 +64,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.removeItem("authToken");
     sessionStorage.removeItem("user");
     setUser(null);
+    setToken(null);
     setIsLoggedIn(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoggedIn, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
