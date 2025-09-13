@@ -31,7 +31,7 @@ public class ReviewController {
     public ResponseEntity<ReviewResponseDTO> createReview(
             @PathVariable("serviceId") Long serviceId,
             @RequestPart("rating") String ratingStr,
-            @RequestPart("content") String content,
+            @RequestPart(value = "content", required = false) String content,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "videos", required = false) List<MultipartFile> videos,
             Authentication authentication) {
