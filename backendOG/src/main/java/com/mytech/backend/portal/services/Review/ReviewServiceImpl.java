@@ -108,6 +108,17 @@ public class ReviewServiceImpl implements ReviewService {
         review.setVideos(videoUrls);
 
         reviewRepository.save(review);
+        
+     // ✅ Cập nhật averageRating & reviewCount trong Service
+//        int oldCount = service.getReviewCount();
+//        double oldAvg = service.getAverageRating();
+//
+//        double newAvg = ((oldAvg * oldCount) + review.getRating()) / (oldCount + 1);
+//
+//        service.setReviewCount(oldCount + 1);
+//        service.setAverageRating(newAvg);
+//
+//        serviceRepository.save(service);
 
         return mapToResponse(review);
     }
