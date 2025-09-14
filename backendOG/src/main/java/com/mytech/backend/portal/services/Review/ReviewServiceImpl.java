@@ -59,12 +59,14 @@ public class ReviewServiceImpl implements ReviewService {
                 .build();
 
         reviewRepository.save(review);
-
+        
+        //  Cập nhật rating cho service
+        updateServiceRating(service, review.getRating());
         return mapToResponse(review);
     }
     
 
-    // ✅ Thêm mới: nhận MultipartFile (upload ảnh/video thật sự)
+    // Thêm mới: nhận MultipartFile (upload ảnh/video thật sự)
     @Override
     public ReviewResponseDTO createReviewWithFiles(
             Long customerId,
@@ -89,7 +91,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .reply(null)
                 .build();
 
-        // ✅ Upload file & convert sang URL
+        // Upload file & convert sang URL
         List<String> imageUrls = new ArrayList<>();
         if (images != null) {
             for (MultipartFile img : images) {
@@ -109,18 +111,22 @@ public class ReviewServiceImpl implements ReviewService {
 
         reviewRepository.save(review);
         
-     // ✅ Cập nhật averageRating & reviewCount trong Service
-//        int oldCount = service.getReviewCount();
-//        double oldAvg = service.getAverageRating();
-//
-//        double newAvg = ((oldAvg * oldCount) + review.getRating()) / (oldCount + 1);
-//
-//        service.setReviewCount(oldCount + 1);
-//        service.setAverageRating(newAvg);
-//
-//        serviceRepository.save(service);
+        // Cập nhật totalReviews & averageRating trong Service
+        updateServiceRating(service, review.getRating());
 
         return mapToResponse(review);
+    }
+    
+    private void updateServiceRating(com.mytech.backend.portal.models.Service.Service service, Integer newRating) {
+        int oldCount = service.getTotalReviews() != null ? service.getTotalReviews() : 0;
+        double oldAvg = service.getAverageRating() != null ? service.getAverageRating() : 0.0;
+
+        double newAvg = ((oldAvg * oldCount) + newRating) / (oldCount + 1);
+
+        service.setTotalReviews(oldCount + 1);
+        service.setAverageRating(newAvg);
+
+        serviceRepository.save(service);
     }
 
     // ✅ Hàm helper để lưu file
