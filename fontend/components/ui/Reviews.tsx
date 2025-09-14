@@ -24,6 +24,11 @@ type Review = {
   createdAt: string;
 };
 
+type ServiceInfo = {
+  averageRating: number;
+  totalReviews: number;
+};
+
 type MediaItem = {
   type: "image" | "video";
   url: string;
@@ -32,6 +37,7 @@ type MediaItem = {
 export default function Reviews({ serviceId }: { serviceId: number }) {
   const { user, token, isLoggedIn } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [serviceInfo, setServiceInfo] = useState<ServiceInfo | null>(null);
   const [content, setContent] = useState("");
   const [rating, setRating] = useState<number>(5);
   const [files, setFiles] = useState<File[]>([]);
@@ -69,6 +75,21 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
       console.error("Error fetching reviews:", err);
     }
   };
+
+  // Lấy thông tin service (để hiển thị rating trung bình, tổng số review)
+  const fetchServiceInfo = async () => {
+  try {
+    const res = await axios.get(
+      `http://localhost:8080/apis/v1/services/${serviceId}`
+    );
+    setServiceInfo({
+      averageRating: res.data.averageRating || 0,
+      totalReviews: res.data.totalReviews || 0,
+    });
+  } catch (err) {
+    console.error("Error fetching service info:", err);
+  }
+};
 
   // Submit review mới
   const submitReview = async () => {
@@ -114,6 +135,7 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
       setRating(5);
       setFiles([]);
       fetchReviews(); // reload danh sách review
+      fetchServiceInfo();
     } catch (err) {
       console.error("Error submitting review:", err);
     }
@@ -149,6 +171,7 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
 
   useEffect(() => {
     fetchReviews();
+    fetchServiceInfo();
   }, [serviceId]);
 
   // clamp currentPage nếu số trang thay đổi (ví dụ xóa review làm giảm totalPages)
@@ -175,15 +198,10 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
             <span className="font-semibold">
-              {reviews.length > 0
-                ? (
-                    reviews.reduce((sum, r) => sum + r.rating, 0) /
-                    reviews.length
-                  ).toFixed(1)
-                : "0"}
+                {serviceInfo ? serviceInfo.averageRating.toFixed(1) : "0"}
             </span>
             <span className="text-gray-500">
-              ({reviews.length} đánh giá)
+              ({serviceInfo ? serviceInfo.totalReviews : 0} đánh giá)
             </span>
           </div>
         </div>
