@@ -72,7 +72,15 @@ public class AppUserDetails implements UserDetails {
         return roles;
     }
 
-    public String getFullname() {
+    public String getName() {
         return user.getName();
+    }
+
+    public String getAvatar() {
+        return user.getAvatar();
+    }
+    
+    public Long getId() {
+        return user.getId();
     }
 }

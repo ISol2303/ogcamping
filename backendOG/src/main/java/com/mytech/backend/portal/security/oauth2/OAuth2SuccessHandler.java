@@ -70,7 +70,11 @@ public void onAuthenticationSuccess(HttpServletRequest request, HttpServletRespo
     // --- 3. Tạo JWT token ---
     String token = jwtUtils.generateToken(
             user.getEmail(),
-            Map.of("role", user.getRole().name())
+            Map.of(
+                    "role", user.getRole().name(),
+                    "name", user.getName(),
+                    "avatar", user.getAvatar()
+                )
     );
 
     // --- 4. Redirect về frontend ---

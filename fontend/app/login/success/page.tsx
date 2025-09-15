@@ -34,7 +34,8 @@ export default function LoginSuccessPage() {
       // Store token and userId
       localStorage.setItem('authToken', token)
       localStorage.setItem('userId', decoded.sub || '1')
-
+      
+      console.log("Token from URL:", searchParams.get("token"))
       // Redirect based on role
       const role = decoded.role.toUpperCase()
       if (role === 'ADMIN') {
