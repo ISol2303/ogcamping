@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
 
   return (
-     <html lang="vi">
+     <html lang="vi" className="mdl-js">
       <body className={`${inter.variable} ${inter.className}`} suppressHydrationWarning>
         <AuthProvider>
           <ChatProvider>
