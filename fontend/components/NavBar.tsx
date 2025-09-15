@@ -10,7 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles, Settings } from "lucide-react"
+import { Sparkles } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function Navbar() {
   const router = useRouter()
@@ -74,13 +75,23 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {isLoggedIn && user ? (
             <>
+              {/* Avatar + tên */}
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user.avatar || ""} alt={user.name || "User"} />
+                <AvatarFallback>
+                  {(user.name?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
               <span className="text-gray-800 font-medium">
                 {user.name || user.email}
               </span>
+
+              {/* Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Settings className="h-5 w-5 text-gray-800" />
+                  <Button variant="ghost" size="sm">
+                    ☰
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
