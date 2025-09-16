@@ -5,4 +5,5 @@ import com.mytech.backend.portal.models.OrderBooking;
 public interface EmailService {
     void sendOrderConfirmation(String to, String subject, String body);
     void sendBookingEmail(OrderBooking order);
+    void sendResetPasswordCode(String to, String subject, String body);
 }

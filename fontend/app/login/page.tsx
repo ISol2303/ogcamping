@@ -49,56 +49,54 @@ export default function LoginPage() {
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+  e.preventDefault();
+  setError(null);
+  setIsLoading(true);
 
-    try {
-      const response = await loginApi({
-        // id
-        email: formData.email,
-        password: formData.password,
-        remember: formData.remember,
-      });
-      
-      // cập nhật AuthContext ngay sau khi login thành công
-      login(response.token, {
-        id: response.id, // giữ nguyên id là string
-        email: response.email,
-        name: response.name,
-        role: response.role,
-      }, formData.remember);
-      console.log('Login response:', response);
+  try {
+    const response = await loginApi({
+      email: formData.email,
+      password: formData.password,
+      remember: formData.remember,
+    });
 
-      if (!response?.token || !response?.email) {
-        throw new Error('Dữ liệu phản hồi không hợp lệ từ máy chủ.');
-      }
+    console.log("Login response:", response);
 
-      const { role } = response;
-      const normalizedRole = role.toUpperCase();
-
-      if (normalizedRole === 'ADMIN') {
-        router.push('/');
-      } else if (normalizedRole === 'STAFF') {
-        router.push('/');
-      } else {
-        router.push('/');
-      }
-    } catch (err: any) {
-      console.error('Lỗi đăng nhập:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        responseBody: err.response?.data ? JSON.stringify(err.response.data, null, 2) : 'No response body',
-        stack: err.stack,
-      });
-      setError(
-        err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.'
-      );
-    } finally {
-      setIsLoading(false);
+    if (!response?.token) {
+      throw new Error("Dữ liệu phản hồi không hợp lệ từ máy chủ.");
     }
-  };
+
+    // cập nhật AuthContext ngay sau khi login thành công
+    login(response.token, formData.remember);
+
+    // lấy role từ token (context đã decode) hoặc từ response
+    const normalizedRole = response.role?.toUpperCase();
+
+    if (normalizedRole === "ADMIN") {
+      router.push("/");
+    } else if (normalizedRole === "STAFF") {
+      router.push("/");
+    } else {
+      router.push("/");
+    }
+  } catch (err: any) {
+    console.error("Lỗi đăng nhập:", {
+      message: err.message,
+      response: err.response?.data,
+      status: err.response?.status,
+      responseBody: err.response?.data
+        ? JSON.stringify(err.response.data, null, 2)
+        : "No response body",
+      stack: err.stack,
+    });
+    setError(
+      err.message || "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
@@ -194,7 +192,7 @@ export default function LoginPage() {
                   </Label>
                 </div>
                 <Link
-                  href="/forgot-password"
+                  href="/reset-password"
                   className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
                 >
                   Quên mật khẩu?

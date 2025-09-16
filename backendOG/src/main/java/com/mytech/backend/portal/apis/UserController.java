@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.mytech.backend.portal.dto.ResetPasswordRequestDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.services.UserService;
 
@@ -80,6 +82,34 @@ public class UserController {
     public ResponseEntity<UserDTO> getUserByEmail(@RequestParam(name = "email") String email) {
         UserDTO userDTO = userService.getUserByEmail(email);
         return ResponseEntity.ok(userDTO);
+    }
+    
+    // Gửi email reset password
+ // Case: user chưa đăng nhập -> cần nhập email
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPasswordGuest(@RequestParam(name = "email") String email) {
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email không được để trống");
+        }
+        userService.sendResetCode(email);
+        return ResponseEntity.ok("OTP đã được gửi tới " + email);
+    }
+
+    // Case: user đã đăng nhập -> lấy email từ token
+    @PostMapping("/forgot-password/authenticated")
+    public ResponseEntity<String> forgotPasswordAuth(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn chưa đăng nhập");
+        }
+        String targetEmail = authentication.getName();
+        userService.sendResetCode(targetEmail);
+        return ResponseEntity.ok("OTP đã được gửi tới " + targetEmail);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequestDTO request) {
+        userService.resetPassword(request.getCode(), request.getNewPassword());
+        return ResponseEntity.ok("Mật khẩu đã được đặt lại thành công.");
     }
 
 }

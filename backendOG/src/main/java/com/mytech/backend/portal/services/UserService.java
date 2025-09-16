@@ -19,5 +19,7 @@ public interface UserService {
     Collection<StatDTO> findAllStats();          // Thống kê user
     UserDTO findById(Long id);
     UserDTO getUserByEmail(String email);
+    void sendResetCode(String email);
+    void resetPassword(String token, String newPassword);
 }
 

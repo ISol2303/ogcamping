@@ -49,17 +49,23 @@ public class JwtUtils {
     public String generateJwtToken(Authentication authentication) {
         AppUserDetails userPrincipal = (AppUserDetails) authentication.getPrincipal();
         String role = userPrincipal.roles().stream().findFirst().orElse("USER");
+        
+        System.out.println("Generate JWT: email=" + userPrincipal.getUsername()
+        + ", name=" + userPrincipal.getName()
+        + ", avatar=" + userPrincipal.getAvatar());
 
         return Jwts.builder()
                 .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(new Date())
                 .setIssuer("ogcamping")
                 .claim("role", role) // Use single "role" claim as string
+                .claim("name", userPrincipal.getName())
+                .claim("avatar", userPrincipal.getAvatar())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
-
+    
     public String getUserNameFromJwtToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key())

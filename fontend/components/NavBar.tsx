@@ -2,27 +2,34 @@
 
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { useAuth } from "@/context/AuthContext"   // 👈 lấy AuthContext
+import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Sparkles, Settings } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Sparkles } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, isLoggedIn, logout } = useAuth()   // 👈 lấy dữ liệu từ context
+  const { user, isLoggedIn, logout } = useAuth()
 
-  // 👇 helper để set class active
+  // helper để set class active
   const linkClass = (href: string) =>
     pathname === href
-      ? "text-green-600 font-medium" // active
-      : "text-gray-600 hover:text-green-600 transition-colors" // normal
+      ? "text-green-600 font-medium"
+      : "text-gray-600 hover:text-green-600 transition-colors"
 
-  // 👇 xử lý chuyển hướng Dashboard theo role
+  // xử lý chuyển hướng Dashboard theo role
   const handleDashboardNavigation = () => {
-    if (user?.role === "ADMIN") {
+    const role = user?.role?.toUpperCase()
+    if (role === "ADMIN") {
       router.push("/admin")
-    } else if (user?.role === "STAFF") {
+    } else if (role === "STAFF") {
       router.push("/staff")
     } else {
       router.push("/dashboard")
@@ -68,16 +75,32 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {isLoggedIn && user ? (
             <>
-              <span className="text-gray-800 font-medium">{user.name}</span>
+              {/* Avatar + tên */}
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user.avatar || ""} alt={user.name || "User"} />
+                <AvatarFallback>
+                  {(user.name?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+
+              <span className="text-gray-800 font-medium">
+                {user.name || user.email}
+              </span>
+
+              {/* Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <Settings className="h-5 w-5 text-gray-800" />
+                  <Button variant="ghost" size="sm">
+                    ☰
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleDashboardNavigation}>Dashboard</DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout}>Đăng xuất</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDashboardNavigation}>
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout}>
+                    Đăng xuất
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>

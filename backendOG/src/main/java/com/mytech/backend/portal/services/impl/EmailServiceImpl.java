@@ -3,6 +3,9 @@ package com.mytech.backend.portal.services.impl;
 import com.mytech.backend.portal.models.OrderBooking;
 import com.mytech.backend.portal.services.EmailService;
 import jakarta.mail.internet.MimeMessage;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -11,7 +14,8 @@ import org.thymeleaf.context.Context;
 
 @Service
 public class EmailServiceImpl implements EmailService {
-
+	
+	@Autowired
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
@@ -76,5 +80,15 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Lỗi gửi email: " + e.getMessage());
         }
     }
+
+	@Override
+	public void sendResetPasswordCode(String to, String subject, String body) {
+		SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body);
+        mailSender.send(message);
+		
+	}
 
 }
