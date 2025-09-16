@@ -1,36 +1,72 @@
 package com.mytech.backend.portal.apis;
 
-import com.mytech.backend.portal.dto.OrderBookingRequestDTO;
-import com.mytech.backend.portal.models.OrderBooking;
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.repositories.OrderBookingRepository;
-import com.mytech.backend.portal.services.EmailService;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
+import com.itextpdf.io.source.ByteArrayOutputStream;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import com.mytech.backend.portal.dto.AddDishRequestDTO;
+import com.mytech.backend.portal.dto.OrderBookingRequestDTO;
+import com.mytech.backend.portal.models.Dish;
+import com.mytech.backend.portal.models.OrderBooking;
+import com.mytech.backend.portal.models.OrderItem;
+import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.repositories.DishRepository;
+import com.mytech.backend.portal.repositories.OrderBookingRepository;
+import com.mytech.backend.portal.repositories.OrderItemRepository;
+import com.mytech.backend.portal.services.EmailService;
 
 @RestController
 @RequestMapping("/apis/orders")
 public class OrderBookingController {
 
-    private final OrderBookingRepository orderBookingRepository;
+	private final OrderBookingRepository orderBookingRepository;
+	private final SimpMessagingTemplate messagingTemplate;
+    private final OrderItemRepository orderItemRepository;
+    private final DishRepository dishRepository;
     private final EmailService emailService;
     private final SecureRandom random = new SecureRandom();
 
+
     public OrderBookingController(OrderBookingRepository orderBookingRepository,
-                                  EmailService emailService) {
-        this.orderBookingRepository = orderBookingRepository;
-        this.emailService = emailService;
-    }
+            OrderItemRepository orderItemRepository,
+            SimpMessagingTemplate messagingTemplate,
+            DishRepository dishRepository,
+            EmailService emailService) {
+    	this.orderBookingRepository = orderBookingRepository;
+    	this.orderItemRepository = orderItemRepository;
+    	this.messagingTemplate = messagingTemplate;
+    	this.dishRepository = dishRepository;
+    	this.emailService = emailService;
+}
 
     // =====================
     // 🔹 Helper generate mã
@@ -138,11 +174,59 @@ public class OrderBookingController {
     // =====================
     // 🔹 API CONFIRM SINGLE ORDER (staff)
     // =====================
+//    @PatchMapping("/{id}/confirm")
+//    @PreAuthorize("hasRole('STAFF')")
+//    public ResponseEntity<?> confirmOrder(@PathVariable("id") Long id) {
+//        if (id == null) {
+//            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "ID đơn hàng không được null"));
+//        }
+//
+//        try {
+//            // Lấy đơn hàng theo id
+//            OrderBooking order = orderBookingRepository.findById(id)
+//                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với id: " + id));
+//
+//            // Kiểm tra trạng thái đã CONFIRMED chưa
+//            if ("CONFIRMED".equalsIgnoreCase(order.getStatus())) {
+//                return ResponseEntity.badRequest()
+//                        .body(Collections.singletonMap("error", "Đơn hàng đã được xác nhận trước đó"));
+//            }
+//
+//            // Xác nhận đơn hàng
+//            order.setStatus("CONFIRMED");
+//            order.setConfirmedAt(LocalDateTime.now());
+//            orderBookingRepository.save(order);
+//
+//            // Gửi email xác nhận
+//            try {
+//                sendConfirmationEmail(order);
+//            } catch (Exception e) {
+//                // Không crash nếu gửi mail fail
+//                e.printStackTrace();
+//            }
+//
+//            return ResponseEntity.ok(order);
+//
+//        } catch (RuntimeException e) {
+//            // Lỗi do không tìm thấy đơn hàng
+//            e.printStackTrace();
+//            return ResponseEntity.status(404)
+//                    .body(Collections.singletonMap("error", e.getMessage()));
+//        } catch (Exception e) {
+//            // Các lỗi khác
+//            e.printStackTrace();
+//            return ResponseEntity.status(500)
+//                    .body(Collections.singletonMap("error", "Có lỗi xảy ra khi xác nhận đơn"));
+//        }
+//    }
+
     @PatchMapping("/{id}/confirm")
     @PreAuthorize("hasRole('STAFF')")
+    @Transactional
     public ResponseEntity<?> confirmOrder(@PathVariable("id") Long id) {
         if (id == null) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "ID đơn hàng không được null"));
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "ID đơn hàng không được null"));
         }
 
         try {
@@ -150,39 +234,54 @@ public class OrderBookingController {
             OrderBooking order = orderBookingRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với id: " + id));
 
-            // Kiểm tra trạng thái đã CONFIRMED chưa
+            // Nếu đã xác nhận rồi thì trả về
             if ("CONFIRMED".equalsIgnoreCase(order.getStatus())) {
                 return ResponseEntity.badRequest()
                         .body(Collections.singletonMap("error", "Đơn hàng đã được xác nhận trước đó"));
             }
 
-            // Xác nhận đơn hàng
-            order.setStatus("CONFIRMED");
-            order.setConfirmedAt(LocalDateTime.now());
-            orderBookingRepository.save(order);
-
-            // Gửi email xác nhận
-            try {
-                sendConfirmationEmail(order);
-            } catch (Exception e) {
-                // Không crash nếu gửi mail fail
-                e.printStackTrace();
+            // Nếu email đã gửi trước đó thì không gửi lại
+            if (order.getEmailSentAt() != null) {
+                return ResponseEntity.badRequest()
+                        .body(Collections.singletonMap("error", "Đơn hàng này đã được gửi email trước đó"));
             }
 
-            return ResponseEntity.ok(order);
+            // 🔥 Chỉ gửi email trước, nếu thành công mới xác nhận
+            try {
+                emailService.sendBookingEmail(order);
+                order.setEmailSentAt(LocalDateTime.now());
+
+                // Nếu email gửi ok thì mới set CONFIRMED
+                order.setStatus("CONFIRMED");
+                order.setConfirmedAt(LocalDateTime.now());
+                orderBookingRepository.save(order);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Đơn hàng đã được xác nhận thành công và email đã gửi.");
+                response.put("orderId", order.getId());
+                response.put("orderCode", order.getOrderCode());
+                response.put("status", order.getStatus());
+                response.put("confirmedAt", order.getConfirmedAt());
+
+                return ResponseEntity.ok(response);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(500)
+                        .body(Collections.singletonMap("error", "Gửi email thất bại, đơn hàng chưa được xác nhận."));
+            }
 
         } catch (RuntimeException e) {
-            // Lỗi do không tìm thấy đơn hàng
             e.printStackTrace();
             return ResponseEntity.status(404)
                     .body(Collections.singletonMap("error", e.getMessage()));
         } catch (Exception e) {
-            // Các lỗi khác
             e.printStackTrace();
             return ResponseEntity.status(500)
                     .body(Collections.singletonMap("error", "Có lỗi xảy ra khi xác nhận đơn"));
         }
     }
+
 
 
     // =====================
@@ -255,6 +354,340 @@ public class OrderBookingController {
 
         return "Gửi email xong: thành công=" + success + ", lỗi=" + fail;
     }
+    //add thông báo 
+    @PostMapping("/add")
+    public OrderBooking addOrder(@RequestBody OrderBooking order) {
+        // Lưu order vào DB
+        OrderBooking savedOrder = orderBookingRepository.save(order);
+
+        // Gửi notification tới tất cả client subscribe topic /topic/orders
+        messagingTemplate.convertAndSend("/topic/orders", savedOrder);
+
+        System.out.println("✅ Đã thêm đơn mới và gửi notification: " + savedOrder.getCustomerName());
+
+        return savedOrder;
+    }
+
+  
+
+    @PostMapping("/{orderId}/add-dishes")
+    public ResponseEntity<?> addDishesToOrder(
+            @PathVariable("orderId") Long orderId,
+            @RequestBody List<AddDishRequestDTO> dishesRequest) {
+        try {
+            OrderBooking order = orderBookingRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+
+            for (AddDishRequestDTO dto : dishesRequest) {
+                Dish dish = dishRepository.findById(dto.getDishId())
+                        .orElseThrow(() -> new RuntimeException("Món ăn không tồn tại"));
+
+                // ✅ Kiểm tra số lượng tồn kho
+                if (dish.getQuantity() < dto.getQuantity()) {
+                    throw new RuntimeException("Không đủ số lượng cho món: " + dish.getName());
+                }
+
+                // ✅ Trừ số lượng trong DB
+                dish.setQuantity(dish.getQuantity() - dto.getQuantity());
+                dishRepository.save(dish);
+
+                // Tạo OrderItem
+                OrderItem item = new OrderItem();
+                item.setOrder(order);
+                item.setDish(dish);
+                item.setQuantity(dto.getQuantity());
+                item.setUnitPrice(dish.getPrice());
+                item.setTotalPrice(dish.getPrice() * dto.getQuantity());
+
+                orderItemRepository.save(item);
+            }
+
+            // ✅ Gửi WebSocket cho staff
+            Map<String, Object> message = new HashMap<>();
+            message.put("orderId", order.getId());
+            message.put("email", order.getEmail());
+            message.put("message", "Có đơn hàng đặt thêm món từ " + order.getEmail());
+
+            messagingTemplate.convertAndSend("/topic/order-updates", message);
+
+            return ResponseEntity.ok("Thêm món thành công");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi thêm món: " + e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/{orderId}/details")
+    public ResponseEntity<?> getOrderDetails(@PathVariable("orderId") Long orderId) {
+        Optional<OrderBooking> orderOpt = orderBookingRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found");
+        }
+        return ResponseEntity.ok(orderOpt.get());
+    }
+
+
+
+	
+	    // =====================
+	    // 🔹 API GET ORDER DETAILS (staff)
+   
+	    
+//	    @GetMapping("/all-added-dishes")
+//	    public ResponseEntity<?> getAllAddedDishes() {
+//	        List<OrderBooking> orders = orderBookingRepository.findAll();
+//	        List<Map<String, Object>> allOrdersResponse = new ArrayList<>();
+//
+//	        for (OrderBooking order : orders) {
+//	            List<OrderItem> items = orderItemRepository.findByOrder(order);
+//
+//	            // Chỉ lấy món đã được khách thêm (quantity > 0)
+//	            List<OrderItem> addedItems = items.stream()
+//	                                             .filter(i -> i.getQuantity() > 0)
+//	                                             .collect(Collectors.toList());
+//
+//	            if (addedItems.isEmpty()) continue; // bỏ qua đơn không có món
+//
+//	            List<Map<String, Object>> itemsResponse = new ArrayList<>();
+//	            double totalOrderPrice = 0;
+//
+//	            for (OrderItem i : addedItems) {
+//	                Map<String, Object> itemMap = new HashMap<>();
+//	                itemMap.put("dishId", i.getDish().getId());
+//	                itemMap.put("dishName", i.getDish().getName());
+//	                itemMap.put("category", i.getDish().getCategory());
+//	                itemMap.put("quantity", i.getQuantity());
+//	                itemMap.put("price", i.getDish().getPrice());
+//	                itemMap.put("totalPrice", i.getDish().getPrice() * i.getQuantity());
+//
+//	                totalOrderPrice += i.getDish().getPrice() * i.getQuantity();
+//	                itemsResponse.add(itemMap);
+//	            }
+//
+//	            Map<String, Object> orderMap = new HashMap<>();
+//	            orderMap.put("orderId", order.getId());
+//	            orderMap.put("orderCode", order.getOrderCode());
+//	            orderMap.put("customerName", order.getCustomerName());
+//	            orderMap.put("email", order.getEmail());
+//	            orderMap.put("phone", order.getPhone());
+//	            orderMap.put("items", itemsResponse);
+//	            orderMap.put("totalOrderPrice", totalOrderPrice);
+//
+//	            allOrdersResponse.add(orderMap);
+//	        }
+//
+//	        return ResponseEntity.ok(allOrdersResponse);
+//	    }
+//    @GetMapping("/all-details")
+//    public ResponseEntity<?> getAllOrderDetails() {
+//        List<Map<String, Object>> allOrdersResponse = orderBookingRepository.findAll().stream()
+//            .map(order -> {
+//                List<Map<String, Object>> itemsResponse = orderItemRepository.findByOrder(order).stream()
+//                    .map(i -> {
+//                        Map<String, Object> itemMap = new HashMap<>();
+//                        itemMap.put("dishId", i.getDish().getId());
+//                        itemMap.put("dishName", i.getDish().getName());
+//                        itemMap.put("category", i.getDish().getCategory());
+//                        itemMap.put("quantity", i.getQuantity());
+//                        itemMap.put("price", i.getDish().getPrice());
+//                        itemMap.put("totalPrice", i.getDish().getPrice() * i.getQuantity());
+//                        return itemMap;
+//                    })
+//                    .toList();
+//
+//                double totalOrderPrice = itemsResponse.stream()
+//                    .mapToDouble(i -> (double) i.get("totalPrice"))
+//                    .sum();
+//
+//                Map<String, Object> orderMap = new HashMap<>();
+//                orderMap.put("orderId", order.getId());
+//                orderMap.put("orderCode", order.getOrderCode());
+//                orderMap.put("customerName", order.getCustomerName());
+//                orderMap.put("email", order.getEmail());
+//                orderMap.put("phone", order.getPhone());
+//                orderMap.put("items", itemsResponse);
+//                orderMap.put("totalOrderPrice", totalOrderPrice);
+//
+//                return orderMap;
+//            })
+//            .toList();
+//
+//        return ResponseEntity.ok(allOrdersResponse);
+//    }
+
+    @GetMapping("/all-dishes")
+    public ResponseEntity<?> getAllOrderItems() {
+        List<OrderBooking> orders = StreamSupport
+            .stream(orderBookingRepository.findAll().spliterator(), false)
+            .toList();
+
+        List<Map<String, Object>> allOrdersResponse = orders.stream()
+            .map(order -> {
+                // Lấy danh sách item của order
+                List<Map<String, Object>> itemsResponse = orderItemRepository.findByOrder(order).stream()
+                    .map(item -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("dishId", item.getDish().getId());
+                        map.put("dishName", item.getDish().getName());
+                        map.put("category", item.getDish().getCategory());
+                        map.put("quantity", item.getQuantity());
+                        map.put("price", item.getUnitPrice());
+                        map.put("totalPrice", item.getTotalPrice());
+                        return map;
+                    })
+                    .toList();
+
+                double totalOrderPrice = itemsResponse.stream()
+                    .mapToDouble(i -> (double) i.get("totalPrice"))
+                    .sum();
+
+                Map<String, Object> orderMap = new HashMap<>();
+                orderMap.put("orderId", order.getId());
+                orderMap.put("orderCode", order.getOrderCode());
+                orderMap.put("customerName", order.getCustomerName());
+                orderMap.put("email", order.getEmail());
+                orderMap.put("phone", order.getPhone());
+                orderMap.put("items", itemsResponse);
+                orderMap.put("totalOrderPrice", totalOrderPrice);
+
+                return orderMap;
+            })
+            .toList();
+
+        return ResponseEntity.ok(allOrdersResponse);
+    }
+//    @GetMapping("/{orderId}")
+//    public ResponseEntity<?> getAllOrderItems(@PathVariable("orderId")  Long orderId) {
+//        Optional<OrderBooking> optionalOrder = orderBookingRepository.findById(orderId);
+//        if (optionalOrder.isEmpty()) {
+//            return ResponseEntity.notFound().build();
+//        }
+//
+//        OrderBooking order = optionalOrder.get();
+//
+//        // 2. Lấy danh sách item của order
+//        List<Map<String, Object>> itemsResponse = orderItemRepository.findByOrder(order).stream()
+//            .map(item -> {
+//                Map<String, Object> map = new HashMap<>();
+//                map.put("dishId", item.getDish().getId());
+//                map.put("dishName", item.getDish().getName());
+//                map.put("category", item.getDish().getCategory());
+//                map.put("quantity", item.getQuantity());
+//                map.put("price", item.getUnitPrice());
+//                map.put("totalPrice", item.getTotalPrice());
+//                return map;
+//            })
+//            .toList();
+//
+//        // 3. Tính tổng tiền đơn hàng
+//        double totalOrderPrice = itemsResponse.stream()
+//            .mapToDouble(i -> (double) i.get("totalPrice"))
+//            .sum();
+//
+//        // 4. Build response
+//        Map<String, Object> orderMap = new HashMap<>();
+//        orderMap.put("orderId", order.getId());
+//        orderMap.put("orderCode", order.getOrderCode());
+//        orderMap.put("customerName", order.getCustomerName());
+//        orderMap.put("email", order.getEmail());
+//        orderMap.put("phone", order.getPhone());
+//        orderMap.put("items", itemsResponse);
+//        orderMap.put("totalOrderPrice", totalOrderPrice);
+//
+//        return ResponseEntity.ok(orderMap);
+//    }
+
+    @GetMapping("/all-items")
+    public ResponseEntity<?> getOrdersWithItems() {
+        List<OrderBooking> orders = orderBookingRepository.findAll();
+
+        List<Map<String, Object>> response = orders.stream()
+            .map(order -> {
+                // Lấy items của order
+                List<Map<String, Object>> itemsResponse = orderItemRepository.findByOrder(order).stream()
+                    .map(item -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("dishId", item.getDish().getId());
+                        map.put("dishName", item.getDish().getName());
+                        map.put("category", item.getDish().getCategory());
+                        map.put("quantity", item.getQuantity());
+                        map.put("price", item.getUnitPrice());
+                        map.put("totalPrice", item.getTotalPrice());
+                        return map;
+                    })
+                    .toList();
+
+                // Build order map
+                Map<String, Object> orderMap = new HashMap<>();
+                orderMap.put("orderId", order.getId());
+                orderMap.put("orderCode", order.getOrderCode());
+                orderMap.put("customerName", order.getCustomerName());
+                orderMap.put("email", order.getEmail());
+                orderMap.put("phone", order.getPhone());
+                orderMap.put("items", itemsResponse);
+                orderMap.put("totalOrderPrice", itemsResponse.stream()
+                        .mapToDouble(i -> (double) i.get("totalPrice"))
+                        .sum());
+                
+                return orderMap;
+            })
+            // Lọc chỉ giữ order có items
+            .filter(orderMap -> {
+                List<?> items = (List<?>) orderMap.get("items");
+                return items != null && !items.isEmpty();
+            })
+            .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{orderId}/add-item")
+    public ResponseEntity<?> addItemToOrder(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, Object> payload) {
+
+        try {
+            // Lấy order từ DB
+            OrderBooking order = orderBookingRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            Long dishId = Long.valueOf(payload.get("dishId").toString());
+            int quantity = Integer.parseInt(payload.get("quantity").toString());
+
+            Dish dish = dishRepository.findById(dishId)
+                    .orElseThrow(() -> new RuntimeException("Dish not found"));
+
+            // Tạo item
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setDish(dish);
+            item.setQuantity(quantity);
+            item.setUnitPrice(dish.getPrice());
+            item.setTotalPrice(dish.getPrice() * quantity);
+
+            orderItemRepository.save(item);
+
+            // Emit WebSocket log cho staff
+            Map<String, Object> logData = new HashMap<>();
+            logData.put("type", "EXTRA_ITEM");
+            logData.put("orderId", order.getId());
+            logData.put("orderCode", order.getOrderCode());
+            logData.put("customerEmail", order.getEmail());
+            logData.put("dishName", dish.getName());
+            logData.put("quantity", quantity);
+            logData.put("time", new Date());
+
+            messagingTemplate.convertAndSend("/topic/staff-logs", logData);
+
+            return ResponseEntity.ok(item);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
 
 }

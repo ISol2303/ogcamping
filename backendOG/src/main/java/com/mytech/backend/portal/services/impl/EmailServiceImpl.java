@@ -4,8 +4,9 @@ import com.mytech.backend.portal.models.OrderBooking;
 import com.mytech.backend.portal.services.EmailService;
 import jakarta.mail.internet.MimeMessage;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
+import java.io.File;
+
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -14,8 +15,7 @@ import org.thymeleaf.context.Context;
 
 @Service
 public class EmailServiceImpl implements EmailService {
-	
-	@Autowired
+
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
@@ -43,14 +43,18 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("customerName", order.getCustomerName());
             context.setVariable("orderCode", order.getOrderCode());
             context.setVariable("checkinDate", order.getBookingDate());
-            context.setVariable("totalAmount", order.getTotalPrice());
+            context.setVariable("totalPrice", order.getTotalPrice());
             context.setVariable("people", order.getPeople());
             context.setVariable("phone", order.getPhone());
             context.setVariable("specialRequests", order.getSpecialRequests());
 
-            // Render template
+            // Render template trước
             String htmlContent = templateEngine.process("order-confirmation", context);
-            helper.setText(htmlContent, true); // HTML email
+
+            // Nhúng ảnh logo
+            ClassPathResource logo = new ClassPathResource("static/images/ogcamping.jpg");
+            helper.setText(htmlContent, true); // Nội dung html trước
+            helper.addInline("ogLogo", logo); // Sau đó gắn ảnh inline
 
             mailSender.send(message);
             System.out.println("✅ Email sent to: " + order.getEmail());
@@ -60,6 +64,7 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Lỗi gửi email: " + e.getMessage());
         }
     }
+
 
     @Override
     public void sendOrderConfirmation(String to, String subject, String body) {
@@ -80,15 +85,5 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Lỗi gửi email: " + e.getMessage());
         }
     }
-
-	@Override
-	public void sendResetPasswordCode(String to, String subject, String body) {
-		SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-        mailSender.send(message);
-		
-	}
 
 }
