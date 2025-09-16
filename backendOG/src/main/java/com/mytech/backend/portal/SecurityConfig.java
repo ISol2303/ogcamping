@@ -90,7 +90,14 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	        .authorizeHttpRequests(auth -> auth
 	        	.requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
-	            .requestMatchers("/apis/v1/login", "/apis/v1/register", "/apis/test/**", "/apis/v1/services/**").permitAll()
+	        	.requestMatchers(
+	                    "/apis/v1/login",
+	                    "/apis/v1/register",
+	                    "/apis/test/**",
+	                    "/apis/v1/services/**",
+	                    "/apis/v1/users/forgot-password",
+	                    "/apis/v1/users/reset-password"
+	                ).permitAll()
 	            .anyRequest().authenticated()
 	        )
 	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

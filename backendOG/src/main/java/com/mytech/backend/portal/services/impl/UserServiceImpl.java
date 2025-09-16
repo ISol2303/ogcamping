@@ -5,6 +5,7 @@ import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.repositories.*;
+import com.mytech.backend.portal.services.EmailService;
 import com.mytech.backend.portal.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +38,8 @@ public class UserServiceImpl implements UserService {
     private final CustomerRepository customerRepo;
     @Autowired
     private CustomerRepository customerRepository;
+    @Autowired
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -178,6 +183,40 @@ public class UserServiceImpl implements UserService {
         stats.add(new StatDTO("Total Gears", totalGears));
 
         return stats;
+    }
+    
+    public void sendResetCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với email: " + email));
+        
+        // Sinh OTP (6 số)
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        
+        // Lưu vào DB
+        user.setResetCode(otp);
+        user.setResetCodeExpiry(LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+     // Gửi email
+        String subject = "Mã OTP đặt lại mật khẩu";
+        String body = "Mã OTP của bạn là: " + otp + "\nMã có hiệu lực trong 5 phút.";
+        emailService.sendResetPasswordCode(user.getEmail(), subject, body);
+        
+        System.out.println("Reset code cho " + email + " : " + otp);
+    }
+
+    public void resetPassword(String code, String newPassword) {
+        User user = userRepository.findByResetCode(code)
+                .orElseThrow(() -> new RuntimeException("Mã xác thực không hợp lệ."));
+
+        if (user.getResetCodeExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Mã xác thực đã hết hạn.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetCode(null); // clear code sau khi dùng
+        user.setResetCodeExpiry(null);
+        userRepository.save(user);
     }
 }
 

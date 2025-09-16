@@ -1,6 +1,5 @@
 package com.mytech.backend.portal.repositories;
 
-import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +25,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Corrected to return Optional<User> instead of Optional<UserDTO>
     Optional<User> findById(Long id);
+    
+    Optional<User> findByResetCode(String resetCode);
 }

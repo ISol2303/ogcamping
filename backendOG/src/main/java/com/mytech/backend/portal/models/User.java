@@ -80,6 +80,10 @@ public class User {
     public enum Status {
         ACTIVE, INACTIVE
     }
+    // reset password
+    private String resetCode;
+    private LocalDateTime resetCodeExpiry;
+    
     @Column(name = "google_Id", nullable = true)
     private String googleId;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

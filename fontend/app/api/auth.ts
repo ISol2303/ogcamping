@@ -17,7 +17,7 @@ interface RegisterRequest {
 
 interface DecodedToken {
   sub: string;
-  role?: string; // backend trả "role"
+  role?: string;
   name?: string;
   email?: string;
   exp?: number;
@@ -196,4 +196,29 @@ export const getUserProfile = async (token: string): Promise<UserProfile> => {
     console.error('Get user profile error:', error);
     throw new Error('Không thể lấy thông tin hồ sơ người dùng.');
   }
+};
+
+// Quên mật khẩu (khách) → gửi mã về email
+export const forgotPasswordApiGuest = async (email: string): Promise<string> => {
+  const res = await axios.post(`${API_URL}/apis/v1/users/forgot-password`, null, {
+    params: { email },
+  });
+  return res.data;
+};
+
+// Quên mật khẩu (người dùng đã đăng nhập) → gửi mã về email
+export const forgotPasswordApiAuth = async (token: string): Promise<string> => {
+  const res = await axios.post(`${API_URL}/apis/v1/users/forgot-password/authenticated`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+};
+
+// Đặt lại mật khẩu bằng mã xác thực
+export const resetPasswordApi = async (code: string, newPassword: string): Promise<string> => {
+  const res = await axios.post(`${API_URL}/apis/v1/users/reset-password`, {
+    code,
+    newPassword,
+  });
+  return res.data; // server trả về message
 };

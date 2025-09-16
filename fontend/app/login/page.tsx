@@ -192,7 +192,7 @@ export default function LoginPage() {
                   </Label>
                 </div>
                 <Link
-                  href="/forgot-password"
+                  href="/reset-password"
                   className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
                 >
                   Quên mật khẩu?
