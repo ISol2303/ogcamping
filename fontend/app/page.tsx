@@ -27,6 +27,7 @@ export default function HomePage() {
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
   const router = useRouter()
+  const [blogs, setBlogs] = useState<Blog[]>([]);
 
   // Kiểm tra login và fetch service
   useEffect(() => {
@@ -78,6 +79,31 @@ export default function HomePage() {
       router.push("/dashboard")
     }
   }
+  //BLOGS
+  const handleBlogsNavigation = () => {
+    if (user?.role === "ADMIN") {
+      router.push("/admin/blogs");
+    } else if (user?.role === "STAFF") {
+      router.push("/staff/blogs");
+    } else if (user?.role === "CUSTOMER") {
+      router.push("/blogs");
+    } else {
+      router.push("/blogs"); // GUEST cũng về trang blogs chung
+    }
+  };
+  useEffect(() => {
+    fetch("http://localhost:8080/apis/blogs/public")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setBlogs(data);
+        else if (Array.isArray(data.content)) setBlogs(data.content);
+        else setBlogs([]);
+      })
+      .catch((err) => {
+        console.error("Error fetching blogs:", err);
+        setBlogs([]);
+      });
+  }, []);
 
   // Format duration + capacity
   function formatDurationCapacity(duration?: string, capacity?: string) {
@@ -328,6 +354,72 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Blogs Preview */}
+      <section className="py-20 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text mb-6">
+              Blogs mới nhất
+            </h2>
+            <p className="text-xl text-gray-800 leading-relaxed">
+              Cập nhật những bài viết mới nhất từ OG Camping – mẹo, kinh nghiệm và review địa điểm cắm trại
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {blogs.slice(0, 3).map((blog) => (
+              <Card
+                key={blog.id}
+                className="overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 backdrop-blur-sm group"
+              >
+                <div className="h-48 bg-gray-200 relative overflow-hidden">
+                  {(blog.imageUrl || blog.thumbnail) && (
+                    <div className="mb-6">
+                      <img
+                        src={blog.imageUrl ? `http://localhost:8080${blog.imageUrl}` : `http://localhost:8080/uploads/${blog.thumbnail}`}
+                        alt={blog.title}
+                        className="w-full h-72 object-cover rounded"
+                      />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                </div>
+
+                <CardHeader>
+                  <CardTitle className="text-lg text-gray-900">{blog.title}</CardTitle>
+                  <CardDescription className="text-gray-800">
+                    {(blog.content || "").substring(0, 120)}...
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <Button
+                    className="w-full mt-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white border-0"
+                    asChild
+                  >
+                    <Link href={`/blogs/${blog.id}`}>Đọc thêm</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-gray-300 text-gray-800 hover:bg-gray-50 hover:border-gray-400 px-8 py-3 text-lg font-semibold"
+              asChild
+            >
+              <Link href="/blogs">
+                Xem tất cả Blogs
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* AI Consultant CTA */}
       <section className="py-20 px-4 bg-black text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23ffffff' fillOpacity='.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
@@ -499,6 +591,19 @@ export default function HomePage() {
                 <li>
                   <Link href="/policy" className="hover:text-white transition-colors">
                     Chính sách
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleBlogsNavigation()
+                    }}
+                    className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group cursor-pointer"
+                  >
+                    Blogs
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
                   </Link>
                 </li>
               </ul>
