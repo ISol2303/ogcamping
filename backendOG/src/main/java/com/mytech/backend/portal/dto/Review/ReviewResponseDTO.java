@@ -16,6 +16,7 @@ public class ReviewResponseDTO {
 
     private Long customerId;
     private String customerName;
+    private String customerAvatar;
 
     private Long serviceId;
     private String serviceName;

@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO createUser(UserDTO userDTO) {
         User user = User.builder()
-                .name(userDTO.getFirstName() + " " + userDTO.getLastName())
+                .name(userDTO.getName())
                 .email(userDTO.getEmail())
                 .password(passwordEncoder.encode(userDTO.getPassword())) // nên encode nếu có security
                 .phone(userDTO.getPhone())
@@ -55,8 +55,7 @@ public class UserServiceImpl implements UserService {
         user = userRepository.save(user);
 //    Customer 0 Day
         Customer customer = Customer.builder()
-                .firstName(userDTO.getFirstName())
-                .lastName(userDTO.getLastName())
+                .name(userDTO.getName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .address(userDTO.getAddress())
@@ -106,7 +105,7 @@ public class UserServiceImpl implements UserService {
         // Cập nhật customer
         Customer customer = customerRepo.findByUser(user).orElse(null);
         if (customer != null) {
-            customer.setFirstName(userDTO.getName());
+            customer.setName(userDTO.getName());
             customer.setEmail(userDTO.getEmail());
             customer.setPhone(userDTO.getPhone());
             customer.setAddress(userDTO.getAddress());
@@ -158,8 +157,7 @@ public class UserServiceImpl implements UserService {
         dto.setCreatedAt(user.getCreatedAt());
         if (customer != null) {
             dto.setAddress(customer.getAddress());
-            dto.setFirstName(customer.getFirstName());
-            dto.setLastName(customer.getLastName());
+            dto.setName(customer.getName());
         }
         return dto;
     }

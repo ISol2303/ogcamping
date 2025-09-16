@@ -129,10 +129,10 @@ public class ReviewServiceImpl implements ReviewService {
         serviceRepository.save(service);
     }
 
-    // ✅ Hàm helper để lưu file
+    // Hàm helper để lưu file
     private String saveFile(MultipartFile file, String subDir) {
         try {
-            // ✅ Đường dẫn lưu file thực tế
+            // Đường dẫn lưu file thực tế
             String basePath = "D:/DANG/Git/ogcamping-git/ogcamping/backendOG/uploads/" + subDir;
             File dir = new File(basePath);
             if (!dir.exists()) dir.mkdirs();
@@ -142,7 +142,7 @@ public class ReviewServiceImpl implements ReviewService {
 
             file.transferTo(dest);
 
-            // ✅ Trả về URL public trùng với ResourceHandler
+            // Trả về URL public trùng với ResourceHandler
             return "/uploads/" + subDir + "/" + fileName;
         } catch (IOException e) {
             throw new RuntimeException("Error saving file", e);
@@ -180,7 +180,8 @@ public class ReviewServiceImpl implements ReviewService {
         return ReviewResponseDTO.builder()
                 .id(review.getId())
                 .customerId(review.getCustomer().getId())
-                .customerName(review.getCustomer().getFirstName() + " " + review.getCustomer().getLastName())
+                .customerName(review.getCustomer().getName())
+                .customerAvatar(review.getCustomer().getAvatar())
                 .serviceId(review.getService().getId())
                 .serviceName(review.getService().getName())
                 .rating(review.getRating())

@@ -24,12 +24,8 @@ public class Customer {
     private Long id;
 
     @NotBlank
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-
-    @Column(name = "last_name", nullable = true)
-    private String lastName;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Email
     @NotBlank
@@ -40,6 +36,8 @@ public class Customer {
     private String phone;
 
     private String address;
+    
+    private String avatar;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
