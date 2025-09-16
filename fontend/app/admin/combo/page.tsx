@@ -70,7 +70,7 @@ interface Combo {
   createdAt: string
   updatedAt: string
 }
-
+const PAGE_SIZE = 10
 import { useSearchParams } from "next/navigation"
 export default function ComboManagement() {
   const [combos, setCombos] = useState<Combo[]>([])
@@ -82,6 +82,8 @@ export default function ComboManagement() {
   const [selectedCombo, setSelectedCombo] = useState<Combo | null>(null)
   const [totalBookings, setTotalBookings] = useState<number>(0)
   const [showMessage, setShowMessage] = useState(false)
+  const [page, setPage] = useState(1)
+
 
   useEffect(() => {
     fetchCombos()
@@ -119,12 +121,11 @@ export default function ComboManagement() {
 
       const data = await response.json()
 
-      // ✅ Nếu API Spring Boot trả về trực tiếp list combo
       setCombos(data)
 
-      // ✅ Nếu API trả về dạng { success, data, message }
       if (Array.isArray(data)) {
         setCombos(data)
+
       } else if (data && data.data) {
         setCombos(data.data)
       } else {
@@ -216,7 +217,10 @@ export default function ComboManagement() {
     return { serviceCount, equipmentCount, foodCount };
   };
 
-
+  const totalPages = Math.ceil(filteredCombos.length / PAGE_SIZE)
+  const start = (page - 1) * PAGE_SIZE
+  const end = start + PAGE_SIZE
+  const currentData = filteredCombos.slice(start, end)
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -227,6 +231,9 @@ export default function ComboManagement() {
       </div>
     )
   }
+
+  // Lấy danh sách location duy nhất từ combos
+  const uniqueLocations = Array.from(new Set(combos.map(c => c.location)));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -355,10 +362,10 @@ export default function ComboManagement() {
                     Tạo Combo mới
                   </Button>
                 </Link>
-                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent">
+                {/* <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent">
                   <Download className="w-4 h-4 mr-2" />
                   Xuất Excel
-                </Button>
+                </Button> */}
               </div>
             </div>
           </CardHeader>
@@ -391,12 +398,15 @@ export default function ComboManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tất cả địa điểm</SelectItem>
-                  <SelectItem value="sapa">Sapa</SelectItem>
-                  <SelectItem value="dalat">Đà Lạt</SelectItem>
-                  <SelectItem value="ninh binh">Ninh Bình</SelectItem>
-                  <SelectItem value="quang ninh">Quảng Ninh</SelectItem>
+
+                  {uniqueLocations.map(location => (
+                    <SelectItem key={location} value={location.toLowerCase()}>
+                      {location}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+
             </div>
 
             {/* Table */}
@@ -414,7 +424,7 @@ export default function ComboManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCombos.map((combo) => {
+                  {currentData.map((combo) => {
                     const { serviceCount, equipmentCount, foodCount } = getItemCounts(combo)
                     return (
                       <TableRow key={combo.id} className="hover:bg-gray-50">
@@ -422,15 +432,10 @@ export default function ComboManagement() {
                           <div className="space-y-2">
                             <div className="font-medium text-gray-900 line-clamp-1">{combo.name}</div>
                             <div className="text-sm text-gray-600 line-clamp-2">{combo.description}</div>
-
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {/* <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
-                              <MapPin className="w-3 h-3" />
-                              {combo.location}
-                            </div> */}
                             <div className="flex items-center gap-1 text-xs text-gray-600">
                               <Clock className="w-3 h-3" />
                               {combo.duration}
@@ -449,7 +454,9 @@ export default function ComboManagement() {
                                 <div className="text-xs text-gray-500 line-through">
                                   {formatPrice(combo.originalPrice)}
                                 </div>
-                                <Badge className="bg-red-100 text-red-800 border-0 text-xs">-{combo.discount}%</Badge>
+                                <Badge className="bg-red-100 text-red-800 border-0 text-xs">
+                                  -{combo.discount}%
+                                </Badge>
                               </>
                             )}
                           </div>
@@ -479,7 +486,6 @@ export default function ComboManagement() {
                             <div className="text-xs text-gray-600">{combo.reviewCount} đánh giá</div>
                           </div>
                         </TableCell>
-
                         <TableCell>{getStatusBadge(combo.active)}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-center gap-1">
@@ -493,42 +499,48 @@ export default function ComboManagement() {
                                 <Eye className="w-4 h-4" />
                               </Button>
                             </Link>
-                            {/* <Link href={`/admin/combo/${combo.id}/edit`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                                title="Chỉnh sửa"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-900 hover:bg-red-50"
-                              title="Xóa"
-                              onClick={() => {
-                                setSelectedCombo(combo)
-                                setDeleteDialogOpen(true)
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button> */}
                           </div>
                         </TableCell>
                       </TableRow>
                     )
                   })}
+
+
                 </TableBody>
+
               </Table>
+
             </div>
 
             <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
               <div>
                 Hiển thị {filteredCombos.length} trong tổng số {combos.length} combo
               </div>
+              <div className="flex justify-end items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  ← Trước
+                </Button>
+
+                <span className="text-sm">
+                  Trang {page}/{totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Sau →
+                </Button>
+              </div>
             </div>
+
           </CardContent>
         </Card>
       </div>
@@ -552,6 +564,6 @@ export default function ComboManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }

@@ -21,11 +21,13 @@ public interface ServiceService {
 
 
     // Cập nhật service
-    ServiceResponseDTO updateService(Long id, ServiceRequestDTO dto, MultipartFile imageFile);
+    ServiceResponseDTO updateService(Long id, ServiceRequestDTO req, MultipartFile imageFile, MultipartFile[] extraImages) throws IOException;
 
     // Lấy dịch vụ theo tag (POPULAR, NEW, DISCOUNT)
     List<ServiceResponseDTO> getServicesByTag(String tag);
 
     // Xóa service (hoặc set active=false)
     void deleteService(Long id);
+    //location
+   List<String> getAllUniqueLocations();
 }

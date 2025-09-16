@@ -50,14 +50,20 @@ public class ServiceController {
     // PUT /services/{id} → cập nhật service
     @PutMapping("/{id}")
     public ResponseEntity<ServiceResponseDTO> updateService(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart("service") String serviceJson,
-            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestPart(value = "extraImages", required = false) MultipartFile[] extraImages
     ) throws IOException {
+        // parse JSON sang DTO
         ServiceRequestDTO dto = new ObjectMapper().readValue(serviceJson, ServiceRequestDTO.class);
-        ServiceResponseDTO response = serviceService.updateService(id, dto, imageFile); // ✅ đúng
+
+        // gọi service update
+        ServiceResponseDTO response = serviceService.updateService(id, dto, imageFile, extraImages);
+
         return ResponseEntity.ok(response);
     }
+
 
 
     // DELETE /services/{id} → xóa (soft delete)
@@ -72,6 +78,11 @@ public class ServiceController {
     public ResponseEntity<List<ServiceResponseDTO>> getServicesByTag(@PathVariable String tag) {
         List<ServiceResponseDTO> services = serviceService.getServicesByTag(tag);
         return ResponseEntity.ok(services);
+    }
+    // GET /locations
+    @GetMapping("/locations")
+    public ResponseEntity<List<String>> getUniqueLocations() {
+        return ResponseEntity.ok(serviceService.getAllUniqueLocations());
     }
 }
 

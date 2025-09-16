@@ -136,6 +136,13 @@ export default function ServicesPage() {
             <Link href="/equipment" className="text-gray-600 hover:text-green-600 transition-colors">
               Thuê thiết bị
             </Link>
+            <Link
+              href="/combos"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
+            >
+              Combo
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
+            </Link>
             <Link href="/ai-consultant" className="text-gray-600 hover:text-green-600 transition-colors">
               Tư vấn AI
             </Link>

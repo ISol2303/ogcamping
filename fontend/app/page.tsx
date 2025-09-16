@@ -118,6 +118,13 @@ export default function HomePage() {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
             </Link>
             <Link
+              href="/combos"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
+            >
+              Combo
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
+            </Link>
+            <Link
               href="/about"
               className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group"
             >

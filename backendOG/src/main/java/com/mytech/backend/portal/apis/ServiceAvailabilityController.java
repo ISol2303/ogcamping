@@ -31,8 +31,8 @@ public class ServiceAvailabilityController {
 
     @PutMapping("/{availabilityId}")
     public ResponseEntity<ServiceAvailabilityDTO> updateAvailability(
-            @PathVariable Long serviceId,
-            @PathVariable Long availabilityId,
+            @PathVariable("serviceId") Long serviceId,
+            @PathVariable("availabilityId") Long availabilityId,
             @RequestBody ServiceAvailabilityDTO dto) {
         return ResponseEntity.ok(availabilityService.updateAvailability(availabilityId, dto));
     }

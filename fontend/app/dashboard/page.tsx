@@ -22,7 +22,7 @@ import {
   MessageCircle,
   Star,
 } from 'lucide-react';
-import {jwtDecode} from 'jwt-decode';
+import jwtDecode from 'jwt-decode';
 import Link from 'next/link';
 interface Payment {
   id: number;

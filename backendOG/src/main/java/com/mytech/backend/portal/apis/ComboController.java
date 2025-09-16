@@ -33,18 +33,19 @@ public class ComboController {
 
         return ResponseEntity.ok(response);
     }
-
-
-
-
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping("/{id}")
     public ResponseEntity<ComboResponseDTO> update(
-            @PathVariable Long id,
-            @RequestPart("data") ComboRequestDTO request,
+            @PathVariable("id") Long id,
+            @RequestPart("combo") String comboJson,
             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
-    ) {
-        return ResponseEntity.ok(comboService.updateCombo(id, request, imageFile));
+    ) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ComboRequestDTO dto = objectMapper.readValue(comboJson, ComboRequestDTO.class);
+        return ResponseEntity.ok(comboService.updateCombo(id, dto, imageFile));
     }
+
+
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

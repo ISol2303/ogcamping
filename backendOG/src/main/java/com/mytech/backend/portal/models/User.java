@@ -84,4 +84,6 @@ public class User {
     private String googleId;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WishlistItem> wishlist = new ArrayList<>();
+
+
 }

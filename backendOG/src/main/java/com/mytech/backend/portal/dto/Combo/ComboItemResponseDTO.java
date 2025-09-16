@@ -9,4 +9,5 @@ public class ComboItemResponseDTO {
     private Long serviceId;
     private String serviceName;
     private Integer quantity;
+    private Double price; // lấy từ service.getPrice()
 }

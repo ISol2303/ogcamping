@@ -2,6 +2,7 @@ package com.mytech.backend.portal.repositories;
 
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
+import com.mytech.backend.portal.models.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +17,7 @@ import java.util.Optional;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByCustomerId(Long customerId);
-
+    int countByAssignedStaff(User staff);
 
 //    Optional<Booking> findByCustomerIdAndServiceIdAndCheckInDate(
 //            Long customerId,

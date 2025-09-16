@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +28,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Corrected to return Optional<User> instead of Optional<UserDTO>
     Optional<User> findById(Long id);
+
+    @Query("SELECT sa.user FROM ShiftAssignment sa " +
+            "WHERE sa.shift.shiftDate = :date " +
+            "AND sa.shift.status IN ('APPROVED','IN_PROGRESS')")
+    List<User> findStaffInActiveShift(LocalDateTime date, LocalDateTime date2);
 }

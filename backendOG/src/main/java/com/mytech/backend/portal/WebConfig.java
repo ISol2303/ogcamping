@@ -15,11 +15,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Services
         registry.addResourceHandler("/uploads/services/**")
-                .addResourceLocations("file:///C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/services/");
+                .addResourceLocations("file:///D:/ogcamping/backendOG/uploads/services/");
 
         // Combos
         registry.addResourceHandler("/uploads/combos/**")
-                .addResourceLocations("file:///C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/combos/");
+                .addResourceLocations("file:///D:/ogcamping/backendOG/uploads/combos/");
     }
 
 }

@@ -4,11 +4,11 @@ import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Payment.Payment;
 import com.mytech.backend.portal.models.Service.Service;
+import com.mytech.backend.portal.models.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,19 +27,24 @@ public class Booking {
 	private Customer customer;
 
 
-	private LocalDate checkInDate;
-	private LocalDate checkOutDate;
-	private Integer numberOfPeople;
+    private LocalDateTime checkInDate;
+    private LocalDateTime checkOutDate;
+    private Integer numberOfPeople;
 
 	@Enumerated(EnumType.STRING)
 	private BookingStatus status = BookingStatus.PENDING;
 
-	private String note;
-	private Integer rating; //1-5
+    private String note;
+    private String internalNotes;
+	private Integer rating;
 	private String feedback;
 
+    @ManyToOne
+    @JoinColumn(name = "assigned_staff_id")
+    private User assignedStaff; // nhân viên được gán
+
 	@Column(name = "total_price")
-	private Long totalPrice; // ✅ lưu vào DB
+	private Long totalPrice;
 
 	@OneToOne(mappedBy="booking", cascade=CascadeType.ALL, orphanRemoval=true)
 	private Payment payment;

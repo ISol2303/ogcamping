@@ -183,9 +183,12 @@ public class PaymentServiceImpl implements PaymentService {
                             throw new RuntimeException("Missing check-in/check-out date for service " + service.getName());
                         }
 
-                        LocalDate current = item.getCheckInDate();
-                        while (!current.isAfter(item.getCheckOutDate().minusDays(1))) {
-                            LocalDate dateToCheck = current;
+                        LocalDateTime current = item.getCheckInDate();
+                        LocalDateTime end = item.getCheckOutDate();
+
+                        while (!current.isAfter(end.minusDays(1))) {
+                            // convert LocalDateTime -> LocalDate vì availability được quản lý theo ngày
+                            LocalDate dateToCheck = current.toLocalDate();
 
                             ServiceAvailability availability = serviceAvailabilityRepository
                                     .findByServiceIdAndDate(service.getId(), dateToCheck)
@@ -203,6 +206,7 @@ public class PaymentServiceImpl implements PaymentService {
                         }
                     }
                 }
+
 
 
                 bookingRepository.save(booking);

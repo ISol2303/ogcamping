@@ -698,9 +698,7 @@ export default function ServiceDetailPage() {
                 </div>
 
 
-                <Button className="w-full" size="lg" onClick={handleBooking}>
-                  Đặt ngay
-                </Button>
+              
                 <Button className="w-full mt-2" size="lg" onClick={handleAddToCart}>
                   Thêm vào kế hoạch
                 </Button>

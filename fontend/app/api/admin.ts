@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { PackageFormData } from './package';
-import { Itinerary, ServiceAvailability } from '../admin/page';
+import { Itinerary, ServiceAvailability } from '../admin/page_old';
 
 
 // Define interfaces for request and response data
@@ -44,7 +44,7 @@ export interface Service {
   minCapacity: number;
   maxCapacity: number;
   isExperience: boolean;
-  active: boolean | null;   // ✅ sửa lại, khớp với backend
+  active: boolean | null;  
 
   averageRating: number;
   totalReviews: number;

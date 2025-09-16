@@ -65,6 +65,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .email(customer.getEmail())
                 .phone(customer.getPhone())
                 .address(customer.getAddress())
+                .userId(customer.getUser().getId())
                 .build();
     }
 }

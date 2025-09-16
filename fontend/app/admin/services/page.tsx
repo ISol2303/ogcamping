@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { fetchUser, fetchServices } from '../../api/admin';
 import jwtDecode from 'jwt-decode';
 import { PackageFormData } from '@/app/api/package';
-import { Service } from '../page';
+import { Service } from '../page_old';
 
 
 
@@ -155,6 +155,10 @@ export default function ServicesPage() {
           <Link href="/admin/services" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
             <Tent className="inline-block w-5 h-5 mr-2" />
             Services
+          </Link>
+          <Link href="/admin/combo" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
+            <Tent className="inline-block w-5 h-5 mr-2" />
+            Combo
           </Link>
           <Link href="/admin/equipment" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
             <Package className="inline-block w-5 h-5 mr-2" />
