@@ -46,8 +46,7 @@ public class DataLoader {
                     .build());
 
             Customer c1 = Customer.builder()
-                    .firstName("Nguyen")
-                    .lastName("An")
+                    .name("Nguyen An")
                     .email("an@example.com")
                     .phone("0909123456")
                     .address("Ha Noi")
@@ -66,8 +65,7 @@ public class DataLoader {
                     .build());
 
             Customer c2 = Customer.builder()
-                    .firstName("Tran")
-                    .lastName("Binh")
+                    .name("Tran Binh")
                     .email("binh@example.com")
                     .phone("0909988776")
                     .address("Da Nang")
@@ -86,8 +84,7 @@ public class DataLoader {
                     .build());
 
             Customer c3 = Customer.builder()
-                    .firstName("Le")
-                    .lastName("Cuong")
+                    .name("Le Cuong")
                     .email("cuong@example.com")
                     .phone("0912345678")
                     .address("Ho Chi Minh")
@@ -105,8 +102,7 @@ public class DataLoader {
                     .build());
 
             Customer c4 = Customer.builder()
-                    .firstName("Pham")
-                    .lastName("Dung")
+                    .name("Pham Dung")
                     .email("dung@example.com")
                     .phone("0933445566")
                     .address("Hai Phong")

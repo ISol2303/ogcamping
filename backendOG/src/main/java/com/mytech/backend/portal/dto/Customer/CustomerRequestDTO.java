@@ -4,8 +4,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomerRequestDTO {
-    private String firstName;
-    private String lastName;
+    private String name;
     private String email;
     private String phone;
     private String address;

@@ -27,8 +27,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerResponseDTO createCustomer(CustomerRequestDTO req) {
         Customer customer = Customer.builder()
-                .firstName(req.getFirstName())
-                .lastName(req.getLastName())
+                .name(req.getName())
                 .email(req.getEmail())
                 .phone(req.getPhone())
                 .address(req.getAddress())
@@ -41,8 +40,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponseDTO updateCustomer(Long id, CustomerRequestDTO req) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
-        customer.setFirstName(req.getFirstName());
-        customer.setLastName(req.getLastName());
+        customer.setName(req.getName());
         customer.setEmail(req.getEmail());
         customer.setPhone(req.getPhone());
         customer.setAddress(req.getAddress());
@@ -60,8 +58,7 @@ public class CustomerServiceImpl implements CustomerService {
     private CustomerResponseDTO mapToDTO(Customer customer) {
         return CustomerResponseDTO.builder()
                 .id(customer.getId())
-                .firstName(customer.getFirstName())
-                .lastName(customer.getLastName())
+                .name(customer.getName())
                 .email(customer.getEmail())
                 .phone(customer.getPhone())
                 .address(customer.getAddress())

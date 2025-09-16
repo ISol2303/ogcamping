@@ -1,6 +1,5 @@
 package com.mytech.backend.portal.apis;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,23 +17,24 @@ import com.mytech.backend.portal.dto.SignInResponse;
 import com.mytech.backend.portal.dto.SignUpRequest;
 import com.mytech.backend.portal.jwt.JwtUtils;
 import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.Customer.Customer;
+import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.services.UserService;
+
+import lombok.RequiredArgsConstructor;
 
 
 @RestController
 @RequestMapping("/apis")
+@RequiredArgsConstructor
 public class AppRestController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+	private final AuthenticationManager authenticationManager;
+    private final UserService userService;
+    private final JwtUtils jwtUtils;
+    private final CustomerRepository customerRepository;
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @PostMapping({"/v1/login", "/test/login"}) // Support both /v1/login and /test/login
+    @PostMapping({"/v1/login", "/test/login"})
     public ResponseEntity<?> signIn(@RequestBody SignInRequest signInRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -55,6 +55,7 @@ public class AppRestController {
             signInResponse.setRole(user.getRole());
             signInResponse.setTokenType("Bearer");
             signInResponse.setToken(token);
+           
 
             return ResponseEntity.ok(signInResponse);
         } catch (Exception e) {
@@ -100,6 +101,16 @@ public class AppRestController {
         newUser.setAgreeMarketing(signUpRequest.getAgreeMarketing());
 
         userService.save(newUser);
+        
+        // --- Tạo Customer tương ứng ---
+      Customer customer = Customer.builder()
+              .name(newUser.getName())
+              .email(newUser.getEmail())
+              .phone(newUser.getPhone())
+              .address("")
+              .user(newUser)
+              .build();
+      customerRepository.save(customer);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("✅ Đăng ký thành công.");
     }

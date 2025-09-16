@@ -51,10 +51,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             // ✅ Facebook: fallback email nếu null
             if (email == null) {
                 String fbId = oAuth2User.getAttribute("id");
-                email = fbId + "@facebook.com"; // 👈 dùng ID để tạo email giả
+                email = fbId + "@facebook.com"; // dùng ID để tạo email giả
             }
 
-            // ✅ Facebook: lấy avatar từ picture.data.url
+            // Facebook: lấy avatar từ picture.data.url
             Map<String, Object> pictureObj = oAuth2User.getAttribute("picture");
             if (pictureObj != null) {
                 Map<String, Object> data = (Map<String, Object>) pictureObj.get("data");
@@ -66,11 +66,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // Tìm user theo email
         String finalPicture = picture;
-        String finalEmail = email; // 👈 để dùng trong lambda
+        String finalEmail = email;
         User user = userRepository.findByEmail(finalEmail).orElseGet(() -> {
             // --- 1. Tạo User ---
             User newUser = User.builder()
-                    .email(finalEmail) // 👈 dùng email đã fallback nếu FB thiếu
+                    .email(finalEmail)
                     .name(name)
                     .avatar(finalPicture)
                     .role(User.Role.CUSTOMER)
@@ -78,24 +78,33 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .build();
             newUser = userRepository.save(newUser);
 
-            // --- 2. Tạo Customer tương ứng ---
-            Customer customer = Customer.builder()
-                    .firstName(firstName != null ? firstName : name)
-                    .lastName(lastName != null ? lastName : "-") // 👈 fallback nếu thiếu lastName
+            // --- 2. Tạo Customer gắn với User ---
+            Customer newCustomer = Customer.builder()
+                    .name(name)
                     .email(finalEmail)
-                    .phone("")
-                    .address("")
+                    .avatar(finalPicture)
                     .user(newUser)
                     .build();
-            customerRepository.save(customer);
+            customerRepository.save(newCustomer);
 
             return newUser;
         });
 
+
         // --- 3. Update avatar nếu login lại bằng FB/Google ---
-        if (user.getAvatar() == null && finalPicture != null) {
-            user.setAvatar(finalPicture);
-            userRepository.save(user);
+        if (finalPicture != null) {
+            if (user.getAvatar() == null) {
+                user.setAvatar(finalPicture);
+                userRepository.save(user);
+            }
+
+            // Cập nhật avatar cho Customer
+            customerRepository.findByUser(user).ifPresent(customer -> {
+                if (customer.getAvatar() == null) {
+                    customer.setAvatar(finalPicture);
+                    customerRepository.save(customer);
+                }
+            });
         }
 
         // --- 4. Tạo JWT token ---
