@@ -13,10 +13,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Star, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaLightbox from "@/components/MediaLightbox";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 type Review = {
   id: number;
   customerName: string;
+  customerAvatar?: string; //thêm avatar
   rating: number;
   content: string;
   images?: string[];
@@ -275,8 +277,9 @@ export default function Reviews({ serviceId }: { serviceId: number }) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <Avatar>
+                    <AvatarImage src={review.customerAvatar || ""} alt={review.customerName || "User"} />
                     <AvatarFallback>
-                      {review.customerName.charAt(0)}
+                      {(review.customerName?.charAt(0) || "?").toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
