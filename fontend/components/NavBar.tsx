@@ -69,6 +69,9 @@ export default function Navbar() {
           <Link href="/contact" className={linkClass("/contact")}>
             Liên hệ
           </Link>
+          <Link href="/blogs" className={linkClass("/blogs")}>
+            Blog
+          </Link>
         </nav>
 
         {/* User actions */}

@@ -1,4 +1,3 @@
-// route.ts
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -10,17 +9,11 @@ const BASE_URL = "http://localhost:8080/apis/v1/services";
 
 export async function POST(req: Request) {
   try {
-    const { message, history } = await req.json(); // nhận luôn history từ FE
+    const { message } = await req.json();
 
-    // gọi BE để có danh sách service
+    // gọi BE để lấy danh sách service
     const res = await fetch(BASE_URL, { cache: "no-store" });
     const allServices = await res.json();
-
-    // map history từ FE sang format AI hiểu
-    const aiHistory = history.map((m: any) => ({
-      role: m.type === "user" ? "user" : "assistant",
-      content: m.content,
-    }));
 
     // gọi AI
     const completion = await client.chat.completions.create({
@@ -29,26 +22,24 @@ export async function POST(req: Request) {
         {
           role: "system",
           content: `Bạn là AI tư vấn dịch vụ cắm trại OG Camping, trả lời bằng tiếng Việt.
-      - Đây là danh sách gói dịch vụ hiện có: ${JSON.stringify(allServices, null, 2)}
+- Đây là danh sách gói dịch vụ hiện có: ${JSON.stringify(allServices, null, 2)}
 
-      QUY TẮC TRẢ LỜI:
-      1. Nếu người dùng hỏi về dịch vụ (giá, vị trí, số ngày, tag, gia đình, bạn bè...), bạn LUÔN trả về **một JSON hợp lệ duy nhất** theo format:
+QUY TẮC TRẢ LỜI:
+1. Nếu người dùng hỏi về dịch vụ (giá, vị trí, số ngày, tag, gia đình, bạn bè...), bạn LUÔN trả về **một JSON hợp lệ duy nhất** theo format:
 
-      {
-        "type": "service_request",
-        "criteria": { "location": "...", "maxPrice": ..., "days": ..., "tag": "..." },
-        "services": [
-          { "id": ..., "name": "...", "price": ..., "location": "...", "days": ..., "tag": "..." }
-        ],
-        "reply": "Một câu trả lời thân thiện, giải thích tại sao gói này phù hợp cho khách."
-      }
+{
+  "type": "service_request",
+  "criteria": { "location": "...", "maxPrice": ..., "days": ..., "tag": "..." },
+  "services": [
+    { "id": ..., "name": "...", "price": ..., "location": "...", "days": ..., "tag": "..." }
+  ],
+  "reply": "Một câu trả lời thân thiện, giải thích tại sao gói này phù hợp cho khách."
+}
 
-      2. Nếu chỉ chào hỏi → trả text tự nhiên, KHÔNG JSON.
-      3. KHÔNG dùng từ khóa 'json', KHÔNG bao bọc câu trả lời bằng backtick.
-      `,
+2. Nếu chỉ chào hỏi → trả text tự nhiên, KHÔNG JSON.
+3. KHÔNG dùng từ khóa 'json', KHÔNG bao bọc câu trả lời bằng backtick.`,
         },
-        ...aiHistory,
-        { role: "user", content: message }, // thêm câu mới
+        { role: "user", content: message },
       ],
     });
 
@@ -61,7 +52,6 @@ export async function POST(req: Request) {
         const parsed = JSON.parse(aiResponse);
 
         if (parsed.type === "service_request") {
-          // filter dịch vụ
           services = allServices.filter((s: any) => {
             const matchPrice =
               !parsed.criteria?.maxPrice || s.price <= parsed.criteria.maxPrice;
@@ -89,8 +79,7 @@ export async function POST(req: Request) {
           reply = parsed.content || "Xin lỗi, tôi chưa có câu trả lời.";
         }
       } catch {
-        // parse lỗi → text thường
-        reply = aiResponse;
+        reply = aiResponse; // không parse được thì coi như text thường
       }
     }
 

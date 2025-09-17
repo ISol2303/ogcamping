@@ -29,27 +29,34 @@ export default function AIConsultantPage() {
   
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return
+  if (!inputMessage.trim()) return
 
-    // user message
-    addMessage({ type: "user", content: inputMessage })
-    const userText = inputMessage
-    setInputMessage("")
+  // user message
+  addMessage({ type: "user", content: inputMessage })
+  const userText = inputMessage
+  setInputMessage("")
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userText }),
-      })
-      const data = await res.json()
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userText }), // chỉ gửi message
+    })
+    const data = await res.json()
 
-      // add bot message with optional services payload
-      addMessage({ type: "bot", content: data.reply || "", services: data.services || [] })
-    } catch (err) {
-      addMessage({ type: "bot", content: "Xin lỗi, AI hiện không phản hồi." })
-    }
+    // bot trả lời
+    addMessage({
+      type: "bot",
+      content: data.reply || "",
+      services: data.services || [],
+    })
+  } catch (err) {
+    addMessage({
+      type: "bot",
+      content: "Xin lỗi, AI hiện không phản hồi.",
+    })
   }
+}
 
   const handleQuickQuestion = (q: string) => {
     setInputMessage(q)

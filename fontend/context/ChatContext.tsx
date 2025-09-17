@@ -2,8 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 
-
-
 export interface Service {
   id: number
   name: string
@@ -54,7 +52,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to load chat history:", err)
     }
 
-    // mặc định nếu không có history
+    // mặc định tin nhắn chào
     setMessages([
       {
         id: crypto.randomUUID(),
@@ -68,12 +66,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // save vào localStorage
   useEffect(() => {
-    try {
-      if (messages.length > 0) {
-        localStorage.setItem("ai-chat-history", JSON.stringify(messages))
-      }
-    } catch (err) {
-      console.error("Failed to save chat history:", err)
+    if (messages.length > 0) {
+      localStorage.setItem("ai-chat-history", JSON.stringify(messages))
     }
   }, [messages])
 
