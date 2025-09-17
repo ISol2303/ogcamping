@@ -11,6 +11,8 @@ import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap, Settings } from "l
 import Link from "next/link"
 import { useChat } from "@/context/ChatContext"
 
+
+
 export default function AIConsultantPage() {
   const { messages, addMessage, clearMessages } = useChat()
   const [inputMessage, setInputMessage] = useState("")
@@ -24,6 +26,7 @@ export default function AIConsultantPage() {
     "So sánh gói cắm trại biển và núi",
     "Gói nào có giá dưới 2 triệu?",
   ]
+  
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
@@ -40,7 +43,9 @@ export default function AIConsultantPage() {
         body: JSON.stringify({ message: userText }),
       })
       const data = await res.json()
-      addMessage({ type: "bot", content: data.reply })
+
+      // add bot message with optional services payload
+      addMessage({ type: "bot", content: data.reply || "", services: data.services || [] })
     } catch (err) {
       addMessage({ type: "bot", content: "Xin lỗi, AI hiện không phản hồi." })
     }
@@ -50,10 +55,10 @@ export default function AIConsultantPage() {
     setInputMessage(q)
   }
   useEffect(() => {
-  if (messagesContainerRef.current) {
-    messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
-  }
-}, [messages])
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+  }, [messages])
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -145,8 +150,34 @@ export default function AIConsultantPage() {
                       }`}
                     >
                       <div className="whitespace-pre-wrap break-words">{message.content}</div>
+
+                      {/* render services if API returned any */}
+                      {message.services && message.services.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          {message.services.map((s: any) => (
+                            <Link
+                              key={s.id}
+                              href={`/services/${s.id}`}
+                              className="block p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium">{s.name}</div>
+                                <div className="text-xs text-gray-500">{s.tag ?? ""}</div>
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {s.price?.toLocaleString("vi-VN")}đ • {s.averageRating ?? 0}⭐
+                              </div>
+                              <div
+                                className={`text-xs mt-1 ${s.availableSlots > 0 ? "text-green-600" : "text-red-500"}`}>
+                                {s.availableSlots > 0 ? "Còn chỗ" : "Hết chỗ"}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
                       <div className={`text-xs mt-1 ${message.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                        {message.timestamp.toLocaleTimeString("vi-VN", {
+                        {message.timestamp?.toLocaleTimeString("vi-VN", {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
