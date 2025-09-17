@@ -86,4 +86,10 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+	@Override
+	public void sendResetPasswordCode(String to, String subject, String body) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

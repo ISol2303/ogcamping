@@ -43,6 +43,8 @@ dependencies {
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
     implementation 'com.itextpdf:html2pdf:4.0.0'
     // JavaFaker, exclude snakeyaml Android
     implementation('com.github.javafaker:javafaker:1.0.2') {

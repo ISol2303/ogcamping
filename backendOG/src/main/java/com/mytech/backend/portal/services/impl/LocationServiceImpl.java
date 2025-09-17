@@ -3,7 +3,6 @@ package com.mytech.backend.portal.services.impl;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.mytech.backend.portal.models.Location;
@@ -17,10 +16,6 @@ import lombok.RequiredArgsConstructor;
 public class LocationServiceImpl implements LocationService {
 
     private final LocationRepository locationRepository;
-    @Autowired
-    public LocationServiceImpl(LocationRepository locationRepository) {
-        this.locationRepository = locationRepository;
-    }
 
     @Override
     public Location createLocation(Location location) {

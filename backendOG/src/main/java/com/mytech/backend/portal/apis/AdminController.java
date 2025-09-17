@@ -329,16 +329,16 @@ public class AdminController {
         }
     }
 
-    @GetMapping("/locations")
-    public ResponseEntity<List<LocationDTO>> fetchLocations() {
-        logger.info("Fetching locations");
-        try {
-            return ResponseEntity.ok(locationService.findAll());
-        } catch (Exception e) {
-            logger.error("Error fetching locations: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch locations: " + e.getMessage(), e);
-        }
-    }
+//    @GetMapping("/locations")
+//    public ResponseEntity<List<LocationDTO>> fetchLocations() {
+//        logger.info("Fetching locations");
+//        try {
+//            return ResponseEntity.ok(locationService.findAll());
+//        } catch (Exception e) {
+//            logger.error("Error fetching locations: {}", e.getMessage(), e);
+//            throw new RuntimeException("Failed to fetch locations: " + e.getMessage(), e);
+//        }
+//    }
 
     @GetMapping("/promotions")
     public ResponseEntity<List<PromotionDTO>> fetchPromotions() {
