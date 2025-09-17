@@ -22,11 +22,20 @@ interface Service {
   imageUrl?: string | null
 }
 
+interface Blog {
+  id: number;
+  title: string;
+  content: string;
+  thumbnail?: string;
+  imageUrl?: string;
+}
+
 export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
   const router = useRouter()
+  
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
   // Kiểm tra login và fetch service
