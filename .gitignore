@@ -2,3 +2,4 @@
 .env
 *.env
 /backendOG/uploads
+backendOG/src/main/resources/application.properties
