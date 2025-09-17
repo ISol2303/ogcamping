@@ -96,11 +96,11 @@ export default function DashboardPage() {
 
       try {
         // Lấy token & userData
-        const token = localStorage.getItem("authToken");
-        const userData = localStorage.getItem("user");
+        const token = sessionStorage.getItem("authToken");
+        const userData = sessionStorage.getItem("user");
 
         if (!token || !userData) {
-          console.warn("⚠️ Không có token hoặc userData trong localStorage");
+          console.warn("⚠️ Không có token hoặc userData trong sessionStorage");
           router.push("/login");
           return;
         }
@@ -343,13 +343,13 @@ export default function DashboardPage() {
 
 
   //handleLogout
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('user');
-    router.push('/login');
-  };
+  // const handleLogout = () => {
+  //   localStorage.removeItem('authToken');
+  //   localStorage.removeItem('user');
+  //   sessionStorage.removeItem('authToken');
+  //   sessionStorage.removeItem('user');
+  //   router.push('/login');
+  // };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -400,7 +400,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </header> */}
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
