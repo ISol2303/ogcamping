@@ -13,6 +13,7 @@ import { Tent, ArrowLeft, Calendar, Users, CreditCard, Shield, CheckCircle, Spar
 import Link from "next/link"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/AuthContext"
 
 
 export default function BookingPage() {
@@ -20,8 +21,11 @@ export default function BookingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Trạng thái user/login
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+  const { token, user, isLoggedIn } = useAuth();
+  // const token = sessionStorage.getItem("authToken")
+  // const userData = sessionStorage.getItem("user")
+  // const [isLoggedIn, setIsLoggedIn] = useState(false)
+  // const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
 
   // Bước đặt chỗ
   const [currentStep, setCurrentStep] = useState(1)
@@ -88,23 +92,28 @@ export default function BookingPage() {
 
   // --- EFFECT: Check login ---
   useEffect(() => {
-    const token = localStorage.getItem("authToken")
-    const userData = localStorage.getItem("user")
+    
 
-    if (token && userData) {
-      const parsedUser = JSON.parse(userData)
-      setIsLoggedIn(true)
-      setUser(parsedUser)
-
+    if (token && user && user.email) {
+      // const parsedUser = JSON.parse(userData)
+      console.log("Email from context:", user.email);
+      
       // Gọi API lấy chi tiết user theo email
-      fetchUserByEmail(parsedUser.email)
+      fetchUserByEmail(user.email)
     }
-  }, [])
+  }, [token, user])
 
   // ✅ Hàm lấy thông tin user theo email
   const fetchUserByEmail = async (email: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/apis/v1/users/by-email?email=${email}`)
+      const res = await fetch(`http://localhost:8080/apis/v1/users/by-email?email=${email}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`, // 👈 thêm token từ context
+            "Content-Type": "application/json",
+          },
+        }
+      )
       if (!res.ok) throw new Error("Không thể lấy thông tin user")
       const data = await res.json()
 
@@ -188,6 +197,7 @@ export default function BookingPage() {
         const res = await fetch("http://localhost:8080/apis/v1/payments/create", {
           method: "POST",
           headers: {
+            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
@@ -251,7 +261,7 @@ export default function BookingPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       })

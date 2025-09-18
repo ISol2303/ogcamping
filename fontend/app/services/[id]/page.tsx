@@ -14,6 +14,7 @@ import Image from "next/image"
 import axios from "axios"
 import { Textarea } from "@/components/ui/textarea"
 import Reviews from "@/components/ui/Reviews"
+import { useAuth } from "@/context/AuthContext"
 interface Availability {
   id: number;
   date: string;
@@ -96,8 +97,7 @@ export interface CartItem {
 export default function ServiceDetailPage() {
   const params = useParams()
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const { isLoggedIn, user } = useAuth()
   const router = useRouter()
   const [service, setService] = useState<Service | null>(null)
   const [selectedDate, setSelectedDate] = useState("")
@@ -130,12 +130,11 @@ export default function ServiceDetailPage() {
       }
     }
     if (params.id) fetchService()
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
+    const userData = sessionStorage.getItem('user')
+    // if (token && userData) {
+    //   setIsLoggedIn(true)
+    //   setUser(JSON.parse(userData))
+    // }
   }, [params.id])
 
   if (!service) {
@@ -156,13 +155,6 @@ export default function ServiceDetailPage() {
   )
 
   const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0)
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('user');
-    router.push('/login');
-  };
   // const handleDashboardNavigation = () => {
   //   if (user?.role === 'ADMIN') {
   //     router.push('/admin')
@@ -204,7 +196,9 @@ export default function ServiceDetailPage() {
     if (hasError) return;
 
     // ✅ Nếu chưa login → lưu redirect gốc + chuyển login
-    if (!token) {
+    console.log("Token:", token);
+    
+    if (!isLoggedIn) {
       localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
       router.push("/login");
       return;

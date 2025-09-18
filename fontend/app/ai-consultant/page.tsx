@@ -7,17 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap, Settings } from "lucide-react"
+import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap } from "lucide-react"
 import Link from "next/link"
 import { useChat } from "@/context/ChatContext"
-
-
 
 export default function AIConsultantPage() {
   const { messages, addMessage, clearMessages } = useChat()
   const [inputMessage, setInputMessage] = useState("")
   const messagesContainerRef = useRef<HTMLDivElement | null>(null)
-  const router = useRouter()
 
   const quickQuestions = [
     "Tôi muốn đi cắm trại 2-3 ngày với gia đình",
@@ -26,50 +23,64 @@ export default function AIConsultantPage() {
     "So sánh gói cắm trại biển và núi",
     "Gói nào có giá dưới 2 triệu?",
   ]
-  
+
+  // 👉 helper tính slot còn lại
+  const getAvailableSlots = (service: any) => {
+    if (!service.availability) return 0
+    return service.availability.reduce(
+      (acc: number, a: any) => acc + (a.totalSlots - a.bookedSlots),
+      0
+    )
+  }
 
   const handleSendMessage = async () => {
-  if (!inputMessage.trim()) return
+    if (!inputMessage.trim()) return
+    const userText = inputMessage
 
-  // user message
-  addMessage({ type: "user", content: inputMessage })
-  const userText = inputMessage
-  setInputMessage("")
+    // thêm tin nhắn user vào state ngay
+    addMessage({ type: "user", content: userText })
+    setInputMessage("")
 
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: userText }), // chỉ gửi message
-    })
-    const data = await res.json()
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, { type: "user", content: userText }],
+        }),
+      })
 
-    // bot trả lời
-    addMessage({
-      type: "bot",
-      content: data.reply || "",
-      services: data.services || [],
-    })
-  } catch (err) {
-    addMessage({
-      type: "bot",
-      content: "Xin lỗi, AI hiện không phản hồi.",
-    })
+      const data = await res.json()
+
+      // bot trả lời
+      addMessage({
+        type: "bot",
+        content: data.reply || "",
+        services: data.services || [],
+      })
+    } catch (err) {
+      addMessage({
+        type: "bot",
+        content: "Xin lỗi, AI hiện không phản hồi.",
+      })
+    }
   }
-}
 
   const handleQuickQuestion = (q: string) => {
     setInputMessage(q)
   }
+
   useEffect(() => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight
     }
   }, [messages])
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Page Header */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Avatar>
@@ -82,26 +93,12 @@ export default function AIConsultantPage() {
             <Sparkles className="w-8 h-8 text-yellow-500" />
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Trò chuyện với AI chuyên dụng để tìm ra gói dịch vụ cắm trại hoàn hảo nhất cho bạn
+            Trò chuyện với AI để tìm ra gói dịch vụ cắm trại phù hợp nhất cho bạn
           </p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <Badge className="bg-green-100 text-green-800 border-0">
-              <Zap className="w-3 h-3 mr-1" />
-              Phản hồi tức thì
-            </Badge>
-            <Badge className="bg-blue-100 text-blue-800 border-0">
-              <MessageCircle className="w-3 h-3 mr-1" />
-              Tư vấn 24/7
-            </Badge>
-            <Badge className="bg-purple-100 text-purple-800 border-0">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Cá nhân hóa
-            </Badge>
-          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Chat Interface */}
+          {/* Chat */}
           <div className="lg:col-span-2">
             <Card className="h-[600px] flex flex-col border-0 shadow-lg">
               <CardHeader className="border-b bg-gradient-to-r from-green-500 to-green-600 text-white rounded-t-lg">
@@ -115,33 +112,23 @@ export default function AIConsultantPage() {
                     </Avatar>
                     <div>
                       <CardTitle className="text-lg text-green-900">OG Camping</CardTitle>
-                      <CardDescription className="text-green-900">
-                        Chuyên gia tư vấn cắm trại thông minh
-                      </CardDescription>
+                      <CardDescription className="text-green-900">Chuyên gia tư vấn cắm trại thông minh</CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-400 text-green-900 hover:bg-green-400">Online</Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearMessages}
-                      className="text-black hover:bg-green-600"
-                    >
-                      Xóa lịch sử
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="sm" onClick={clearMessages} className="text-black hover:bg-green-600">
+                    Xóa lịch sử
+                  </Button>
                 </div>
               </CardHeader>
 
               {/* Messages */}
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"  ref={messagesContainerRef}>
+              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" ref={messagesContainerRef}>
                 {messages.map((message) => (
                   <div key={message.id} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                     <Avatar className="w-8 h-8 flex-shrink-0">
                       {message.type === "bot" ? (
                         <AvatarFallback className="bg-green-700 text-black">
-                          <img src="/ai-avatar.jpg" className="h-auto w-auto rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          <img src="/ai-avatar.jpg" className="h-auto w-auto rounded-full object-cover" />
                         </AvatarFallback>
                       ) : (
                         <AvatarFallback className="bg-blue-100 text-blue-600">
@@ -149,45 +136,93 @@ export default function AIConsultantPage() {
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.type === "user"
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-gray-900 border border-gray-200"
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap break-words">{message.content}</div>
 
-                      {/* render services if API returned any */}
-                      {message.services && message.services.length > 0 && (
+                    <div className={`max-w-[80%] rounded-lg p-3 ${message.type === "user" ? "bg-blue-500 text-white" : "bg-white text-gray-900 border border-gray-200"}`}>
+                      {/* Try parse message.content if it's JSON string */}
+                      {(() => {
+                        let parsed: any = null;
+                        try {
+                          parsed = typeof message.content === "string" ? JSON.parse(message.content) : message.content;
+                        } catch (e) {
+                          parsed = null;
+                        }
+
+                        // If it's structured service_request/combo_request, render nicely
+                        if (parsed && (parsed.type === "service_request" || parsed.type === "combo_request")) {
+                          return (
+                            <div className="space-y-3">
+                              <div className="text-sm font-medium text-gray-800">{parsed.reply}</div>
+
+                              {/* criteria */}
+                              {parsed.criteria && (
+                                <div className="text-xs text-gray-600 border rounded-lg p-2 bg-gray-50">
+                                  {parsed.criteria.location && (
+                                    <p>
+                                      <b>Địa điểm:</b> {parsed.criteria.location}
+                                    </p>
+                                  )}
+                                  {parsed.criteria.days && (
+                                    <p>
+                                      <b>Số ngày:</b> {parsed.criteria.days}
+                                    </p>
+                                  )}
+                                  {parsed.criteria.tag && (
+                                    <p>
+                                      <b>Tag:</b> {parsed.criteria.tag}
+                                    </p>
+                                  )}
+                                  {parsed.criteria.minPrice !== undefined || parsed.criteria.maxPrice !== undefined ? (
+                                    <p>
+                                      <b>Giá:</b>{" "}
+                                      {(parsed.criteria.minPrice ?? 0).toLocaleString("vi-VN")}đ -{" "}
+                                      {(parsed.criteria.maxPrice ?? 99999999).toLocaleString("vi-VN")}đ
+                                    </p>
+                                  ) : null}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // default: plain text
+                        return <div className="whitespace-pre-wrap break-words">{message.content}</div>;
+                      })()}
+
+                      {/* render services passed as field on message */}
+                      {message.services?.length ? (
                         <div className="space-y-2 mt-3">
-                          {message.services.map((s: any) => (
-                            <Link
-                              key={s.id}
-                              href={`/services/${s.id}`}
-                              className="block p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="font-medium">{s.name}</div>
-                                <div className="text-xs text-gray-500">{s.tag ?? ""}</div>
-                              </div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {s.price?.toLocaleString("vi-VN")}đ • {s.averageRating ?? 0}⭐
-                              </div>
-                              <div
-                                className={`text-xs mt-1 ${s.availableSlots > 0 ? "text-green-600" : "text-red-500"}`}>
-                                {s.availableSlots > 0 ? "Còn chỗ" : "Hết chỗ"}
-                              </div>
+                          {message.services.map((s: any) => {
+                            const availableSlots = getAvailableSlots(s);
+                            return (
+                              <Link key={s.id} href={`/services/${s.id}`} className="block p-3 border rounded-lg hover:bg-gray-50">
+                                <div className="flex items-center justify-between">
+                                  <div className="font-medium">{s.name}</div>
+                                  <div className="text-xs text-gray-500">{s.tag ?? ""}</div>
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">{s.price?.toLocaleString("vi-VN")}đ</div>
+                                <div className={`text-xs mt-1 ${availableSlots > 0 ? "text-green-600" : "text-red-500"}`}>
+                                  {availableSlots > 0 ? `Còn ${availableSlots} chỗ` : "Hết chỗ"}
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+
+                      {/* render combos if any */}
+                      {message.combos?.length ? (
+                        <div className="space-y-2 mt-3">
+                          {message.combos.map((c: any) => (
+                            <Link key={c.id} href={`/combos/${c.id}`} className="block p-3 border rounded-lg hover:bg-gray-50">
+                              <div className="font-medium">{c.name}</div>
+                              <div className="text-sm text-gray-600">{c.price?.toLocaleString("vi-VN")}đ</div>
                             </Link>
                           ))}
                         </div>
-                      )}
+                      ) : null}
 
                       <div className={`text-xs mt-1 ${message.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                        {message.timestamp?.toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {message.timestamp?.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </div>
                   </div>
@@ -197,18 +232,8 @@ export default function AIConsultantPage() {
               {/* Input */}
               <div className="border-t p-4 bg-white rounded-b-lg">
                 <div className="flex gap-2">
-                  <Input
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Nhập câu hỏi của bạn..."
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="flex-1 border-gray-300 focus:border-green-500"
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim()}
-                    className="bg-green-500 hover:bg-green-600 text-white border-0"
-                  >
+                  <Input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder="Nhập câu hỏi của bạn..." onKeyPress={(e) => e.key === "Enter" && handleSendMessage()} className="flex-1 border-gray-300 focus:border-green-500" />
+                  <Button onClick={handleSendMessage} disabled={!inputMessage.trim()} className="bg-green-500 hover:bg-green-600 text-white border-0">
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>
@@ -226,12 +251,7 @@ export default function AIConsultantPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {quickQuestions.map((question, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-auto text-left h-auto mr-3 p-1 justify-start border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300"
-                    onClick={() => handleQuickQuestion(question)}
-                  >
+                  <Button key={index} variant="outline" className="w-auto text-left h-auto mr-3 p-1 justify-start border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300" onClick={() => handleQuickQuestion(question)}>
                     <MessageCircle className="w-auto h-4 mr-2 flex-shrink-0 text-green-600" />
                     <span className="text-sm">{question}</span>
                   </Button>
@@ -264,16 +284,6 @@ export default function AIConsultantPage() {
                     <p className="text-sm text-gray-600">Kiểm tra tình trạng dịch vụ và thiết bị</p>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Hỗ trợ 24/7</h4>
-                    <p className="text-sm text-gray-600">Luôn sẵn sàng hỗ trợ mọi lúc</p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -291,16 +301,7 @@ export default function AIConsultantPage() {
                   <div className="font-medium text-sm">Cắm trại biển Phú Quốc</div>
                   <div className="text-xs text-gray-600">1.800.000đ • 4.9⭐</div>
                 </div>
-                <div className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200">
-                  <div className="font-medium text-sm">Cắm trại gia đình Đà Lạt</div>
-                  <div className="text-xs text-gray-600">3.200.000đ • 4.7⭐</div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-                  asChild
-                >
+                <Button variant="outline" size="sm" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
                   <Link href="/services">Xem tất cả</Link>
                 </Button>
               </CardContent>

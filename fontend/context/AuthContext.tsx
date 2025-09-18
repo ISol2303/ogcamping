@@ -12,7 +12,8 @@ type User = {
 };
 
 type JwtPayload = {
-  sub: string;       // email hoặc id
+  id: string;        
+  sub: string;       
   role: string;
   name?: string;
   avatar?: string;
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const decoded: JwtPayload = jwtDecode(token);
       const userData: User = {
-        id: decoded.sub,
+        id: decoded.id,
         email: decoded.sub,
         role: decoded.role,
         name: decoded.name,

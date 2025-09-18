@@ -58,6 +58,7 @@ public class JwtUtils {
                 .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(new Date())
                 .setIssuer("ogcamping")
+                .claim("id", userPrincipal.getId())
                 .claim("role", role) // Use single "role" claim as string
                 .claim("name", userPrincipal.getName())
                 .claim("avatar", userPrincipal.getAvatar())

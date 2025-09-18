@@ -26,6 +26,15 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Redirect to home if already logged in
+  useEffect(() => {
+  const token = sessionStorage.getItem("authToken");
+
+  if (token) {
+    router.replace("/");
+  }
+}, [router]);
+
   useEffect(() => {
     const queryError = searchParams.get('error');
     if (queryError) {

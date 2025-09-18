@@ -95,6 +95,7 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	                    "/apis/v1/register",
 	                    "/apis/test/**",
 	                    "/apis/v1/services/**",
+	                    "apis/v1/combos",
 	                    "/apis/dishes/all",
 	                    "/apis/v1/users/forgot-password",
 	                    "/apis/v1/users/reset-password"

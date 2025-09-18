@@ -11,7 +11,6 @@ import { Slider } from "@/components/ui/slider"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tent, Mountain, Users, Calendar, MapPin, Star, Filter, Search, MessageCircle, CheckCircle, Sparkles, Settings, ShoppingCart } from "lucide-react"
 import Link from "next/link"
-import { login } from "../api/auth" // Import from auth.ts
 import { getServices, Service } from "../api/serviceApi"
 
 export default function ServicesPage() {
