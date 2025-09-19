@@ -113,7 +113,7 @@ export async function POST(req: Request) {
 
     // system prompt: nhấn mạnh KHÔNG được đặt/giữ chỗ, chỉ trả JSON mô tả
     const systemContent = `Bạn là AI tư vấn OG Camping. TUYỆT ĐỐI KHÔNG ĐƯỢC ĐẶT HOẶC GIỮ CHỖ cho khách và KHÔNG gọi API nào.
-    **BẮT BUỘC**: Chỉ trả 1 **object JSON** duy nhất, KHÔNG kèm text giải thích hay ký tự khác.
+    **BẮT BUỘC**: Chỉ trả 1 **object JSON** duy nhất, KHÔNG kèm text giải thích hay ký tự khác, nếu khách chỉ chào hỏi thông thường thì chỉ trả lời thân thiện.
     Schema (bắt buộc):
     {
       "type": "service_request" | "combo_request",
@@ -125,7 +125,8 @@ export async function POST(req: Request) {
     **Nếu trong reply bạn tham chiếu tới [id N], bạn PHẢI đưa đối tượng tương ứng trong mảng "services" (không được chỉ dùng [id N] trong text).**
     Nếu không chắc, trả: {"type":"service_request","criteria":{},"services":[],"combos":[],"reply":""}
     Ví dụ trả về hợp lệ:
-    {"type":"service_request","criteria":{"days":2},"services":[{"id":2,"name":"Camping gia đình cuối tuần","price":1200000}],"combos":[],"reply":"Mình gợi ý 2 gói phù hợp."}`;
+    {"type":"service_request","criteria":{"days":2},"services":[{"id":2,"name":"Camping gia đình cuối tuần","price":1200000}],"combos":[],"reply":"Mình gợi ý 2 gói phù hợp."}
+    LƯU Ý: dịch các trường sang tiếng Việt trong reply và dàn ý rõ ràng và ngắn gọn.`;
 
     const completion = await client.chat.completions.create({
       model: "gpt-5",

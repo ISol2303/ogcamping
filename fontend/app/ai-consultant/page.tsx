@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, use } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,11 +10,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap } from "lucide-react"
 import Link from "next/link"
 import { useChat } from "@/context/ChatContext"
+import { useAuth } from "@/context/AuthContext"
 
 export default function AIConsultantPage() {
   const { messages, addMessage, clearMessages } = useChat()
+  const { user } = useAuth()
+  
   const [inputMessage, setInputMessage] = useState("")
   const messagesContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const [popularServices, setPopularServices] = useState<any[]>([]);
+  const [loadingPopular, setLoadingPopular] = useState(false);
 
   const quickQuestions = [
     "Tôi muốn đi cắm trại 2-3 ngày với gia đình",
@@ -24,7 +30,7 @@ export default function AIConsultantPage() {
     "Gói nào có giá dưới 2 triệu?",
   ]
 
-  // 👉 helper tính slot còn lại
+  // helper tính slot còn lại
   const getAvailableSlots = (service: any) => {
     if (!service.availability) return 0
     return service.availability.reduce(
@@ -77,6 +83,38 @@ export default function AIConsultantPage() {
     }
   }, [messages])
   
+  //Load popular services
+  useEffect(() => {
+  let mounted = true;
+  async function loadPopular() {
+    setLoadingPopular(true);
+    try {
+      // gọi API (thay bằng URL BE nếu cần, ví dụ http://localhost:8080/apis/v1/services)
+      const res = await fetch("http://localhost:8080/apis/v1/services", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch services");
+      const all = await res.json();
+      if (!mounted) return;
+
+      // filter tag = "POPULAR" (so sánh in hoa/thoáng)
+      const popular = Array.isArray(all)
+        ? all.filter((s: any) => String(s.tag ?? "").toUpperCase() === "POPULAR")
+        : [];
+
+      setPopularServices(popular);
+    } catch (err) {
+      console.error("Load popular services error:", err);
+      setPopularServices([]);
+    } finally {
+      if (mounted) setLoadingPopular(false);
+    }
+  }
+
+  loadPopular();
+  return () => {
+    mounted = false;
+  };
+}, []);
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -126,16 +164,20 @@ export default function AIConsultantPage() {
                 {messages.map((message) => (
                   <div key={message.id} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                     <Avatar className="w-8 h-8 flex-shrink-0">
-                      {message.type === "bot" ? (
-                        <AvatarFallback className="bg-green-700 text-black">
-                          <img src="/ai-avatar.jpg" className="h-auto w-auto rounded-full object-cover" />
-                        </AvatarFallback>
+                    {message.type === "bot" ? (
+                      // bot vẫn dùng image (hoặc fallback)
+                      <AvatarImage src="/ai-avatar.jpg" alt="OG AI" />
+                    ) : (
+                      // user avatar: lấy user từ context
+                      (user?.avatar) ? (
+                        <AvatarImage src={user?.avatar} alt="Bạn" className="rounded-full object-cover" />
                       ) : (
                         <AvatarFallback className="bg-blue-100 text-blue-600">
                           <User className="w-4 h-4" />
                         </AvatarFallback>
-                      )}
-                    </Avatar>
+                      )
+                    )}
+                  </Avatar>
 
                     <div className={`max-w-[80%] rounded-lg p-3 ${message.type === "user" ? "bg-blue-500 text-white" : "bg-white text-gray-900 border border-gray-200"}`}>
                       {/* Try parse message.content if it's JSON string */}
@@ -289,23 +331,61 @@ export default function AIConsultantPage() {
 
             {/* Popular Services */}
             <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Dịch vụ phổ biến</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200">
-                  <div className="font-medium text-sm">Cắm trại núi Sapa</div>
-                  <div className="text-xs text-gray-600">2.500.000đ • 4.8⭐</div>
-                </div>
-                <div className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200">
-                  <div className="font-medium text-sm">Cắm trại biển Phú Quốc</div>
-                  <div className="text-xs text-gray-600">1.800.000đ • 4.9⭐</div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
-                  <Link href="/services">Xem tất cả</Link>
-                </Button>
-              </CardContent>
-            </Card>
+  <CardHeader>
+    <CardTitle className="text-lg">Dịch vụ phổ biến</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-3">
+    {loadingPopular ? (
+      <div className="p-3 text-sm text-gray-500">Đang tải...</div>
+    ) : popularServices.length === 0 ? (
+      <div className="p-3 text-sm text-gray-500">Chưa có dịch vụ phổ biến.</div>
+    ) : (
+      popularServices.map((s: any) => {
+        const availableSlots = (s.availability ?? []).reduce(
+          (acc: number, a: any) => acc + (a.totalSlots - (a.bookedSlots ?? 0)),
+          0
+        );
+        const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+        const getImgUrl = (path?: string) => {
+          if (!path) return "/placeholder-service.jpg";
+          if (/^https?:\/\//i.test(path)) return path; // nếu backend trả sẵn full URL
+          return `${API_BASE}${path}`;
+        };
+        return (
+          <Link
+            key={s.id}
+            href={`/services/${s.id}`}
+            className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200 flex items-center gap-3"
+          >
+            {/* thumbnail */}
+            <div className="w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+              <img src={getImgUrl(s.imageUrl ?? s.image)} alt={s.name} className="w-full h-full object-cover" />
+            </div>
+
+            {/* info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm truncate">{s.name}</div>
+              <div className="text-xs text-gray-600 mt-1">
+                {(s.price ?? 0).toLocaleString("vi-VN")}đ • {(s.averageRating ?? 0).toFixed(1)}⭐
+              </div>
+            </div>
+
+            {/* badge */}
+            <div className="text-right">
+              <div className={`text-xs ${availableSlots > 0 ? "text-green-600" : "text-red-500"}`}>
+                {availableSlots > 0 ? `${availableSlots} chỗ` : "Hết chỗ"}
+              </div>
+            </div>
+          </Link>
+        );
+      })
+    )}
+
+    <Button variant="outline" size="sm" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" asChild>
+      <Link href="/services">Xem tất cả</Link>
+    </Button>
+  </CardContent>
+</Card>
           </div>
         </div>
 

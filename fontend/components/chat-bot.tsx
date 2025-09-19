@@ -26,6 +26,9 @@ export default function ChatBot() {
     "Gói nào có giá dưới 2 triệu?",
   ]
 
+  // kiểm tra user đã gửi tin nhắn chưa
+  const hasUserSent = messages.some((m) => m.type === "user")
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
 
@@ -116,67 +119,66 @@ export default function ChatBot() {
             <CardContent className="p-0 h-64 overflow-y-auto bg-gray-50">
               <div className="p-3 space-y-3">
                 {messages.map((message) => (
-  <div
-    key={message.id}
-    className={`flex gap-2 ${message.type === "user" ? "flex-row-reverse" : ""}`}
-  >
-    <Avatar className="w-6 h-6 flex-shrink-0">
-      {message.type === "bot" ? (
-        <AvatarFallback className="bg-green-100 text-green-600">
-          <img
-            src="/ai-avatar.jpg"
-            className="h-auto w-auto rounded-full object-cover"
-          />
-        </AvatarFallback>
-      ) : (
-        <AvatarFallback className="bg-blue-100 text-blue-600">
-          <User className="w-3 h-3" />
-        </AvatarFallback>
-      )}
-    </Avatar>
+                  <div
+                    key={message.id}
+                    className={`flex gap-2 ${message.type === "user" ? "flex-row-reverse" : ""}`}
+                  >
+                    <Avatar className="w-6 h-6 flex-shrink-0">
+                      {message.type === "bot" ? (
+                        <AvatarFallback className="bg-green-100 text-green-600">
+                          <img
+                            src="/ai-avatar.jpg"
+                            className="h-auto w-auto rounded-full object-cover"
+                          />
+                        </AvatarFallback>
+                      ) : (
+                        <AvatarFallback className="bg-blue-100 text-blue-600">
+                          <User className="w-3 h-3" />
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
 
-    <div
-      className={`max-w-[80%] rounded-lg p-2 text-xs ${
-        message.type === "user"
-          ? "bg-blue-500 text-white"
-          : "bg-white text-gray-800 border border-gray-200"
-      }`}
-    >
-      <div className="whitespace-pre-wrap break-words">
-        {message.content}
-      </div>
+                    <div
+                      className={`max-w-[80%] rounded-lg p-2 text-xs ${
+                        message.type === "user"
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-gray-800 border border-gray-200"
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap break-words">
+                        {message.content}
+                      </div>
 
-      {/* Nếu bot trả kèm danh sách service thì render card */}
-      {message.type === "bot" && Array.isArray(message.services) && message.services.length > 0 && (
-        <div className="mt-2 space-y-2">
-          {message.services.map((s: any) => (
-            <Link
-              key={s.id}
-              href={`/services/${s.id}`}
-              className="block p-2 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200"
-            >
-              <div className="flex items-center justify-between">
-                <div className="font-medium">{s.name}</div>
-                <div className="text-xs text-gray-500">{s.tag ?? ""}</div>
-              </div>
-              <div className="text-sm text-gray-600 mt-1">
-                {s.price?.toLocaleString("vi-VN")}đ • {s.averageRating ?? 0}⭐
-              </div>
-              <div
-                className={`text-xs mt-1 ${
-                  s.availableSlots > 0 ? "text-green-600" : "text-red-500"
-                }`}
-              >
-                {s.availableSlots > 0 ? "Còn chỗ" : "Hết chỗ"}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-))}
-
+                      {/* Nếu bot trả kèm danh sách service thì render card */}
+                      {message.type === "bot" && Array.isArray(message.services) && message.services.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {message.services.map((s: any) => (
+                            <Link
+                              key={s.id}
+                              href={`/services/${s.id}`}
+                              className="block p-2 border rounded-lg hover:bg-gray-50 cursor-pointer border-gray-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium">{s.name}</div>
+                                <div className="text-xs text-gray-500">{s.tag ?? ""}</div>
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {s.price?.toLocaleString("vi-VN")}đ • {s.averageRating ?? 0}⭐
+                              </div>
+                              <div
+                                className={`text-xs mt-1 ${
+                                  s.availableSlots > 0 ? "text-green-600" : "text-red-500"
+                                }`}
+                              >
+                                {s.availableSlots > 0 ? "Còn chỗ" : "Hết chỗ"}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
 
                 {isTyping && (
                   <div className="flex gap-2">
@@ -195,26 +197,30 @@ export default function ChatBot() {
                   </div>
                 )}
 
+                {/* chỉ hiển thị Quick Questions khi user CHƯA gửi tin nào */}
+                {!hasUserSent && (
+                  <div className="p-3 border-t bg-white">
+                    <div className="text-xs text-gray-500 mb-2">Câu hỏi nhanh:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {quickQuestions.map((question, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setInputMessage(question)}
+                          className="text-xs h-6 px-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300"
+                        >
+                          {question}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick Questions */}
-              <div className="p-3 border-t bg-white">
-                <div className="text-xs text-gray-500 mb-2">Câu hỏi nhanh:</div>
-                <div className="flex flex-wrap gap-1">
-                  {quickQuestions.map((question, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setInputMessage(question)}
-                      className="text-xs h-6 px-2 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300"
-                    >
-                      {question}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              {/* nếu user đã gửi tin thì không show quick questions ở đây (đã xử lý) */}
             </CardContent>
 
             <div className="p-3 border-t bg-white rounded-b-lg">
