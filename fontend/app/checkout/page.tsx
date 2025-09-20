@@ -34,7 +34,6 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import axios from "axios"
-import { jwtDecode } from "jwt-decode";
 
 
 export default function CheckoutPage() {
@@ -46,8 +45,8 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [note, setNote] = useState("")
   useEffect(() => {
-    const token = sessionStorage.getItem('authToken')
-    const userData = sessionStorage.getItem('user')
+    const token = localStorage.getItem('authToken')
+    const userData = localStorage.getItem('user')
     if (token && userData) {
       setIsLoggedIn(true)
       setUser(JSON.parse(userData))
@@ -127,30 +126,17 @@ export default function CheckoutPage() {
       router.push("/checkout/failure")
     }
   }
-
   const handleCreateBooking = async () => {
     try {
       setIsProcessing(true);
 
-      // 🔹 Lấy token từ localStorage hoặc sessionStorage
-      const storedToken =
-        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
-      if (!storedToken) {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) {
         alert("Bạn cần đăng nhập trước khi đặt chỗ");
         return;
       }
+      const user = JSON.parse(storedUser);
 
-      // 🔹 Decode token để lấy userId
-      const decoded: any = jwtDecode(storedToken);
-      const userId = decoded.id || decoded.userId || decoded.sub; // fallback nếu key khác
-
-      if (!userId) {
-        alert("Không tìm thấy ID người dùng trong token");
-        return;
-      }
-
-      // 🔹 Lấy cart
       const storedCart = localStorage.getItem("cart");
       if (!storedCart) {
         alert("Giỏ hàng trống");
@@ -185,35 +171,29 @@ export default function CheckoutPage() {
           extraPeople: item.extraPeople || 0,
         }));
 
+
       const bookingRequest = {
         services,
         combos,
         note: note || "",
       };
 
-      // 🔹 Gọi API tạo booking kèm customerId từ token
+      // B1: Tạo booking
       const res = await axios.post(
-        `http://localhost:8080/apis/v1/bookings?customerId=${userId}`,
-        bookingRequest,
-        {
-          headers: { Authorization: `Bearer ${storedToken}` }, // nếu API yêu cầu
-        }
+        `http://localhost:8080/apis/v1/bookings?customerId=${user.id}`,
+        bookingRequest
       );
 
       const booking = res.data;
       localStorage.setItem("infoBookingItem", JSON.stringify(booking));
-      localStorage.removeItem("cart");
-
-      // 🔹 Thanh toán
+      localStorage.removeItem("cart")
+      // B2: Thanh toán
       if (paymentMethod === "vnpay") {
         const paymentRes = await axios.post(
           "http://localhost:8080/apis/v1/payments/create",
           {
             bookingId: booking.id,
             method: "VNPAY",
-          },
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
           }
         );
 
@@ -237,11 +217,88 @@ export default function CheckoutPage() {
 
 
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       {/* Header */}
-
+      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 group">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="relative">
+                <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
+              </div>
+              <span className="text-3xl font-bold text-green-600">OG Camping</span>
+            </Link>
+          </div>
+          <nav className="hidden md:flex items-center gap-8">
+            <Link
+              href="/services"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
+            >
+              Dịch vụ
+            </Link>
+            <Link
+              href="/equipment"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
+            >
+              Thuê thiết bị
+            </Link>
+            <Link
+              href="/combos"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
+            >
+              Combo
+            </Link>
+            <Link href="/about" className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium">
+              Về chúng tôi
+            </Link>
+            <Link
+              href="/contact"
+              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
+            >
+              Liên hệ
+            </Link>
+          </nav>
+          <div className="flex items-center gap-3">
+            {isLoggedIn ? (
+              <>
+                <span className="text-gray-800 font-medium">{user?.name}</span>
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Settings className="h-5 w-5 text-gray-800" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleDashboardNavigation}>
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link href="/login">Đăng nhập</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/register">Đăng ký</Link>
+                </Button>
+                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                  <ShoppingCart className="h-5 w-5 text-gray-800" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
 
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">

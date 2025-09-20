@@ -78,7 +78,7 @@ export default function PaymentSuccessPage() {
       try {
         const res = await fetch(`http://localhost:8080/apis/v1/bookings/${bookingId}`);
         const data = await res.json();
-
+        console.log(data);
         // Gộp tất cả items từ 3 mảng
         const bookingItems = [
           ...(data.services || []),
@@ -188,6 +188,7 @@ export default function PaymentSuccessPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       {/* Header */}
       
+
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">

@@ -1,4 +1,5 @@
 package com.mytech.backend.portal.models.Customer;
+
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.User;
 import jakarta.persistence.*;
@@ -22,6 +23,10 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    @Column(name = "name", nullable = true)
+    private String name;
+
     @NotBlank
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -39,6 +44,8 @@ public class Customer {
     private String phone;
 
     private String address;
+
+    private String avatar;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)

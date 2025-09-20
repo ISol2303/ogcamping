@@ -1,6 +1,7 @@
 package com.mytech.backend.portal.security;
 
 import com.mytech.backend.portal.models.User;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,18 +11,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import com.mytech.backend.portal.models.User;
-
+@Getter
+@Setter
 public class AppUserDetails implements UserDetails {
 
     private static final long serialVersionUID = 995564934432043084L;
-    
+
     private final User user;
-    
+
     public AppUserDetails(User user) {
         this.user = user;
     }
@@ -79,8 +76,15 @@ public class AppUserDetails implements UserDetails {
     public String getAvatar() {
         return user.getAvatar();
     }
-    
+
     public Long getId() {
         return user.getId();
+    }
+    public String getFirstName(){
+        return user.getCustomer().getFirstName().toString();
+    }
+
+    public String getLastName(){
+        return user.getCustomer().getLastName().toString();
     }
 }
