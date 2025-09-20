@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "booking_items")
@@ -38,8 +39,8 @@ public class BookingItem {
     private Integer quantity;
     private Double price;
     // 🔹 Các field mới để lưu theo từng dịch vụ lưu trú
-    private LocalDate checkInDate;
-    private LocalDate checkOutDate;
+    private LocalDateTime checkInDate;
+    private LocalDateTime checkOutDate;
     private Integer numberOfPeople;
 }
 

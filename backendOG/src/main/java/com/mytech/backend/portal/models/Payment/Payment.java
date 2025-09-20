@@ -18,36 +18,36 @@ import java.time.LocalDateTime;
 @Builder
 public class Payment {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	// Liên kết 1-1 với Booking
-	@OneToOne
-	@JoinColumn(name = "booking_id", nullable = false, unique = true)
-	private Booking booking;
+    // Liên kết 1-1 với Booking
+    @OneToOne
+    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    private Booking booking;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private PaymentMethod method;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod method;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private PaymentStatus status = PaymentStatus.PENDING;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus status = PaymentStatus.PENDING;
 
-	@Column(nullable = false)
-	private Double amount;
+    @Column(nullable = false)
+    private Double amount;
 
-	@Column(nullable = false, unique = true)
-	private String providerTransactionId; // mã giao dịch VNPay/Momo/PayPal
+    @Column(nullable = false, unique = true)
+    private String providerTransactionId; // mã giao dịch VNPay/Momo/PayPal
 
-	@Column
-	private String failureReason;
+    @Column
+    private String failureReason;
 
-	@CreationTimestamp
-	@Column(nullable = false, updatable = false)
-	private LocalDateTime createdAt;
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-	@UpdateTimestamp
-	private LocalDateTime updatedAt;
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

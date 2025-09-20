@@ -1,3 +1,3 @@
 package com.mytech.backend.portal.models.Booking;
 
-public enum BookingStatus { PENDING, CONFIRMED, CANCELLED, COMPLETED }
+public enum BookingStatus { PENDING, CONFIRMED, IN_PROGRESS, CANCELLED, COMPLETED }

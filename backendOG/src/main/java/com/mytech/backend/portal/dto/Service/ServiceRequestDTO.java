@@ -1,11 +1,13 @@
 package com.mytech.backend.portal.dto.Service;
 
 
-import lombok.*;
+import com.mytech.backend.portal.models.Service.ServiceTag;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
-
-import com.mytech.backend.portal.models.Service.ServiceTag;
 
 @Data
 @NoArgsConstructor
@@ -22,15 +24,19 @@ public class ServiceRequestDTO {
     private Integer minCapacity;
     private Integer maxCapacity;
     private Boolean allowExtraPeople;
+    private Boolean active;
     private Double extraFeePerPerson;
     private Integer maxExtraPeople;
     private Boolean requireAdditionalSiteIfOver;
     private Integer defaultSlotsPerDay;
     private String duration;
     private String capacity;
-    private ServiceTag tag;         // POPULAR / NEW / DISCOUNT
+    private ServiceTag tag;
     private List<String> highlights;
     private List<String> included;
     private List<ItineraryDTO> itinerary;
+
+    private Boolean keepImageUrl;
+    private List<String> extraImageUrls;
 }
 

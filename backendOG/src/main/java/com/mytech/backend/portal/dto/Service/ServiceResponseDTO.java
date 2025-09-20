@@ -1,9 +1,12 @@
 package com.mytech.backend.portal.dto.Service;
-import lombok.*;
-
-import java.util.List;
 
 import com.mytech.backend.portal.models.Service.ServiceTag;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor

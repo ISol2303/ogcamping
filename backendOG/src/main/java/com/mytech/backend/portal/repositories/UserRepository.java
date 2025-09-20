@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,4 +28,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findById(Long id);
     
     Optional<User> findByResetCode(String resetCode);
+
+
+    @Query("SELECT sa.user FROM ShiftAssignment sa " +
+            "WHERE sa.shift.shiftDate = :date " +
+            "AND sa.shift.status IN ('APPROVED','IN_PROGRESS')")
+
+    List<User> findByRole(User.Role role);
+
+    // Method used in ShiftServiceImpl previously (if you implemented it)
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        JOIN ShiftAssignment sa ON sa.user = u
+        JOIN Shift s ON sa.shift = s
+        WHERE ( (s.shiftDate >= :fromDate) AND (s.shiftDate <= :toDate) )
+    """)
+    List<User> findStaffInActiveShift(@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate);
 }

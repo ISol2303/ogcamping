@@ -64,6 +64,7 @@ public class ServiceController {
     }
 
 
+
     // DELETE /services/{id} → xóa (soft delete)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteService(@PathVariable Long id) {
@@ -77,4 +78,10 @@ public class ServiceController {
         List<ServiceResponseDTO> services = serviceService.getServicesByTag(tag);
         return ResponseEntity.ok(services);
     }
+    // GET /locations
+    @GetMapping("/locations")
+    public ResponseEntity<List<String>> getUniqueLocations() {
+        return ResponseEntity.ok(serviceService.getAllUniqueLocations());
+    }
 }
+
