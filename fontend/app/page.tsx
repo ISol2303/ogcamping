@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useAuth } from "@/context/AuthContext"
+import {Dialog, DialogContent, DialogHeader,DialogTitle, DialogFooter} from "@/components/ui/dialog"
 interface Service {
   id: number
   name: string
@@ -31,23 +32,18 @@ interface Blog {
 }
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  // const [isLoggedIn, setIsLoggedIn] = useState(false)
+  // const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const {user, isLoggedIn, token}= useAuth()
   const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
+  const [showReviewPopup, setShowReviewPopup] = useState(false)
+  const [serviceToReview, setServiceToReview] = useState<number | null>(null)
   const router = useRouter()
   
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
   // Kiểm tra login và fetch service
   useEffect(() => {
-    // check login từ localStorage
-    const token = localStorage.getItem("authToken")
-    const userData = localStorage.getItem("user")
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-
     // fetch services từ API
     const fetchServices = async () => {
       try {
@@ -68,26 +64,19 @@ export default function HomePage() {
     DISCOUNT: { text: "Khuyến mãi", className: "bg-yellow-500 hover:bg-yellow-600" },
   }
 
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem("authToken")
-    localStorage.removeItem("user")
-    setIsLoggedIn(false)
-    setUser(null)
-  }
   const handleGoToCart = () => {
     router.push("/cart");
   };
   // Chuyển dashboard theo role
-  const handleDashboardNavigation = () => {
-    if (user?.role === "ADMIN") {
-      router.push("/admin")
-    } else if (user?.role === "STAFF") {
-      router.push("/staff")
-    } else {
-      router.push("/dashboard")
-    }
-  }
+  // const handleDashboardNavigation = () => {
+  //   if (user?.role === "ADMIN") {
+  //     router.push("/admin")
+  //   } else if (user?.role === "STAFF") {
+  //     router.push("/staff")
+  //   } else {
+  //     router.push("/dashboard")
+  //   }
+  // }
   //BLOGS
   const handleBlogsNavigation = () => {
     if (user?.role === "ADMIN") {
@@ -122,8 +111,63 @@ export default function HomePage() {
     return [validDuration, validCapacity].filter(Boolean).join(" | ")
   }
 
+  // Fetch booking gần nhất đã hoàn thành trong 7 ngày để hỏi review
+   useEffect(() => {
+    if (!isLoggedIn || !user) return
+
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/apis/v1/bookings/customer/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const bookings = await res.json()
+        const now = new Date()
+
+        const recentBooking = bookings.find((b: any) => {
+          if (b.status !== "COMPLETED" || !b.checkOutDate) return false
+          const checkout = new Date(b.checkOutDate)
+          const diffDays = (now.getTime() - checkout.getTime()) / (1000 * 60 * 60 * 24)
+          return checkout < now && diffDays <= 7 && b.services?.length > 0
+        })
+
+        if (recentBooking) {
+          setServiceToReview(recentBooking.services[0].serviceId)
+          setShowReviewPopup(true)
+        }
+      } catch (err) {
+        console.error("Error fetching bookings:", err)
+      }
+    }
+
+    fetchBookings()
+  }, [isLoggedIn, user])
+
+  const handleGoReview = () => {
+    if (serviceToReview) {
+      setShowReviewPopup(false)
+      router.push(`/services/${serviceToReview}#reviews`); // chuyển đến phần reviews của dịch vụ
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* Popup mời review */}
+      <Dialog open={showReviewPopup} onOpenChange={setShowReviewPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Chia sẻ trải nghiệm của bạn</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-600">
+            Bạn vừa hoàn thành một chuyến cắm trại gần đây. Hãy để lại đánh giá để giúp chúng tôi cải thiện dịch vụ nhé!
+          </p>
+          <DialogFooter className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={() => setShowReviewPopup(false)}>
+              Để sau
+            </Button>
+            <Button onClick={handleGoReview}>Viết đánh giá</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Hero Section */}
       <section className="py-24 px-4 relative overflow-hidden">
         {/* Background decorations */}

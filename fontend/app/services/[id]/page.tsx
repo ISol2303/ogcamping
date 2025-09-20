@@ -155,18 +155,9 @@ export default function ServiceDetailPage() {
   )
 
   const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0)
-  // const handleDashboardNavigation = () => {
-  //   if (user?.role === 'ADMIN') {
-  //     router.push('/admin')
-  //   } else if (user?.role === 'STAFF') {
-  //     router.push('/staff')
-  //   } else {
-  //     router.push('/dashboard')
-  //   }
-  // }
-  const handleGoToCart = () => {
-    router.push("/cart");
-  };
+  // const handleGoToCart = () => {
+  //   router.push("/cart");
+  // };
   
 
 
@@ -303,7 +294,14 @@ export default function ServiceDetailPage() {
             </div>
 
             {/* Service Details */}
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs
+              defaultValue={
+                typeof window !== "undefined" && window.location.hash === "#reviews"
+                  ? "reviews"
+                  : "overview"
+              }
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Tổng quan</TabsTrigger>
                 <TabsTrigger value="itinerary">Lịch trình</TabsTrigger>

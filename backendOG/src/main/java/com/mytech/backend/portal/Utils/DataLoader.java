@@ -280,7 +280,7 @@ public class DataLoader {
                     .build());
             // --- 3. Tạo Booking mẫu ---
             // 1. Tạo booking
-            Booking booking = Booking.builder()
+            Booking booking1 = Booking.builder()
                     .customer(c1)
                     .checkInDate(LocalDateTime.now().plusDays(5))
                     .checkOutDate(LocalDateTime.now().plusDays(7))
@@ -288,20 +288,40 @@ public class DataLoader {
                     .note("Kỷ niệm")
                     .status(BookingStatus.PENDING)
                     .build();
+            
+            Booking booking2 = Booking.builder()
+                    .customer(c2)
+                    .checkInDate(LocalDateTime.now().minusDays(2))
+                    .checkOutDate(LocalDateTime.now().minusDays(1))
+                    .numberOfPeople(2)
+                    .note("1 ngày")
+                    .status(BookingStatus.COMPLETED)
+                    .build();
+
 
 // 2. Tạo BookingItem cho service
             BookingItem item = BookingItem.builder()
-                    .booking(booking)
+                    .booking(booking1)
+                    .service(s1)
+                    .type(ItemType.SERVICE)
+                    .quantity(1)
+                    .price(s1.getPrice())
+                    .build();
+            
+            BookingItem item02 = BookingItem.builder()
+                    .booking(booking2)
                     .service(s1)
                     .type(ItemType.SERVICE)
                     .quantity(1)
                     .price(s1.getPrice())
                     .build();
             // 3. Gán items vào booking
-            booking.setItems(List.of(item));
+            booking1.setItems(List.of(item));
+            booking2.setItems(List.of(item02));
 
 // 4. Lưu booking (cascade sẽ lưu luôn BookingItem nếu cascade.ALL)
-            bookingRepo.save(booking);
+            bookingRepo.save(booking1);
+            bookingRepo.save(booking2);
             // --- 4. Tạo Combo ---
             Combo familyCombo = Combo.builder()
                     .name("Family Camping Pack")
