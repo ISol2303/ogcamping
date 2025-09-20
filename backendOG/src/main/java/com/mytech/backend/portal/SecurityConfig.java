@@ -90,15 +90,23 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	        .authorizeHttpRequests(auth -> auth
 	        	.requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
+	        	.requestMatchers(HttpMethod.GET, "/apis/v1/categories").permitAll()
+	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears").permitAll()
+	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears/**").permitAll()
 	        	.requestMatchers(
 	                    "/apis/v1/login",
 	                    "/apis/v1/register",
 	                    "/apis/test/**",
 	                    "/apis/v1/services/**",
-	                    "apis/v1/combos",
+	                    "/apis/v1/combos",
 	                    "/apis/dishes/all",
 	                    "/apis/v1/users/forgot-password",
-	                    "/apis/v1/users/reset-password"
+	                    "/apis/v1/users/reset-password",
+	                    "/apis/v1/bookings",  // Tạm thời cho phép không cần auth
+            "/apis/v1/customers/by-user/**",  // Cho phép lấy customer theo user ID
+            "/apis/orders/gear/**",  // Cho phép truy cập lịch sử đơn hàng gear
+            "/apis/gear-orders/**",  // Cho phép truy cập API gear orders mới
+            "/apis/orders/test-gear/**"  // Cho phép test API kiểm tra số lượng thiết bị
 	                ).permitAll()
 	            .anyRequest().authenticated()
 	        )

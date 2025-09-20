@@ -33,25 +33,17 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/AuthContext"
 import axios from "axios"
 
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const { user, isLoggedIn, logout } = useAuth()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<string>("vnpay")
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [note, setNote] = useState("")
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
   useEffect(() => {
     const raw = localStorage.getItem("cart");
     if (!raw) return;
@@ -65,8 +57,9 @@ export default function CheckoutPage() {
       type: c.type as "SERVICE" | "COMBO" | "EQUIPMENT",
       quantity: c.quantity,
       unitPrice: c.item?.price,
-      // tổng dòng ưu tiên lấy từ totalPrice (hoặc total), fallback = unitPrice * quantity
-      total: c.totalPrice ?? c.total ?? (c.item?.price ?? 0) * (c.quantity ?? 1),
+      rentalDays: c.rentalDays, // Thêm thông tin số ngày thuê cho thiết bị
+      // tổng dòng ưu tiên lấy từ totalPrice (hoặc total), fallback = unitPrice * quantity * rentalDays
+      total: c.totalPrice ?? c.total ?? (c.item?.price ?? 0) * (c.quantity ?? 1) * (c.rentalDays ?? 1),
       image: c.item?.imageUrl
         ? (c.item.imageUrl.startsWith("http") ? c.item.imageUrl : `${BASE_URL}${c.item.imageUrl}`)
         : "/placeholder.svg",
@@ -76,10 +69,7 @@ export default function CheckoutPage() {
   }, []);
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUser(null)
+    logout()
   }
   const handleGoToCart = () => {
     router.push("/cart");
@@ -130,12 +120,49 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true)
 
-      const storedUser = localStorage.getItem("user")
-      if (!storedUser) {
+      // Debug logs
+      console.log('=== CHECKOUT PAGE DEBUG ===');
+      console.log('isLoggedIn:', isLoggedIn);
+      console.log('user:', user);
+      console.log('localStorage authToken:', localStorage.getItem('authToken'));
+      console.log('localStorage user:', localStorage.getItem('user'));
+      console.log('===========================');
+
+      // Fallback: check localStorage if AuthContext is not ready
+      const storedToken = localStorage.getItem('authToken')
+      const storedUser = localStorage.getItem('user')
+      
+      if ((!isLoggedIn || !user) && (!storedToken || !storedUser)) {
         alert("Bạn cần đăng nhập trước khi đặt chỗ")
         return
       }
-      const user = JSON.parse(storedUser)
+
+      // Use stored data if AuthContext is not ready
+      const currentUser = user || (storedUser ? JSON.parse(storedUser) : null)
+      const currentToken = storedToken
+
+      if (!currentUser) {
+        alert("Không thể lấy thông tin người dùng. Vui lòng đăng nhập lại.")
+        return
+      }
+
+      console.log('Current user for booking:', currentUser);
+      console.log('Current token:', currentToken ? 'Present' : 'Missing');
+      
+      // Lấy customer ID từ user ID qua API
+      let customerId;
+      try {
+        const customerRes = await axios.get(
+          `http://localhost:8080/apis/v1/customers/by-user/${currentUser.id}`,
+          { headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {} }
+        );
+        customerId = customerRes.data.id;
+        console.log('Customer ID from API:', customerId);
+      } catch (error) {
+        console.error('Error getting customer ID:', error);
+        alert("Không thể lấy thông tin khách hàng. Vui lòng thử lại.");
+        return;
+      }
 
       const storedCart = localStorage.getItem("cart")
       if (!storedCart) {
@@ -148,6 +175,7 @@ export default function CheckoutPage() {
       }
       const cart = JSON.parse(storedCart)
 
+      // Tách services và equipment
       const services = cart
         .filter((item: any) => item.type === "SERVICE")
         .map((item: any) => ({
@@ -159,20 +187,96 @@ export default function CheckoutPage() {
             : item.item.maxCapacity,
         }))
 
+      const equipment = cart
+        .filter((item: any) => item.type === "EQUIPMENT")
+        .map((item: any) => ({
+          gearId: item.item.id,
+          quantity: item.quantity,
+          rentalDays: item.rentalDays || 1,
+        }))
+
+      // Tạo booking request với cả services và equipment
       const bookingRequest = {
-        services,
+        services: services.length > 0 ? services : undefined,
+        equipment: equipment.length > 0 ? equipment : undefined,
         note: note || "",
       }
 
-      // B1: Tạo booking
-      const res = await axios.post(
-        `http://localhost:8080/apis/v1/bookings?customerId=${user.id}`,
-        bookingRequest
-      )
+      console.log('Booking request:', bookingRequest);
+      console.log('Customer ID:', currentUser.id);
 
-      const booking = res.data
-      localStorage.setItem("infoBookingItem", JSON.stringify(booking))
-      // localStorage.removeItem("cart")
+      // B1: Tạo booking hoặc order tùy theo loại sản phẩm
+      const headers: any = {}
+      if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`
+      }
+      
+      console.log('Request headers:', headers);
+      
+      let booking;
+      
+      // Nếu chỉ có equipment (gear) thì tạo OrderBooking
+      if (equipment.length > 0 && services.length === 0) {
+        console.log('Creating gear order...');
+        
+        // Tạo OrderBooking cho gear
+        const orderRequest = {
+          userId: parseInt(currentUser.id), // Thêm userId
+          customerName: currentUser.name || currentUser.email,
+          email: currentUser.email,
+          phone: "", // Có thể lấy từ user profile sau
+          totalPrice: cart.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0),
+          items: equipment.map((item: any) => {
+            // Lấy giá từ item.item.pricePerDay (từ gear data)
+            const unitPrice = item.item?.pricePerDay || item.item?.price || 0;
+            const totalPrice = item.totalPrice || (unitPrice * item.quantity * (item.rentalDays || 1));
+            console.log('🔍 Cart item debug:', {
+              item: item,
+              unitPrice: unitPrice,
+              totalPrice: totalPrice,
+              quantity: item.quantity,
+              rentalDays: item.rentalDays
+            });
+            return {
+              itemType: "GEAR",
+              itemId: item.gearId,
+              quantity: item.quantity,
+              unitPrice: unitPrice,
+              totalPrice: totalPrice
+            };
+          })
+        };
+        
+        console.log('🔍 Order request debug:', orderRequest);
+        
+        const orderRes = await axios.post(
+          "http://localhost:8080/apis/orders/gear",
+          orderRequest,
+          { headers }
+        );
+        
+        booking = orderRes.data;
+        localStorage.setItem("infoBookingItem", JSON.stringify(booking));
+        
+        // Xóa giỏ hàng sau khi tạo order thành công
+        localStorage.removeItem("cart");
+      } else {
+        // Nếu có services thì tạo booking như cũ
+        console.log('Creating service booking...');
+        console.log('Booking URL:', `http://localhost:8080/apis/v1/bookings?customerId=${customerId}`);
+        
+        const res = await axios.post(
+          `http://localhost:8080/apis/v1/bookings?customerId=${customerId}`,
+          bookingRequest,
+          { headers }
+        );
+        
+        booking = res.data;
+        localStorage.setItem("infoBookingItem", JSON.stringify(booking));
+        
+        // Xóa giỏ hàng sau khi tạo booking thành công
+        localStorage.removeItem("cart");
+      }
 
       // B2: Nếu chọn VNPAY thì tạo payment
       if (paymentMethod === "vnpay") {
@@ -181,7 +285,8 @@ export default function CheckoutPage() {
           {
             bookingId: booking.id,
             method: "VNPAY",
-          }
+          },
+          { headers }
         )
 
         // Redirect đến VNPAY
@@ -191,13 +296,30 @@ export default function CheckoutPage() {
         }
       }
 
-      // B3: Nếu COD thì redirect thẳng đến trang thành công
+      // B3: Nếu COD thì redirect đến trang lịch sử đơn hàng
       if (paymentMethod === "cod") {
-        window.location.href = "/checkout/success"
+        // Nếu là gear order thì chuyển đến lịch sử đơn hàng gear
+        if (equipment.length > 0 && services.length === 0) {
+          window.location.href = "/orders/gear"
+        } else {
+          // Nếu là service booking thì chuyển đến trang thành công
+          window.location.href = "/checkout/success"
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating booking:", error)
-      alert("Có lỗi khi tạo booking")
+      
+      // Hiển thị lỗi chi tiết hơn
+      if (error.response) {
+        console.error("Error response:", error.response.data)
+        alert(`Lỗi từ server: ${error.response.data?.message || error.response.statusText}`)
+      } else if (error.request) {
+        console.error("Error request:", error.request)
+        alert("Không thể kết nối đến server. Vui lòng thử lại.")
+      } else {
+        console.error("Error message:", error.message)
+        alert(`Lỗi: ${error.message}`)
+      }
     } finally {
       setIsProcessing(false)
     }
@@ -207,80 +329,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="relative">
-                <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-              </div>
-              <span className="text-3xl font-bold text-green-600">OG Camping</span>
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              href="/services"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Dịch vụ
-            </Link>
-            <Link
-              href="/equipment"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Thuê thiết bị
-            </Link>
-            <Link href="/about" className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium">
-              Về chúng tôi
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
-                  <ShoppingCart className="h-5 w-5 text-gray-800" />
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDashboardNavigation}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
-                  <ShoppingCart className="h-5 w-5 text-gray-800" />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
@@ -431,7 +479,7 @@ export default function CheckoutPage() {
                     <div key={item.id} className="flex gap-3">
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-green-100 to-green-200 flex-shrink-0">
                         <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
-                        {item.type === "EQUIPMENT" && item.quantity > 1 && (
+                        {item.quantity > 1 && (
                           <Badge className="absolute -top-1 -right-1 bg-green-600 hover:bg-green-700 text-white border-0 text-xs w-6 h-6 rounded-full flex items-center justify-center p-0">
                             {item.quantity}
                           </Badge>
@@ -447,6 +495,12 @@ export default function CheckoutPage() {
                             {formatPrice(item.total)}
                           </span>
                         </div>
+                        {/* Equipment specific info */}
+                        {item.type === "EQUIPMENT" && item.rentalDays && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Thuê {item.rentalDays} ngày × {item.unitPrice?.toLocaleString('vi-VN')}đ/ngày
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -7,7 +7,6 @@ import java.util.List;
 
 import com.mytech.backend.portal.dto.GearDTO;
 import com.mytech.backend.portal.models.Area.AreaName;
-import com.mytech.backend.portal.models.Category.CategoryName;
 import com.mytech.backend.portal.models.Gear.GearStatus;
 import com.mytech.backend.portal.services.GearService;
 
@@ -31,10 +30,20 @@ public class GearController {
     // Thư mục lưu ảnh (có thể thay bằng config trong application.properties)
     private static final String UPLOAD_DIR = "uploads/gears/";
 
+    @PostMapping(consumes = {"application/json"})
+    public ResponseEntity<GearDTO> createJson(@RequestBody GearDTO dto) {
+        try {
+            GearDTO createdGear = gearService.createGear(dto);
+            return ResponseEntity.ok(createdGear);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<GearDTO> create(
             @RequestParam("name") String name,
-            @RequestParam("category") CategoryName category,
+            @RequestParam("category") String category,
             @RequestParam("area") AreaName area,
             @RequestParam("description") String description,
             @RequestParam("quantity_in_stock") int quantityInStock,
@@ -43,22 +52,64 @@ public class GearController {
             @RequestParam("status") GearStatus status,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
-        GearDTO dto = new GearDTO();
-        dto.setName(name);
-        dto.setCategory(category);
-        dto.setArea(area);
-        dto.setDescription(description);
-        dto.setQuantityInStock(quantityInStock);
-        dto.setAvailable(available);
-        dto.setPricePerDay(pricePerDay);
-        dto.setStatus(status);
+        try {
+            System.out.println("Creating gear with data:");
+            System.out.println("Name: " + name);
+            System.out.println("Category: " + category);
+            System.out.println("Area: " + area);
+            System.out.println("Description: " + description);
+            System.out.println("Quantity: " + quantityInStock);
+            System.out.println("Available: " + available);
+            System.out.println("Price: " + pricePerDay);
+            System.out.println("Status: " + status);
+            System.out.println("Image: " + (image != null ? image.getOriginalFilename() : "null"));
 
-        if (image != null && !image.isEmpty()) {
-            String imagePath = saveImage(image);
-            dto.setImage(imagePath);
+            // Validation
+            if (name == null || name.trim().isEmpty()) {
+                System.err.println("Name is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (category == null || category.trim().isEmpty()) {
+                System.err.println("Category is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (area == null) {
+                System.err.println("Area is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (quantityInStock < 0) {
+                System.err.println("Quantity must be >= 0");
+                return ResponseEntity.badRequest().build();
+            }
+            if (pricePerDay < 0) {
+                System.err.println("Price must be >= 0");
+                return ResponseEntity.badRequest().build();
+            }
+
+            GearDTO dto = new GearDTO();
+            dto.setName(name);
+            dto.setCategory(category);
+            dto.setArea(area);
+            dto.setDescription(description);
+            dto.setQuantityInStock(quantityInStock);
+            dto.setAvailable(available);
+            dto.setPricePerDay(pricePerDay);
+            dto.setStatus(status);
+
+            if (image != null && !image.isEmpty()) {
+                String imagePath = saveImage(image);
+                dto.setImage(imagePath);
+                System.out.println("Image saved to: " + imagePath);
+            }
+
+            GearDTO result = gearService.createGear(dto);
+            System.out.println("Gear created successfully with ID: " + result.getId());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("Error creating gear: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
         }
-
-        return ResponseEntity.ok(gearService.createGear(dto));
     }
 
     @GetMapping("/{id}")
@@ -69,7 +120,7 @@ public class GearController {
     @GetMapping
     public ResponseEntity<List<GearDTO>> getAll(
             @RequestParam(value = "name", required = false) String name,
-            @RequestParam(value = "category", required = false) CategoryName category,
+            @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "area", required = false) AreaName area,
             @RequestParam(value = "status", required = false) GearStatus status
     ) {
@@ -79,11 +130,21 @@ public class GearController {
         return ResponseEntity.ok(gearService.getAllGears());
     }
 
+    @PutMapping(value = "/{id}", consumes = {"application/json"})
+    public ResponseEntity<GearDTO> updateJson(@PathVariable("id") Long id, @RequestBody GearDTO dto) {
+        try {
+            GearDTO updatedGear = gearService.updateGear(id, dto);
+            return ResponseEntity.ok(updatedGear);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
     public ResponseEntity<GearDTO> update(
             @PathVariable("id") Long id,
             @RequestParam("name") String name,
-            @RequestParam("category") CategoryName category,
+            @RequestParam("category") String category,
             @RequestParam("area") AreaName area,
             @RequestParam("description") String description,
             @RequestParam("quantity_in_stock") int quantityInStock,
@@ -92,22 +153,64 @@ public class GearController {
             @RequestParam("status") GearStatus status,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
-        GearDTO dto = new GearDTO();
-        dto.setName(name);
-        dto.setCategory(category);
-        dto.setArea(area);
-        dto.setDescription(description);
-        dto.setQuantityInStock(quantityInStock);
-        dto.setAvailable(available);
-        dto.setPricePerDay(pricePerDay);
-        dto.setStatus(status);
+        try {
+            System.out.println("Updating gear with ID: " + id);
+            System.out.println("Name: " + name);
+            System.out.println("Category: " + category);
+            System.out.println("Area: " + area);
+            System.out.println("Description: " + description);
+            System.out.println("Quantity: " + quantityInStock);
+            System.out.println("Available: " + available);
+            System.out.println("Price: " + pricePerDay);
+            System.out.println("Status: " + status);
+            System.out.println("Image: " + (image != null ? image.getOriginalFilename() : "null"));
 
-        if (image != null && !image.isEmpty()) {
-            String imagePath = saveImage(image);
-            dto.setImage(imagePath);
+            // Validation
+            if (name == null || name.trim().isEmpty()) {
+                System.err.println("Name is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (category == null || category.trim().isEmpty()) {
+                System.err.println("Category is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (area == null) {
+                System.err.println("Area is required");
+                return ResponseEntity.badRequest().build();
+            }
+            if (quantityInStock < 0) {
+                System.err.println("Quantity must be >= 0");
+                return ResponseEntity.badRequest().build();
+            }
+            if (pricePerDay < 0) {
+                System.err.println("Price must be >= 0");
+                return ResponseEntity.badRequest().build();
+            }
+
+            GearDTO dto = new GearDTO();
+            dto.setName(name);
+            dto.setCategory(category);
+            dto.setArea(area);
+            dto.setDescription(description);
+            dto.setQuantityInStock(quantityInStock);
+            dto.setAvailable(available);
+            dto.setPricePerDay(pricePerDay);
+            dto.setStatus(status);
+
+            if (image != null && !image.isEmpty()) {
+                String imagePath = saveImage(image);
+                dto.setImage(imagePath);
+                System.out.println("Image saved to: " + imagePath);
+            }
+
+            GearDTO result = gearService.updateGear(id, dto);
+            System.out.println("Gear updated successfully");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("Error updating gear: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
         }
-
-        return ResponseEntity.ok(gearService.updateGear(id, dto));
     }
 
     @DeleteMapping("/{id}")

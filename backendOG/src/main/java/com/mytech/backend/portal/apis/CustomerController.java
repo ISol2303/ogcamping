@@ -37,4 +37,9 @@ public class CustomerController {
     public ResponseEntity<List<CustomerResponseDTO>> getAllCustomers() {
         return ResponseEntity.ok(customerService.getAllCustomers());
     }
+
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<CustomerResponseDTO> getCustomerByUserId(@PathVariable Long userId) {
+        return ResponseEntity.ok(customerService.getCustomerByUserId(userId));
+    }
 }

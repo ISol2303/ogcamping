@@ -55,6 +55,13 @@ public class CustomerServiceImpl implements CustomerService {
                 .toList();
     }
 
+    @Override
+    public CustomerResponseDTO getCustomerByUserId(Long userId) {
+        Customer customer = customerRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Customer not found for user ID: " + userId));
+        return mapToDTO(customer);
+    }
+
     private CustomerResponseDTO mapToDTO(Customer customer) {
         return CustomerResponseDTO.builder()
                 .id(customer.getId())

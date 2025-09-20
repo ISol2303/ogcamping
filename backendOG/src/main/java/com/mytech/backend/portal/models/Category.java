@@ -7,64 +7,31 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "categories")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Category extends AbstractEntity{
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1541660217813447786L;
-
-	@Id
+public class Category extends AbstractEntity {
+    
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, unique = true)
-    private CategoryName name;
+    @Column(name = "name", nullable = false, unique = true, length = 100)
+    private String name;
 
-    @Column
-    private String description = "";
+    @Column(name = "description")
+    private String description;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
-    public enum CategoryName {
-        LEU, TUI_NGU, DEM_HOI, BAN_XEP, GHE_XEP, BEP, DEN, KHAC
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public CategoryName getName() {
-		return name;
-	}
-
-	public void setName(CategoryName name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-    
 }

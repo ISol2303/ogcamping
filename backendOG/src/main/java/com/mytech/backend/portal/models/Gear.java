@@ -24,9 +24,8 @@ public class Gear extends AbstractEntity{
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category.CategoryName category;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -77,11 +76,11 @@ public class Gear extends AbstractEntity{
 		this.name = name;
 	}
 
-	public Category.CategoryName getCategory() {
+	public String getCategory() {
 		return category;
 	}
 
-	public void setCategory(Category.CategoryName category) {
+	public void setCategory(String category) {
 		this.category = category;
 	}
 

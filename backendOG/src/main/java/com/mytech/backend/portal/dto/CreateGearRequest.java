@@ -1,7 +1,6 @@
 package com.mytech.backend.portal.dto;
 
 import com.mytech.backend.portal.models.Area;
-import com.mytech.backend.portal.models.Category;
 import com.mytech.backend.portal.models.Gear.GearStatus;
 
 import lombok.Data;
@@ -9,7 +8,7 @@ import lombok.Data;
 @Data
 public class CreateGearRequest {
     private String name;
-    private Category.CategoryName category;
+    private String category;
     private Area.AreaName area;
     private String description;
     private Integer quantityInStock;
@@ -28,10 +27,10 @@ public class CreateGearRequest {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public Category.CategoryName getCategory() {
+	public String getCategory() {
 		return category;
 	}
-	public void setCategory(Category.CategoryName category) {
+	public void setCategory(String category) {
 		this.category = category;
 	}
 	public Area.AreaName getArea() {

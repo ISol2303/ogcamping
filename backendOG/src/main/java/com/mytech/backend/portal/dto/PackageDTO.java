@@ -1,7 +1,6 @@
 package com.mytech.backend.portal.dto;
 
 import com.mytech.backend.portal.models.Area;
-import com.mytech.backend.portal.models.Category;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +14,7 @@ public class PackageDTO {
     private String location;
     private String image;
     private Integer days;
-    private Category.CategoryName category;
+    private String category;
     private Area.AreaName area;
     private String foodType;
     private String tentType;
@@ -53,10 +52,10 @@ public class PackageDTO {
 	public void setDays(Integer days) {
 		this.days = days;
 	}
-	public Category.CategoryName getCategory() {
+	public String getCategory() {
 		return category;
 	}
-	public void setCategory(Category.CategoryName category) {
+	public void setCategory(String category) {
 		this.category = category;
 	}
 	public Area.AreaName getArea() {

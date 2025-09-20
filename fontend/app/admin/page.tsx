@@ -920,12 +920,14 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full lg:w-auto grid-cols-5">
+            <TabsList className="grid w-full lg:w-auto grid-cols-10">
               <TabsTrigger value="overview">Tổng quan</TabsTrigger>
               <TabsTrigger value="bookings">Đặt chỗ</TabsTrigger>
               <TabsTrigger value="staff">Nhân viên</TabsTrigger>
               <TabsTrigger value="services">Dịch vụ</TabsTrigger>
               <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
+              <TabsTrigger value="gear">Sản phẩm</TabsTrigger>
+              <TabsTrigger value="categories">Danh mục</TabsTrigger>
               <TabsTrigger value="customers">Khách hàng</TabsTrigger>
               <TabsTrigger value="locations">Địa điểm</TabsTrigger>
               <TabsTrigger value="inventory">Kho</TabsTrigger>
@@ -1318,6 +1320,56 @@ export default function AdminDashboard() {
                       )}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gear">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Quản lý Sản phẩm</CardTitle>
+                      <CardDescription>Quản lý các sản phẩm và thiết bị cắm trại</CardDescription>
+                    </div>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+                      <Link href="/admin/gear">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Quản lý sản phẩm
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>Nhấp vào "Quản lý sản phẩm" để truy cập trang quản lý chi tiết.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="categories">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Quản lý Danh mục</CardTitle>
+                      <CardDescription>Quản lý các danh mục sản phẩm và dịch vụ</CardDescription>
+                    </div>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+                      <Link href="/admin/categories">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Quản lý danh mục
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p>Nhấp vào "Quản lý danh mục" để truy cập trang quản lý chi tiết.</p>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

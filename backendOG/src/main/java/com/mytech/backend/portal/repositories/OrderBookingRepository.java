@@ -23,5 +23,12 @@ public interface OrderBookingRepository extends JpaRepository<OrderBooking, Long
     @Query("UPDATE OrderBooking o SET o.status = :status, o.confirmedAt = :confirmedAt WHERE o.status = 'PENDING'")
     int updateStatusForPendingOrders(@Param("status") String status, @Param("confirmedAt") LocalDateTime confirmedAt);
 	 List<OrderBooking> findByEmailSentAtIsNull();
+	 List<OrderBooking> findByUserId(Long userId);
+	 
+	 @Query("SELECT o FROM OrderBooking o WHERE o.user.id = :userId")
+	 List<OrderBooking> findOrdersByUserId(@Param("userId") Long userId);
+	 
+	 @Query("SELECT o.id FROM OrderBooking o WHERE o.user.id = :userId")
+	 List<Long> findOrderIdsByUserId(@Param("userId") Long userId);
 }
 

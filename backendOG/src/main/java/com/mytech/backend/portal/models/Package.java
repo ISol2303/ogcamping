@@ -31,9 +31,8 @@ public class Package extends AbstractEntity{
     @Column(nullable = false)
     private Integer days;
     
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category.CategoryName category;
+    private String category;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -145,11 +144,11 @@ public class Package extends AbstractEntity{
 		this.price = price;
 	}
 
-	public Category.CategoryName getCategory() {
+	public String getCategory() {
 		return category;
 	}
 
-	public void setCategory(Category.CategoryName category) {
+	public void setCategory(String category) {
 		this.category = category;
 	}
 
