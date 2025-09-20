@@ -101,7 +101,7 @@ export default function CheckoutPage() {
   const subtotal = cartItems.reduce((sum, item) => sum + (item.total || 0), 0);
   // const discountRate = 0.2;
   // const discount = subtotal > 0 ? subtotal * discountRate : 0;
-  const total = subtotal ;
+  const total = subtotal;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -128,53 +128,66 @@ export default function CheckoutPage() {
   }
   const handleCreateBooking = async () => {
     try {
-      setIsProcessing(true)
+      setIsProcessing(true);
 
-      const storedUser = localStorage.getItem("user")
+      const storedUser = localStorage.getItem("user");
       if (!storedUser) {
-        alert("Bạn cần đăng nhập trước khi đặt chỗ")
-        return
+        alert("Bạn cần đăng nhập trước khi đặt chỗ");
+        return;
       }
-      const user = JSON.parse(storedUser)
+      const user = JSON.parse(storedUser);
 
-      const storedCart = localStorage.getItem("cart")
+      const storedCart = localStorage.getItem("cart");
       if (!storedCart) {
-        alert("Giỏ hàng trống")
-        return
+        alert("Giỏ hàng trống");
+        return;
       }
+
       if (!paymentMethod) {
-        alert("Vui lòng chọn phương thức thanh toán")
-        return
+        alert("Vui lòng chọn phương thức thanh toán");
+        return;
       }
-      const cart = JSON.parse(storedCart)
+
+      const cart = JSON.parse(storedCart);
 
       const services = cart
         .filter((item: any) => item.type === "SERVICE")
         .map((item: any) => ({
           serviceId: item.item.id,
-          checkInDate: item.checkInDate,
-          checkOutDate: item.checkOutDate,
+          checkInDate: item.checkInDate ? `${item.checkInDate}T08:00:00` : null,
+          checkOutDate: item.checkOutDate ? `${item.checkOutDate}T12:00:00` : null,
           numberOfPeople: item.extraPeople
             ? item.item.maxCapacity + item.extraPeople
             : item.item.maxCapacity,
-        }))
+        }));
+
+      const combos = cart
+        .filter((item: any) => item.type === "COMBO")
+        .map((item: any) => ({
+          comboId: item.item.id,
+          quantity: item.quantity,
+          checkInDate: item.checkInDate ? `${item.checkInDate}T08:00:00` : null,
+          checkOutDate: item.checkOutDate ? `${item.checkOutDate}T12:00:00` : null,
+          extraPeople: item.extraPeople || 0,
+        }));
+
 
       const bookingRequest = {
         services,
+        combos,
         note: note || "",
-      }
+      };
 
       // B1: Tạo booking
       const res = await axios.post(
         `http://localhost:8080/apis/v1/bookings?customerId=${user.id}`,
         bookingRequest
-      )
+      );
 
-      const booking = res.data
-      localStorage.setItem("infoBookingItem", JSON.stringify(booking))
-      // localStorage.removeItem("cart")
-
-      // B2: Nếu chọn VNPAY thì tạo payment
+      const booking = res.data;
+      localStorage.setItem("infoBookingItem", JSON.stringify(booking));
+      localStorage.removeItem("cart")
+      // B2: Thanh toán
       if (paymentMethod === "vnpay") {
         const paymentRes = await axios.post(
           "http://localhost:8080/apis/v1/payments/create",
@@ -182,31 +195,33 @@ export default function CheckoutPage() {
             bookingId: booking.id,
             method: "VNPAY",
           }
-        )
+        );
 
-        // Redirect đến VNPAY
         if (paymentRes.data?.paymentUrl) {
-          window.location.href = paymentRes.data.paymentUrl
-          return
+          window.location.href = paymentRes.data.paymentUrl;
+          return;
         }
       }
 
-      // B3: Nếu COD thì redirect thẳng đến trang thành công
       if (paymentMethod === "cod") {
-        window.location.href = "/checkout/success"
+        window.location.href = "/checkout/success";
       }
     } catch (error) {
-      console.error("Error creating booking:", error)
-      alert("Có lỗi khi tạo booking")
+      console.error("Error creating booking:", error);
+      alert("Có lỗi khi tạo booking");
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
+
 
 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* Header */}
+      
+
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">

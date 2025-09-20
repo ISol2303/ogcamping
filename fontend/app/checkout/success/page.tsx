@@ -79,7 +79,7 @@ export default function PaymentSuccessPage() {
         const res = await fetch(`http://localhost:8080/apis/v1/bookings/${bookingId}`);
         const data = await res.json();
 
-        // gộp tất cả items từ 3 mảng
+        // Gộp tất cả items từ 3 mảng
         const bookingItems = [
           ...(data.services || []),
           ...(data.combos || []),
@@ -91,46 +91,44 @@ export default function PaymentSuccessPage() {
           return;
         }
 
-        // gọi API để lấy imageUrl
         const enrichedItems = await Promise.all(
           bookingItems.map(async (item: any) => {
             let image = "/placeholder.svg";
 
-            if (item.serviceId) {
-              try {
-                const serviceRes = await fetch(
-                  `http://localhost:8080/apis/v1/services/${item.serviceId}`
-                );
-                const serviceData = await serviceRes.json();
-
-                if (serviceData.imageUrl) {
-                  // đảm bảo không có double slash
-                  const path = serviceData.imageUrl.startsWith("/")
-                    ? serviceData.imageUrl
-                    : `/${serviceData.imageUrl}`;
-
-                  image = serviceData.imageUrl.startsWith("http")
-                    ? serviceData.imageUrl
-                    : `http://localhost:8080${path}`;
-                }
-
-              } catch (err) {
-                console.error("Error fetching service image:", err);
+            try {
+              let apiUrl = "";
+              if (item.serviceId) {
+                apiUrl = `http://localhost:8080/apis/v1/services/${item.serviceId}`;
+              } else if (item.comboId) {
+                apiUrl = `http://localhost:8080/apis/v1/combos/${item.comboId}`;
+              } else if (item.equipmentId) {
+                apiUrl = `http://localhost:8080/apis/v1/equipments/${item.equipmentId}`;
               }
+
+              if (apiUrl) {
+                const res = await fetch(apiUrl);
+                const detail = await res.json();
+
+                if (detail.imageUrl) {
+                  image = `http://localhost:8080${detail.imageUrl}`;
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching item image:", err);
             }
 
-            // TODO: nếu có equipmentId thì gọi API equipments giống như trên
             return { ...item, image };
           })
         );
 
-        setItems(enrichedItems);
 
+        setItems(enrichedItems);
+        console.log(enrichedItems);
         const sub = enrichedItems.reduce(
           (sum, it) => sum + (it.price || 0) * (it.quantity || 1),
           0
         );
-        const disc = 0; // có thể lấy từ API nếu có mã giảm giá
+        const disc = 0;
         const tot = sub - disc;
 
         setSubtotal(sub);
@@ -143,6 +141,7 @@ export default function PaymentSuccessPage() {
 
     fetchBooking();
   }, [bookingId]);
+
 
   if (!bookingId) {
     return <p>Không tìm thấy bookingId</p>;
@@ -188,80 +187,7 @@ export default function PaymentSuccessPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="relative">
-                <img src="/ai-avatar.jpg" className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-              </div>
-              <span className="text-3xl font-bold text-green-600">OG Camping</span>
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              href="/services"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Dịch vụ
-            </Link>
-            <Link
-              href="/equipment"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Thuê thiết bị
-            </Link>
-            <Link href="/about" className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium">
-              Về chúng tôi
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-800 font-medium">{user?.name}</span>
-                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
-                  <ShoppingCart className="h-5 w-5 text-gray-800" />
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <Settings className="h-5 w-5 text-gray-800" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDashboardNavigation}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Đăng xuất
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link href="/login">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Đăng ký</Link>
-                </Button>
-                <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
-                  <ShoppingCart className="h-5 w-5 text-gray-800" />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
+      
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles } from "lucide-react"
+import { ShoppingCart, Sparkles } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function Navbar() {
@@ -35,7 +35,9 @@ export default function Navbar() {
       router.push("/dashboard")
     }
   }
-
+  const handleGoToCart = () => {
+    router.push("/cart");
+  };
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -76,6 +78,7 @@ export default function Navbar() {
 
         {/* User actions */}
         <div className="flex items-center gap-2">
+       
           {isLoggedIn && user ? (
             <>
               {/* Avatar + tên */}
@@ -89,7 +92,9 @@ export default function Navbar() {
               <span className="text-gray-800 font-medium">
                 {user.name || user.email}
               </span>
-
+              <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                <ShoppingCart className="h-5 w-5 text-gray-800" />
+              </button>
               {/* Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

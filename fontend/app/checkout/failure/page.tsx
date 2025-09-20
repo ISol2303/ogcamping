@@ -89,52 +89,7 @@ export default function PaymentFailurePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
-            <div className="relative">
-              <Tent className="h-8 w-8 text-green-600 group-hover:scale-110 transition-transform duration-300" />
-            </div>
-            <span className="text-2xl font-bold text-green-900">OG Camping</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link
-              href="/services"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Dịch vụ
-            </Link>
-            <Link
-              href="/equipment"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Thuê thiết bị
-            </Link>
-            <Link href="/about" className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium">
-              Về chúng tôi
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium"
-            >
-              Liên hệ
-            </Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" asChild>
-              <Link href="/login">Đăng nhập</Link>
-            </Button>
-            <Button
-              asChild
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-            >
-              <Link href="/register">Đăng ký</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
+      
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-2 text-sm text-gray-600">
