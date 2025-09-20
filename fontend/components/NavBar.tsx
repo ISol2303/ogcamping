@@ -62,6 +62,9 @@ export default function Navbar() {
           <Link href="/equipment" className={linkClass("/equipment")}>
             Thuê thiết bị
           </Link>
+          <Link href="/combos" className={linkClass("/combos")}>
+            Combo
+          </Link>
           <Link href="/ai-consultant" className={linkClass("/ai-consultant")}>
             Tư vấn AI
           </Link>
