@@ -23,7 +23,7 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ⭐ Customer nào để lại review
+    // Customer nào để lại review
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
@@ -33,31 +33,47 @@ public class Review {
     @JoinColumn(name = "service_id", nullable = false)
     private Service service;
 
-    // ⭐ Số sao (1–5)
+    // Số sao (1–5)
     @Column(nullable = false)
     private Integer rating;
 
-    // 📝 Nội dung review
+    // Nội dung review
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    // 📷 Danh sách ảnh (tối đa 3–4 cái)
+    // Danh sách ảnh (tối đa 3–4 cái)
     @ElementCollection
     @CollectionTable(name = "review_images", joinColumns = @JoinColumn(name = "review_id"))
     @Column(name = "image_url")
     private List<String> images = new ArrayList<>();
 
-    // 🎥 Danh sách video (nếu có)
+    // Danh sách video (nếu có)
     @ElementCollection
     @CollectionTable(name = "review_videos", joinColumns = @JoinColumn(name = "review_id"))
     @Column(name = "video_url")
     private List<String> videos = new ArrayList<>();
 
-    // 📩 Phản hồi review (vd: admin/host phản hồi)
+    // Phản hồi review (vd: admin/host phản hồi)
     @Column(columnDefinition = "TEXT")
     private String reply;
 
     // Thời gian tạo
     @CreationTimestamp
     private LocalDateTime createdAt;
+    
+    // --- moderation fields ---
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private ReviewStatus status = ReviewStatus.PENDING; // mặc định PENDING
+    
+    // ai duyệt (lưu user id của staff)
+    private Long moderatedById;
+
+    private String moderatedByName;
+
+    private LocalDateTime moderatedAt;
+
+    @Column(columnDefinition = "TEXT")
+    private String moderationReason; // lý do từ chối hoặc note
 }
