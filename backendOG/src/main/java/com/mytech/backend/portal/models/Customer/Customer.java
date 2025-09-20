@@ -27,12 +27,12 @@ public class Customer {
     @Column(name = "name", nullable = true)
     private String name;
 
-    @NotBlank
-    @Column(name = "first_name", nullable = false)
+    
+    @Column(name = "first_name", nullable = true)
     private String firstName;
 
-    @NotBlank
-    @Column(name = "last_name", nullable = false)
+    
+    @Column(name = "last_name", nullable = true)
     private String lastName;
 
     @Email

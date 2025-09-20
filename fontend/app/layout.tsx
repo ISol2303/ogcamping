@@ -4,10 +4,9 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import ChatBot from "@/components/chat-bot"
 import { AuthProvider } from "@/context/AuthContext"
-import Navbar from "@/components/NavBar"
 import { ChatProvider } from "@/context/ChatContext"
-import AdminNavbar from "@/components/AdminNavbar"
 import ClientNavbarWrapper from "@/components/ClientNavbarWrapper"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ChatProvider>
             <ClientNavbarWrapper />
             {children}
+            <Toaster />
           </ChatProvider>
         </AuthProvider>
       </body>

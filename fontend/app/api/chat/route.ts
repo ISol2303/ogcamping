@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const allCombos = resCombos.ok ? await resCombos.json() : [];
 
     // system prompt: nhấn mạnh KHÔNG được đặt/giữ chỗ, chỉ trả JSON mô tả
-    const systemContent = `Bạn là AI tư vấn OG Camping. TUYỆT ĐỐI KHÔNG ĐƯỢC ĐẶT HOẶC GIỮ CHỖ cho khách và KHÔNG gọi API nào.
+    const systemContent = `Bạn là AI tư vấn hỗ trợ đề xuất các gói dịch vụ và combo cho OG Camping. TUYỆT ĐỐI KHÔNG ĐƯỢC ĐẶT HOẶC GIỮ CHỖ cho khách và KHÔNG gọi API nào, nếu user chào hỏi thông thường thì chỉ trả lời thân thiện, ko cần trả ra JSON.
     **BẮT BUỘC**: Chỉ trả 1 **object JSON** duy nhất, KHÔNG kèm text giải thích hay ký tự khác, nếu khách chỉ chào hỏi thông thường thì chỉ trả lời thân thiện.
     Schema (bắt buộc):
     {

@@ -62,6 +62,8 @@ public class JwtUtils {
                 .claim("role", role) // Use single "role" claim as string
                 .claim("name", userPrincipal.getName())
                 .claim("avatar", userPrincipal.getAvatar())
+                .claim("firstName", userPrincipal.getFirstName())
+                .claim("lastName", userPrincipal.getLastName())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();

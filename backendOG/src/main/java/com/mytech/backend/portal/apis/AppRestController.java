@@ -112,6 +112,6 @@ public class AppRestController {
               .build();
       customerRepository.save(customer);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("✅ Đăng ký thành công.");
+        return ResponseEntity.status(HttpStatus.CREATED).body(" Đăng ký thành công.");
     }
 }

@@ -110,7 +110,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // --- 4. Tạo JWT token ---
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole() != null ? user.getRole().name() : "CUSTOMER");
-        if (user.getName() != null) claims.put("name", user.getName()); // 👈 chỉ add nếu có dữ liệu
+        if (user.getName() != null) claims.put("name", user.getName()); // 
         if (user.getAvatar() != null) claims.put("avatar", user.getAvatar());
 
         String token = jwtUtils.generateToken(user.getEmail(), claims);
