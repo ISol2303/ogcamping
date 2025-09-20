@@ -23,17 +23,20 @@ import {
   DollarSign,
   Tag,
   Lightbulb,
+  Upload,
+  ImageIcon,
 } from "lucide-react"
 import Link from "next/link"
+import { Service } from "@/app/admin/page_old"
 
 interface ComboItem {
   id: number
   name: string
-  type: string
   price: number
   quantity?: number
-  included: boolean
+  type: "SERVICE" | "EQUIPMENT" | "FOOD"
 }
+
 
 interface Combo {
   id: number
@@ -43,22 +46,22 @@ interface Combo {
   originalPrice: number
   discount: number
   duration: string
+  minDays: number
+  maxDays: number
   maxPeople: number
   rating: number
   reviewCount: number
-  image: string
-  status: string
+  imageFile?: File | null
+  active: boolean
   services: ComboItem[]
   equipment: ComboItem[]
   food: ComboItem[]
   highlights: string[]
-  included: string[]
-  notIncluded: string[]
   tags: string[]
   location: string
   bookingCount: number
   createdAt: string
-  updatedAt: string
+  updateAt: string
 }
 
 export default function EditComboPage() {
@@ -69,49 +72,111 @@ export default function EditComboPage() {
   const [combo, setCombo] = useState<Combo | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [services, setServices] = useState<ComboItem[]>([])
+  const [locations, setLocations] = useState<string[]>([])
+  const [availableServices, setAvailableServices] = useState<Service[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
 
-  // Mock data for selection
-  const availableServices = [
-    { id: 1, name: "Cắm trại Sapa", price: 800000 },
-    { id: 2, name: "Hướng dẫn viên chuyên nghiệp", price: 500000 },
-    { id: 3, name: "Cắm trại Đà Lạt", price: 600000 },
-    { id: 4, name: "Tour trekking", price: 400000 },
+  // Mock data cho equipment & food
+  const availableEquipment: ComboItem[] = [
+    { id: 1, name: "Lều cắm trại 4 người", type: "EQUIPMENT", price: 300000, quantity: 1 },
+    { id: 2, name: "Túi ngủ cao cấp", type: "EQUIPMENT", price: 200000, quantity: 1 },
+    { id: 3, name: "Bếp gas mini", type: "EQUIPMENT", price: 150000, quantity: 1 },
+    { id: 4, name: "Đèn pin LED", type: "EQUIPMENT", price: 100000, quantity: 1 },
   ]
 
-  const availableEquipment = [
-    { id: 1, name: "Lều cắm trại 4 người", price: 300000 },
-    { id: 2, name: "Túi ngủ cao cấp", price: 200000 },
-    { id: 3, name: "Bếp gas mini", price: 150000 },
-    { id: 4, name: "Đèn pin LED", price: 100000 },
-  ]
-
-  const availableFood = [
-    { id: 1, name: "Suất ăn sáng (Phở bò)", price: 80000 },
-    { id: 2, name: "Suất ăn trưa (Cơm rang)", price: 120000 },
-    { id: 3, name: "Suất ăn tối (BBQ)", price: 200000 },
-    { id: 4, name: "Đồ uống", price: 50000 },
+  const availableFood: ComboItem[] = [
+    { id: 1, name: "Suất ăn sáng (Phở bò)", type: "FOOD", price: 80000, quantity: 1 },
+    { id: 2, name: "Suất ăn trưa (Cơm rang)", type: "FOOD", price: 120000, quantity: 1 },
+    { id: 3, name: "Suất ăn tối (BBQ)", type: "FOOD", price: 200000, quantity: 1 },
+    { id: 4, name: "Đồ uống", type: "FOOD", price: 50000, quantity: 1 },
   ]
 
   useEffect(() => {
+    const fetchCombo = async () => {
+      try {
+        setLoading(true)
+
+        // 🔹 Fetch combo theo id
+        const res = await fetch(`http://localhost:8080/apis/v1/combos/${comboId}`, {
+          cache: "no-store",
+        })
+        if (!res.ok) throw new Error("Lỗi tải combo")
+        const data = await res.json()
+
+        // 🔹 Map services từ items + nối giá từ availableServices
+        const mappedServices: ComboItem[] = data.items.map((item: any) => ({
+          id: item.serviceId,
+          name: item.serviceName,
+          price: item.price,     // ✅ lấy trực tiếp từ API
+          quantity: item.quantity,
+          included: true,
+          type: "service",
+        }))
+
+
+        // 🔹 Map combo đầy đủ
+        const mappedCombo: Combo = {
+          ...data,
+          services: mappedServices,
+          equipment: availableEquipment.map((eq) => ({
+            ...eq,
+            type: "equipment",
+            included: false,
+            quantity: 1,
+          })),
+          food: availableFood.map((fd) => ({
+            ...fd,
+            type: "food",
+            included: false,
+            quantity: 1,
+          })),
+          highlights: data.highlights || [],
+          tags: data.tags || [],
+        }
+
+        setServices(mappedServices)
+        setCombo({
+          ...data,
+          services: mappedServices,
+          equipment: [],
+          food: [],
+          highlights: data.highlights || [],
+          tags: data.tags || [],
+        })
+
+
+        // 🔹 Fetch all combos để lấy danh sách location unique
+        const allRes = await fetch("http://localhost:8080/apis/v1/combos")
+        if (!allRes.ok) throw new Error("Lỗi tải danh sách combos")
+        const allData: Combo[] = await allRes.json()
+
+        const uniqueLocations = Array.from(
+          new Set(allData.map((c) => c.location).filter((loc): loc is string => !!loc))
+        )
+        setLocations(uniqueLocations)
+      } catch (err) {
+        console.error("Error fetching combo:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchCombo()
   }, [comboId])
 
-  const fetchCombo = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/combos?id=${comboId}`)
-      const data = await response.json()
-      if (data.success && data.data.length > 0) {
-        const comboData = data.data.find((c: Combo) => c.id === Number.parseInt(comboId))
-        setCombo(comboData)
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/apis/v1/services")
+        const data = await res.json()
+        setAvailableServices(data)
+      } catch (err) {
+        console.error("Lỗi tải services:", err)
       }
-    } catch (error) {
-      console.error("Error fetching combo:", error)
-    } finally {
-      setLoading(false)
     }
-  }
-
+    fetchServices()
+  }, [])
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -120,36 +185,53 @@ export default function EditComboPage() {
   }
 
   const calculateOriginalPrice = () => {
-    if (!combo) return 0
+    if (!combo) return 0;
 
-    const servicesTotal = combo.services.filter((s) => s.included).reduce((sum, service) => sum + service.price, 0)
+    // Tính tổng dịch vụ
+    const servicesTotal = combo.services.reduce((sum, service) => {
+      // Tìm service gốc trong availableServices để check minDays/maxDays
+      const matched = availableServices.find((srv) => srv.id === service.id);
 
-    const equipmentTotal = combo.equipment
-      .filter((e) => e.included)
-      .reduce((sum, equipment) => sum + equipment.price * (equipment.quantity || 1), 0)
+      // Nếu service cho phép nhập số lượng => tính price * quantity
+      if (matched && (!matched.minDays || !matched.maxDays)) {
+        return sum + service.price * (service.quantity ?? 1);
+      }
 
-    const foodTotal = combo.food
-      .filter((f) => f.included)
-      .reduce((sum, food) => sum + food.price * (food.quantity || 1), 0)
+      // Ngược lại chỉ lấy giá mặc định
+      return sum + service.price;
+    }, 0);
 
-    return servicesTotal + equipmentTotal + foodTotal
-  }
+    // Tính tổng equipment
+    const equipmentTotal = combo.equipment.reduce(
+      (sum, equipment) => sum + equipment.price * (equipment.quantity || 1),
+      0
+    );
+
+    // Tính tổng food
+    const foodTotal = combo.food.reduce(
+      (sum, food) => sum + food.price * (food.quantity || 1),
+      0
+    );
+
+    return servicesTotal + equipmentTotal + foodTotal;
+  };
+
+
 
   const addService = (service: any) => {
     if (!combo) return
     const newService: ComboItem = {
       id: service.id,
       name: service.name,
-      type: "service",
+      type: "SERVICE",
       price: service.price,
-      included: true,
     }
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            services: [...prev.services, newService],
-          }
+          ...prev,
+          services: [...prev.services, newService],
+        }
         : null,
     )
   }
@@ -159,17 +241,16 @@ export default function EditComboPage() {
     const newEquipment: ComboItem = {
       id: equipment.id,
       name: equipment.name,
-      type: "equipment",
+      type: "EQUIPMENT",
       price: equipment.price,
       quantity: 1,
-      included: true,
     }
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            equipment: [...prev.equipment, newEquipment],
-          }
+          ...prev,
+          equipment: [...prev.equipment, newEquipment],
+        }
         : null,
     )
   }
@@ -179,17 +260,16 @@ export default function EditComboPage() {
     const newFood: ComboItem = {
       id: food.id,
       name: food.name,
-      type: "food",
+      type: "FOOD",
       price: food.price,
       quantity: 1,
-      included: true,
     }
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            food: [...prev.food, newFood],
-          }
+          ...prev,
+          food: [...prev.food, newFood],
+        }
         : null,
     )
   }
@@ -199,9 +279,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            [type]: prev[type].filter((item) => item.id !== id),
-          }
+          ...prev,
+          [type]: prev[type].filter((item) => item.id !== id),
+        }
         : null,
     )
   }
@@ -211,9 +291,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            [type]: prev[type].map((item) => (item.id === id ? { ...item, quantity } : item)),
-          }
+          ...prev,
+          [type]: prev[type].map((item) => (item.id === id ? { ...item, quantity } : item)),
+        }
         : null,
     )
   }
@@ -223,9 +303,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            highlights: [...prev.highlights, ""],
-          }
+          ...prev,
+          highlights: [...prev.highlights, ""],
+        }
         : null,
     )
   }
@@ -235,9 +315,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            highlights: prev.highlights.map((h, i) => (i === index ? value : h)),
-          }
+          ...prev,
+          highlights: prev.highlights.map((h, i) => (i === index ? value : h)),
+        }
         : null,
     )
   }
@@ -247,9 +327,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            highlights: prev.highlights.filter((_, i) => i !== index),
-          }
+          ...prev,
+          highlights: prev.highlights.filter((_, i) => i !== index),
+        }
         : null,
     )
   }
@@ -259,9 +339,9 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            tags: [...prev.tags, tag],
-          }
+          ...prev,
+          tags: [...prev.tags, tag],
+        }
         : null,
     )
   }
@@ -271,48 +351,102 @@ export default function EditComboPage() {
     setCombo((prev) =>
       prev
         ? {
-            ...prev,
-            tags: prev.tags.filter((t) => t !== tag),
-          }
+          ...prev,
+          tags: prev.tags.filter((t) => t !== tag),
+        }
         : null,
     )
   }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!combo) return
-
-    setSaving(true)
-
-    try {
-      const originalPrice = calculateOriginalPrice()
-      const discount = originalPrice > 0 ? Math.round(((originalPrice - combo.price) / originalPrice) * 100) : 0
-
-      const comboData = {
-        ...combo,
-        originalPrice,
-        discount,
-        highlights: combo.highlights.filter((h) => h.trim() !== ""),
-      }
-
-      const response = await fetch("/api/combos", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(comboData),
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        router.push(`/admin/combo/${combo.id}`)
-      }
-    } catch (error) {
-      console.error("Error updating combo:", error)
-    } finally {
-      setSaving(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0]
+      setFile(selectedFile)
+      setPreview(URL.createObjectURL(selectedFile))
     }
   }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!combo?.id) {
+      console.error("Combo id is missing!");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const originalPrice = calculateOriginalPrice();
+      const discount =
+        originalPrice > 0
+          ? Math.round(((originalPrice - combo.price) / originalPrice) * 100)
+          : 0;
+
+      const comboData = {
+        name: combo.name,
+        description: combo.description,
+        price: combo.price,
+        originalPrice,
+        discount,
+        active: combo.active,
+        location: combo.location,
+        duration: combo.duration,
+        maxPeople: combo.maxPeople,
+        minDays: combo.minDays,
+        maxDays: combo.maxDays,
+        highlights: combo.highlights.filter((h) => h.trim() !== ""),
+        tags: combo.tags,
+        services: combo.services.map((s) => ({
+          serviceId: s.id,
+          quantity: s.quantity ?? 1,
+        })),
+        equipment: combo.equipment,
+        foods: combo.food
+      };
+
+      const formData = new FormData();
+      formData.append("combo", new Blob([JSON.stringify(comboData)], { type: "application/json" }))
+      if (file) {
+        formData.append("imageFile", file);
+      }
+      sessionStorage.setItem("successUpdate", "1")
+      // 👉 In ra nội dung FormData
+      for (const [key, value] of Array.from(formData.entries())) {
+        if (value instanceof File) {
+          console.log(`${key}: File name = ${value.name}, size = ${value.size}`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
+
+
+      const response = await fetch(
+        `http://localhost:8080/apis/v1/combos/${combo.id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Update combo failed");
+      }
+
+      const data = await response.json();
+      console.log("Updated combo:", data);
+
+      router.push(`/admin/combo/${combo.id}`);
+    } catch (error) {
+      console.error("Error updating combo:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
+
+
+
+
 
   if (loading) {
     return (
@@ -371,6 +505,7 @@ export default function EditComboPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
+
           {/* Basic Information */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
@@ -378,6 +513,45 @@ export default function EditComboPage() {
               <CardDescription>Cập nhật thông tin chính của combo</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Upload ảnh */}
+              <div className="space-y-3">
+                <label className="text-base font-medium text-gray-700">Ảnh minh họa Combo</label>
+
+                {/* Nút upload ẩn input */}
+                <div className="flex items-center gap-3">
+                  <input
+                    id="upload-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById("upload-image")?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Chọn ảnh
+                  </Button>
+                </div>
+
+                {/* Hiển thị preview nếu có */}
+                {preview ? (
+                  <div className="mt-2">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="h-32 w-32 object-cover rounded-xl shadow-md border"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-32 w-32 flex items-center justify-center rounded-xl border border-dashed text-gray-400">
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                )}
+              </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Tên combo *</Label>
@@ -390,33 +564,55 @@ export default function EditComboPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Địa điểm *</Label>
-                  <Input
-                    id="location"
-                    value={combo.location}
-                    onChange={(e) => setCombo((prev) => (prev ? { ...prev, location: e.target.value } : null))}
-                    required
-                  />
+                  <Select
+                    value={combo.location || ""}
+                    onValueChange={(value) => setCombo((prev) => (prev ? { ...prev, location: value } : null))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn địa điểm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc} value={loc}>
+                          {loc}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Mô tả *</Label>
-                <Textarea
-                  id="description"
-                  value={combo.description}
-                  onChange={(e) => setCombo((prev) => (prev ? { ...prev, description: e.target.value } : null))}
-                  rows={3}
-                  required
-                />
               </div>
-
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Thời gian</Label>
+                  <Label htmlFor="minDays">Số ngày tối thiểu</Label>
                   <Input
-                    id="duration"
-                    value={combo.duration}
-                    onChange={(e) => setCombo((prev) => (prev ? { ...prev, duration: e.target.value } : null))}
+                    id="minDays"
+                    type="number"
+                    min="1"
+                    value={combo.minDays}
+                    onChange={(e) =>
+                      setCombo((prev) =>
+                        prev ? { ...prev, minDays: Number.parseInt(e.target.value) || 1 } : null
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maxDays">Số ngày tối đa</Label>
+                  <Input
+                    id="maxDays"
+                    type="number"
+                    min="1"
+                    value={combo.maxDays}
+                    onChange={(e) => {
+                      const days = Number.parseInt(e.target.value) || 1
+                      const nights = Math.max(days - 1, 0)
+                      setCombo((prev) =>
+                        prev
+                          ? { ...prev, maxDays: days, duration: `${days} Ngày ${nights} Đêm` }
+                          : null
+                      )
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -431,22 +627,37 @@ export default function EditComboPage() {
                     }
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Trạng thái</Label>
-                  <Select
-                    value={combo.status}
-                    onValueChange={(value) => setCombo((prev) => (prev ? { ...prev, status: value } : null))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Bản nháp</SelectItem>
-                      <SelectItem value="active">Hoạt động</SelectItem>
-                      <SelectItem value="inactive">Tạm dừng</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Trạng thái</Label>
+                <Select
+                  value={combo.active ? "true" : "false"}
+                  onValueChange={(value) =>
+                    setCombo((prev) =>
+                      prev ? { ...prev, active: value === "true" } : null
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Hoạt động</SelectItem>
+                    <SelectItem value="false">Tạm dừng</SelectItem>
+                  </SelectContent>
+                </Select>
+
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Mô tả *</Label>
+                <Textarea
+                  id="description"
+                  value={combo.description}
+                  onChange={(e) => setCombo((prev) => (prev ? { ...prev, description: e.target.value } : null))}
+                  rows={3}
+                  required
+                />
               </div>
             </CardContent>
           </Card>
@@ -460,46 +671,113 @@ export default function EditComboPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {availableServices
-                  .filter((s) => !combo.services.find((fs) => fs.id === s.id))
-                  .map((service) => (
-                    <Button
-                      key={service.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addService(service)}
-                      className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      {service.name} ({formatPrice(service.price)})
-                    </Button>
-                  ))}
+              {/* Danh sách dịch vụ có thể thêm */}
+              <Input
+                placeholder="Tìm dịch vụ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+
+              <div className="max-h-96 overflow-y-auto border rounded-lg p-4 bg-white shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {availableServices
+                    .filter(
+                      (s) =>
+                        !combo.services.some((fs) => fs.id === s.id) &&
+                        s.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .slice(0, 50)
+                    .map((service) => (
+                      <button
+                        key={service.id}
+                        type="button"
+                        onClick={() =>
+                          addService({
+                            id: service.id,
+                            name: service.name,
+                            price: service.price,
+                            type: "SERVICE",
+                            included: true,
+                            quantity: 1,
+                          })
+                        }
+                        className="flex items-center gap-2 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-green-50 hover:border-green-400 transition shadow-sm text-left"
+                      >
+                        <Plus className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-800">{service.name}</span>
+                          <span className="text-sm text-gray-500">
+                            {formatPrice(service.price)}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                </div>
               </div>
 
+
+              {/* Danh sách dịch vụ đã chọn */}
               {combo.services.length > 0 && (
                 <div className="space-y-2">
-                  {combo.services.map((service) => (
-                    <div key={service.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <div>
-                        <div className="font-medium">{service.name}</div>
-                        <div className="text-sm text-gray-600">{formatPrice(service.price)}</div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem("services", service.id)}
-                        className="text-red-600 hover:text-red-900 hover:bg-red-50"
+                  {combo.services.map((service) => {
+                    const matched = availableServices.find((s) => s.id === service.id)
+
+                    return (
+                      <div
+                        key={service.id}
+                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
+                        <div>
+                          <div className="font-medium">{service.name}</div>
+                          <div className="text-sm text-gray-600">
+                            {formatPrice(service.price)}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Chỉ hiển thị ô số lượng nếu service gốc không có minDays & maxDays */}
+                          {matched && (!matched.minDays || !matched.maxDays) && (
+                            <input
+                              type="number"
+                              min={1}
+                              value={service.quantity ?? 1}
+                              onChange={(e) => {
+                                const newQty = Math.max(1, Number(e.target.value) || 1)
+                                setCombo((prev) =>
+                                  prev
+                                    ? {
+                                      ...prev,
+                                      services: prev.services.map((s) =>
+                                        s.id === service.id
+                                          ? { ...s, quantity: newQty }
+                                          : s
+                                      ),
+                                    }
+                                    : null
+                                )
+                              }}
+                              className="w-16 px-2 py-1 border rounded-md text-sm"
+                            />
+                          )}
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem("services", service.id)}
+                            className="text-red-600 hover:text-red-900 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
+
             </CardContent>
+
           </Card>
 
           {/* Equipment */}
@@ -766,6 +1044,6 @@ export default function EditComboPage() {
           </div>
         </form>
       </div>
-    </div>
+    </div >
   )
 }

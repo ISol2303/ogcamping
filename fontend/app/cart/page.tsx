@@ -27,25 +27,28 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/AuthContext"
 
 
 export default function CartPage() {
 
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    // const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    const { user, logout } = useAuth()
+
     const router = useRouter()
 
     const [cartItems, setCartItems] = useState<any[]>([]);
     const [promoCode, setPromoCode] = useState("");
     const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
-    useEffect(() => {
-        const token = localStorage.getItem('authToken')
-        const userData = localStorage.getItem('user')
-        if (token && userData) {
-            setIsLoggedIn(true)
-            setUser(JSON.parse(userData))
-        }
-    }, [])
+    // useEffect(() => {
+    //     const token = localStorage.getItem('authToken')
+    //     const userData = localStorage.getItem('user')
+    //     if (token && userData) {
+    //         setIsLoggedIn(true)
+    //         setUser(JSON.parse(userData))
+    //     }
+    // }, [])
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -110,7 +113,6 @@ export default function CartPage() {
         localStorage.removeItem('authToken')
         localStorage.removeItem('user')
         setIsLoggedIn(false)
-        setUser(null)
     }
 
     // Handle dashboard navigation based on role
@@ -133,7 +135,7 @@ export default function CartPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
                 {/* Header */}
-                
+
 
                 {/* Empty Cart */}
                 <div className="container mx-auto px-4 py-20">
@@ -173,7 +175,7 @@ export default function CartPage() {
             alert("Giỏ hàng trống");
             return;
         }
-        if (!user || !user.id) {
+        if (!user || !user.email) {
             alert("Bạn cần đăng nhập trước khi thanh toán");
             return;
         }
@@ -187,7 +189,7 @@ export default function CartPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-           
+
             <div className="container mx-auto px-4 py-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Link href="/" className="hover:text-green-600 transition-colors">

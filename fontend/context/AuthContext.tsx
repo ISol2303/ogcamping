@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 // Kiểu dữ liệu User
 type User = {
@@ -12,8 +12,8 @@ type User = {
 };
 
 type JwtPayload = {
-  id: string;        
-  sub: string;       
+  id: string;
+  sub: string;
   role: string;
   name?: string;
   avatar?: string;
@@ -46,13 +46,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const decoded: JwtPayload = jwtDecode(storedToken);
         if (decoded.exp * 1000 > Date.now()) {
           setUser({
-            id: decoded.sub,
+            id: decoded.id,
             email: decoded.sub,
             role: decoded.role,
             name: decoded.name,
             avatar: decoded.avatar,
           });
           setToken(storedToken);
+          console.log(decoded)
         } else {
           // Token expired → clear
           logout();
@@ -78,6 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (remember) {
         localStorage.setItem("authToken", token);
+        // localStorage.setItem("user", userData);
       } else {
         sessionStorage.setItem("authToken", token);
       }

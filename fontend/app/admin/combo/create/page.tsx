@@ -311,10 +311,8 @@ export default function CreateComboPage() {
 
       if (!response.ok) throw new Error("Tạo combo thất bại")
 
-      // Lưu trạng thái thành công vào sessionStorage
       sessionStorage.setItem("comboSuccess", "1")
 
-      // Redirect bình thường
       router.push("/admin/combo")
     } catch (error) {
       console.error("Error creating combo:", error)

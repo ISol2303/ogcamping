@@ -34,6 +34,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import axios from "axios"
+import { jwtDecode } from "jwt-decode";
 
 
 export default function CheckoutPage() {
@@ -45,8 +46,8 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [note, setNote] = useState("")
   useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
+    const token = sessionStorage.getItem('authToken')
+    const userData = sessionStorage.getItem('user')
     if (token && userData) {
       setIsLoggedIn(true)
       setUser(JSON.parse(userData))
@@ -126,17 +127,30 @@ export default function CheckoutPage() {
       router.push("/checkout/failure")
     }
   }
+
   const handleCreateBooking = async () => {
     try {
       setIsProcessing(true);
 
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser) {
+      // 🔹 Lấy token từ localStorage hoặc sessionStorage
+      const storedToken =
+        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+      if (!storedToken) {
         alert("Bạn cần đăng nhập trước khi đặt chỗ");
         return;
       }
-      const user = JSON.parse(storedUser);
 
+      // 🔹 Decode token để lấy userId
+      const decoded: any = jwtDecode(storedToken);
+      const userId = decoded.id || decoded.userId || decoded.sub; // fallback nếu key khác
+
+      if (!userId) {
+        alert("Không tìm thấy ID người dùng trong token");
+        return;
+      }
+
+      // 🔹 Lấy cart
       const storedCart = localStorage.getItem("cart");
       if (!storedCart) {
         alert("Giỏ hàng trống");
@@ -171,29 +185,35 @@ export default function CheckoutPage() {
           extraPeople: item.extraPeople || 0,
         }));
 
-
       const bookingRequest = {
         services,
         combos,
         note: note || "",
       };
 
-      // B1: Tạo booking
+      // 🔹 Gọi API tạo booking kèm customerId từ token
       const res = await axios.post(
-        `http://localhost:8080/apis/v1/bookings?customerId=${user.id}`,
-        bookingRequest
+        `http://localhost:8080/apis/v1/bookings?customerId=${userId}`,
+        bookingRequest,
+        {
+          headers: { Authorization: `Bearer ${storedToken}` }, // nếu API yêu cầu
+        }
       );
 
       const booking = res.data;
       localStorage.setItem("infoBookingItem", JSON.stringify(booking));
-      localStorage.removeItem("cart")
-      // B2: Thanh toán
+      localStorage.removeItem("cart");
+
+      // 🔹 Thanh toán
       if (paymentMethod === "vnpay") {
         const paymentRes = await axios.post(
           "http://localhost:8080/apis/v1/payments/create",
           {
             bookingId: booking.id,
             method: "VNPAY",
+          },
+          {
+            headers: { Authorization: `Bearer ${storedToken}` },
           }
         );
 
@@ -217,10 +237,11 @@ export default function CheckoutPage() {
 
 
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
       {/* Header */}
-      
+
 
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-6">
