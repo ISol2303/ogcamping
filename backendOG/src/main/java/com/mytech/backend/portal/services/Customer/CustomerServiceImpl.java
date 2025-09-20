@@ -55,13 +55,16 @@ public class CustomerServiceImpl implements CustomerService {
                 .toList();
     }
 
-    private CustomerResponseDTO mapToDTO(Customer customer) {
-        return CustomerResponseDTO.builder()
-                .id(customer.getId())
-                .name(customer.getName())
-                .email(customer.getEmail())
-                .phone(customer.getPhone())
-                .address(customer.getAddress())
-                .build();
+    public CustomerResponseDTO mapToDTO(Customer customer) {
+        CustomerResponseDTO dto = new CustomerResponseDTO();
+        dto.setId(customer.getId());
+        dto.setName(customer.getName());
+        dto.setFirstName(customer.getFirstName());
+        dto.setLastName(customer.getLastName());
+        dto.setEmail(customer.getEmail());
+        dto.setPhone(customer.getPhone());
+        dto.setAddress(customer.getAddress());
+        dto.setUserId(customer.getUser() != null ? customer.getUser().getId() : null);
+        return dto;
     }
 }

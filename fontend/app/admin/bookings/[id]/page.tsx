@@ -748,33 +748,7 @@ export default function AdminBookingDetailPage() {
         </div>
       )}
       
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin/bookings" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              <Tent className="h-6 w-6 text-green-600" />
-              <span className="text-xl font-bold text-green-800">Quản lý Booking</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Tải hóa đơn
-            </Button>
-            {/* <Button variant="outline" size="sm">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Nhắn tin khách hàng
-            </Button> */}
-            {/* <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-              <Edit className="w-4 h-4 mr-2" />
-              Chỉnh sửa
-            </Button> */}
-          </div>
-        </div>
-      </header>
+      
 
       <div className="container mx-auto px-4 py-8">
         {/* Booking Header */}

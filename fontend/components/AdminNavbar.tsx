@@ -9,7 +9,7 @@ import { useState } from "react";
 export default function AdminNavbar() {
   const { user, isLoggedIn, logout } = useAuth()
   const router = useRouter();
-  console.log("role : "+user?.role) // khong lay dc role
+  console.log("role : " + user?.role) // khong lay dc role
   const handleLogout = () => {
     localStorage.removeItem("authToken")
     localStorage.removeItem("user")
@@ -29,14 +29,14 @@ export default function AdminNavbar() {
           <Tent className="h-8 w-8 text-green-600" />
           <span className="text-2xl font-bold text-green-800">Quản lý OG Camping</span>
         </Link>
-        {user?.role?.toUpperCase() === "ADMIN" && (
-          <Link href="/admin/staff/management">
-            <Button variant="outline" size="sm">
-              Quản lý nhân viên
-            </Button>
-          </Link>
-        )}
         <div className="flex items-center gap-4">
+          {user?.role?.toUpperCase() === "ADMIN" && (
+            <Link href="/admin/staff/">
+              <Button variant="outline" size="sm">
+                Quản lý nhân viên
+              </Button>
+            </Link>
+          )}
           <Button variant="ghost" size="sm">
             <Bell className="w-4 h-4" />
           </Button>

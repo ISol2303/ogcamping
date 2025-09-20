@@ -1,5 +1,6 @@
 package com.mytech.backend.portal.apis;
 
+import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
 import com.mytech.backend.portal.dto.Shift.RegisterShiftRequest;
 import com.mytech.backend.portal.dto.Shift.ShiftResponseDTO;
 import com.mytech.backend.portal.dto.StaffDTO;
@@ -13,6 +14,7 @@ import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.ShiftAssignmentRepository;
 import com.mytech.backend.portal.repositories.ShiftRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
+import com.mytech.backend.portal.services.Booking.BookingService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,7 +28,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/apis/staffs")
+@RequestMapping("/apis/v1/staffs")
 @CrossOrigin(origins = "http://localhost:3000")
 public class StaffController {
 
@@ -36,13 +38,15 @@ public class StaffController {
     private final ShiftAssignmentRepository shiftAssignmentRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
+    private final BookingService bookingService;
     private long idCounter = 1;
 
-    public StaffController(ShiftRepository shiftRepository, ShiftAssignmentRepository shiftAssignmentRepository, UserRepository userRepository, BookingRepository bookingRepository) {
+    public StaffController(ShiftRepository shiftRepository, ShiftAssignmentRepository shiftAssignmentRepository, UserRepository userRepository, BookingRepository bookingRepository, BookingService bookingService) {
         this.shiftRepository = shiftRepository;
         this.shiftAssignmentRepository = shiftAssignmentRepository;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
+        this.bookingService = bookingService;
     }
 
     @GetMapping
@@ -135,12 +139,21 @@ public class StaffController {
 
     // Xem booking được phân công cho mình
     @GetMapping("/me/bookings")
-    public ResponseEntity<?> myBookings(@RequestParam(required = false) Long staffId) {
+    public ResponseEntity<List<BookingResponseDTO>> myBookings(@RequestParam(required = false) Long staffId) {
         Long id = staffId != null ? staffId : getCurrentUserId();
-        User staff = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Staff not found"));
+        User staff = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff not found"));
+
         List<Booking> bookings = bookingRepository.findByAssignedStaff(staff);
-        return ResponseEntity.ok(bookings);
+
+        // Dùng mapToDTO trong service
+        List<BookingResponseDTO> response = bookings.stream()
+                .map(bookingService::mapToDTO)
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
+
 
     // Nhân viên nhận booking (xác nhận)
     @PutMapping("/bookings/{bookingId}/accept")

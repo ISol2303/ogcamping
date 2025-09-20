@@ -101,8 +101,11 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	                    "/apis/dishes/all",
 	                    "/apis/v1/users/forgot-password",
                         "/apis/v1/users/reset-password",
+                        "/apis/v1/users/**",
                         "/apis/v1/bookings/**",
-                        "/apis/v1/admin/shifts/**"
+                        "/apis/v1/admin/shifts/**",
+                        "/apis/v1/shifts/**",
+                        "/apis/v1/customers/**"
 	                ).permitAll()
                     .requestMatchers("/apis/v1/payments/callback").permitAll()
 	            .anyRequest().authenticated()

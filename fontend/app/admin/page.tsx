@@ -661,12 +661,12 @@ export default function AdminDashboard() {
         // Xử lý đặc biệt cho thống kê (sử dụng title làm khóa)
         const validStats = Array.isArray(statsData)
           ? statsData.filter((stat, index) => {
-              if (!stat.title || typeof stat.title !== 'string') {
-                console.warn(`Tiêu đề không hợp lệ trong thống kê tại vị trí ${index}:`, stat);
-                return false;
-              }
-              return true;
-            })
+            if (!stat.title || typeof stat.title !== 'string') {
+              console.warn(`Tiêu đề không hợp lệ trong thống kê tại vị trí ${index}:`, stat);
+              return false;
+            }
+            return true;
+          })
           : [];
 
         setStats(validStats);
@@ -919,18 +919,28 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full lg:w-auto grid-cols-5">
-              <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-              <TabsTrigger value="bookings">Đặt chỗ</TabsTrigger>
-              <TabsTrigger value="staff">Nhân viên</TabsTrigger>
-              <TabsTrigger value="services">Dịch vụ</TabsTrigger>
-              <TabsTrigger value="equipment">Thiết bị</TabsTrigger>
-              <TabsTrigger value="customers">Khách hàng</TabsTrigger>
-              <TabsTrigger value="locations">Địa điểm</TabsTrigger>
-              <TabsTrigger value="inventory">Kho</TabsTrigger>
-              <TabsTrigger value="pricing-promotions">Giá & Khuyến mãi</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="overview" className="space-y-8">
+            <div className="border-b border-gray-200 pb-4">
+              <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                <TabsList className="grid grid-cols-3 lg:grid-cols-5 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
+                  <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Tổng quan</TabsTrigger>
+                  <TabsTrigger value="bookings" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Đặt chỗ</TabsTrigger>
+                  <TabsTrigger value="staff" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300" asChild>
+                    <Link href="/admin/staff/" className="whitespace-nowrap px-3 py-1">
+                      Nhân viên
+                    </Link>
+                  </TabsTrigger>
+                  <TabsTrigger value="services" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Dịch vụ</TabsTrigger>
+                  <TabsTrigger value="equipment" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Thiết bị</TabsTrigger>
+                </TabsList>
+                <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
+                  <TabsTrigger value="customers" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Khách hàng</TabsTrigger>
+                  <TabsTrigger value="locations" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Địa điểm</TabsTrigger>
+                  <TabsTrigger value="inventory" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Kho</TabsTrigger>
+                  <TabsTrigger value="pricing-promotions" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Giá & KM</TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
 
             <TabsContent value="overview">
               <Card>
@@ -1126,7 +1136,7 @@ export default function AdminDashboard() {
                       <CardTitle>Quản lý Nhân viên</CardTitle>
                       <CardDescription>Quản lý đội ngũ nhân viên</CardDescription>
                     </div>
-                     <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white" asChild>
                       <Link href="/admin/staff/new">
                         <Plus className="w-4 h-4 mr-2" />
                         Thêm thiết bị
@@ -1370,11 +1380,11 @@ export default function AdminDashboard() {
                       {customers.length > 0 ? (
                         customers
                           .filter((customer) =>
-                            (
-                              customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-                            )
+                          (
+                            customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
                           )
                           .map((customer, index) => (
                             <TableRow key={customer._id || `customer-${index}`}>
