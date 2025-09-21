@@ -32,8 +32,6 @@ interface Blog {
 }
 
 export default function HomePage() {
-  // const [isLoggedIn, setIsLoggedIn] = useState(false)
-  // const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const {user, isLoggedIn, token}= useAuth()
   const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
   const [showReviewPopup, setShowReviewPopup] = useState(false)
@@ -67,16 +65,6 @@ export default function HomePage() {
   const handleGoToCart = () => {
     router.push("/cart");
   };
-  // Chuyển dashboard theo role
-  // const handleDashboardNavigation = () => {
-  //   if (user?.role === "ADMIN") {
-  //     router.push("/admin")
-  //   } else if (user?.role === "STAFF") {
-  //     router.push("/staff")
-  //   } else {
-  //     router.push("/dashboard")
-  //   }
-  // }
   //BLOGS
   const handleBlogsNavigation = () => {
     if (user?.role === "ADMIN") {
@@ -111,36 +99,94 @@ export default function HomePage() {
     return [validDuration, validCapacity].filter(Boolean).join(" | ")
   }
 
-  // Fetch booking gần nhất đã hoàn thành trong 7 ngày để hỏi review
-   useEffect(() => {
+  // --- CHANGED: Fetch booking gần nhất đã hoàn thành trong 7 ngày để hỏi review ---
+  useEffect(() => {
     if (!isLoggedIn || !user) return
+
+    let cancelled = false // --- ADDED: avoid setState after unmount
 
     const fetchBookings = async () => {
       try {
         const res = await fetch(`http://localhost:8080/apis/v1/bookings/customer/${user.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
+
+        if (!res.ok) {
+          console.error("Failed to fetch bookings", res.status)
+          return
+        }
+
         const bookings = await res.json()
         const now = new Date()
 
-        const recentBooking = bookings.find((b: any) => {
-          if (b.status !== "COMPLETED" || !b.checkOutDate) return false
-          const checkout = new Date(b.checkOutDate)
-          const diffDays = (now.getTime() - checkout.getTime()) / (1000 * 60 * 60 * 24)
-          return checkout < now && diffDays <= 7 && b.services?.length > 0
-        })
+        // Lọc booking thỏa điều kiện:
+        // - completed
+        // - có checkOutDate
+        // - booking.hasReview === false (nếu true thì đã review toàn bộ booking => KHÔNG show popup)
+        // - checkout < now && trong 7 ngày
+        // - booking phải có ít nhất 1 service item chưa được review (item.hasReview === false OR item.hasReview undefined)
+        const candidates = (bookings || [])
+          .filter((b: any) => {
+            if (b.status !== "COMPLETED") return false
+            if (!b.checkOutDate) return false
+            // --- CHANGED: if booking-level hasReview true => skip ---
+            if (b.hasReview === true) return false
 
-        if (recentBooking) {
-          setServiceToReview(recentBooking.services[0].serviceId)
-          setShowReviewPopup(true)
+            const checkout = new Date(b.checkOutDate)
+            if (isNaN(checkout.getTime())) return false
+
+            const diffDays = (now.getTime() - checkout.getTime()) / (1000 * 60 * 60 * 24)
+            if (!(checkout < now && diffDays <= 7)) return false
+
+            // ensure there's at least one service item in booking that has not been reviewed yet
+            if (!Array.isArray(b.services) || b.services.length === 0) return false
+
+            const hasUnreviewedService = b.services.some((s: any) => {
+              // if item-level hasReview exists, respect it; otherwise assume not reviewed
+              const itemHasReview = typeof s.hasReview !== "undefined" ? s.hasReview : false
+              return itemHasReview === false
+            })
+
+            return hasUnreviewedService
+          })
+          // thêm trường parsed date để sắp xếp
+          .map((b: any) => ({ ...b, __checkoutDate: new Date(b.checkOutDate) }))
+          // sắp xếp checkout gần nhất (mới nhất) lên trước
+          .sort((a: any, b: any) => b.__checkoutDate.getTime() - a.__checkoutDate.getTime())
+
+        if (cancelled) return
+
+        if (candidates.length > 0) {
+          const recent = candidates[0]
+          // tìm service item đầu tiên chưa review trong booking
+          const svcItem = recent.services.find((s: any) => {
+            const itemHasReview = typeof s.hasReview !== "undefined" ? s.hasReview : false
+            return itemHasReview === false
+          })
+
+          if (svcItem) {
+            setServiceToReview(svcItem.serviceId)
+            setShowReviewPopup(true)
+          } else {
+            // fallback: không có item phù hợp (hiếm xảy ra vì đã filter trước)
+            setShowReviewPopup(false)
+          }
+        } else {
+          setShowReviewPopup(false)
         }
       } catch (err) {
         console.error("Error fetching bookings:", err)
+        if (!cancelled) setShowReviewPopup(false)
       }
     }
 
     fetchBookings()
-  }, [isLoggedIn, user])
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoggedIn, user, token]) // --- CHANGED: thêm token vào deps để fetch lại khi token thay đổi
+
 
   const handleGoReview = () => {
     if (serviceToReview) {

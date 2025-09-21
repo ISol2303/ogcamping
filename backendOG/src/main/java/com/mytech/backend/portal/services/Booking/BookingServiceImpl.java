@@ -391,6 +391,7 @@ public class BookingServiceImpl implements BookingService {
                 .bookingDate(booking.getCreatedAt())
                 .checkInDate(booking.getCheckInDate())
                 .checkOutDate(booking.getCheckOutDate())
+                .hasReview(booking.isHasReview())
                 .numberOfPeople(booking.getNumberOfPeople())
                 .status(booking.getStatus())
                 .staff(booking.getAssignedStaff() != null

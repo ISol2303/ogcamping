@@ -1,5 +1,6 @@
 package com.mytech.backend.portal.models.Review;
 
+import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Service.Service;
 import jakarta.persistence.*;
@@ -56,6 +57,10 @@ public class Review {
     // Phản hồi review (vd: admin/host phản hồi)
     @Column(columnDefinition = "TEXT")
     private String reply;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
 
     // Thời gian tạo
     @CreationTimestamp

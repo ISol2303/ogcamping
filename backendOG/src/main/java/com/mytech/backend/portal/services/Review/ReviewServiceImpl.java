@@ -4,9 +4,11 @@ package com.mytech.backend.portal.services.Review;
 import com.mytech.backend.portal.dto.Review.ReviewRequestDTO;
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
 import com.mytech.backend.portal.dto.Review.ReviewStatusUpdateDTO;
+import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Review.Review;
 import com.mytech.backend.portal.models.Review.ReviewStatus;
+import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.repositories.ReviewRepository;
 import com.mytech.backend.portal.repositories.ServiceRepository;
@@ -30,6 +32,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final CustomerRepository customerRepository;
     private final ServiceRepository serviceRepository;
+    private final BookingRepository bookingRepository;
 
     @Override
     public ReviewResponseDTO createReview(Long customerId, Long serviceId, ReviewRequestDTO request) {
@@ -74,6 +77,7 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewResponseDTO createReviewWithFiles(
             Long customerId,
             Long serviceId,
+            Long bookingId,
             Integer rating,
             String content,
             List<MultipartFile> images,
@@ -85,13 +89,17 @@ public class ReviewServiceImpl implements ReviewService {
         com.mytech.backend.portal.models.Service.Service service =
                 serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new RuntimeException("Service not found"));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         Review review = Review.builder()
                 .customer(customer)
                 .service(service)
+                .booking(booking)
                 .rating(rating != null ? rating : 5)
                 .content(content != null ? content : "")
                 .reply(null)
+                .status(ReviewStatus.PENDING)
                 .build();
 
         // Upload file & convert sang URL
@@ -111,8 +119,11 @@ public class ReviewServiceImpl implements ReviewService {
 
         review.setImages(imageUrls);
         review.setVideos(videoUrls);
-        review.setStatus(ReviewStatus.PENDING);
         reviewRepository.save(review);
+        
+        // Sau khi tạo review -> set hasReview
+        booking.setHasReview(true);
+        bookingRepository.save(booking);
         
         // Cập nhật totalReviews & averageRating trong Service
        // updateServiceRating(service, review.getRating());
@@ -218,7 +229,7 @@ public class ReviewServiceImpl implements ReviewService {
         return mapToResponse(review);
     }
     
- // helper: giống / chỉnh sửa hàm updateServiceRating
+    // helper: giống / chỉnh sửa hàm updateServiceRating
     private void updateServiceRatingOnApprove(com.mytech.backend.portal.models.Service.Service service, Integer newRating) {
         int oldCount = service.getTotalReviews() != null ? service.getTotalReviews() : 0;
         double oldAvg = service.getAverageRating() != null ? service.getAverageRating() : 0.0;
