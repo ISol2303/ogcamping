@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.mytech.backend.portal.dto.Review.ReviewRequestDTO;
+
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
 import com.mytech.backend.portal.dto.Review.ReviewStatusUpdateDTO;
 import com.mytech.backend.portal.models.User;
@@ -36,6 +36,7 @@ public class ReviewController {
             @PathVariable("serviceId") Long serviceId,
             @RequestPart("rating") String ratingStr,
             @RequestPart(value = "content", required = false) String content,
+            @RequestPart(value = "bookingId") String bookingIdStr,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "videos", required = false) List<MultipartFile> videos,
             Authentication authentication) {
@@ -52,9 +53,9 @@ public class ReviewController {
 
         Long customerId = user.getId();
         int rating = Integer.parseInt(ratingStr);
-
+        Long bookingId = Long.parseLong(bookingIdStr);
         return ResponseEntity.ok(
-                reviewService.createReviewWithFiles(customerId, serviceId,rating, content, images, videos)
+        		reviewService.createReviewWithFiles(customerId, serviceId, bookingId, rating, content, images, videos)
         );
     }
 

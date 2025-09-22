@@ -13,7 +13,7 @@ import com.mytech.backend.portal.models.Review.ReviewStatus;
 
 public interface ReviewService {
 
-    ReviewResponseDTO createReview(Long customerId, Long serviceId, ReviewRequestDTO request);
+    ReviewResponseDTO createReview(Long customerId, Long serviceId,ReviewRequestDTO request);
 
     List<ReviewResponseDTO> getReviewsForService(Long serviceId);
 
@@ -25,6 +25,7 @@ public interface ReviewService {
     ReviewResponseDTO createReviewWithFiles(
             Long customerId,
             Long serviceId,
+            Long bookingId,
             Integer rating,
             String content,
             List<MultipartFile> images,

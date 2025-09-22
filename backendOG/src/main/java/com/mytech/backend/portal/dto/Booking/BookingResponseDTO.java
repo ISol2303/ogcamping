@@ -31,6 +31,7 @@ public class BookingResponseDTO {
     private AssignedStaffResponse staff; // đổi từ User staffId
     private String internalNotes;
     private Double totalPrice;
+    private boolean hasReview;
 }
 
 

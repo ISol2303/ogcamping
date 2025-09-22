@@ -39,6 +39,7 @@ public class Booking {
     private String internalNotes;
     private Integer rating;
     private String feedback;
+    private boolean hasReview;
 
     @ManyToOne
     @JoinColumn(name = "assigned_staff_id")
