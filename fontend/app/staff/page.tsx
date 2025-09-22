@@ -44,7 +44,6 @@ import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 
-
 interface Order {
   id: string;
   orderCode: string;
@@ -187,14 +186,7 @@ export default function StaffDashboard({ orderId }: Props) {
   const itemsPerPage = 5;
   const [selectedCustomerOrder, setSelectedCustomerOrder] = useState<any | null>(null);
 
-  // Reviews state
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [reviewsFilterStatus, setReviewsFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'HIDDEN'>('PENDING');
-  const [searchReviews, setSearchReviews] = useState('');
-  const [loadingReviews, setLoadingReviews] = useState(false);
-  const [selectedReview, setSelectedReview] = useState<any | null>(null); // để show modal xem chi tiết
-  const [replyText, setReplyText] = useState('');
-  const [processingIds, setProcessingIds] = useState<number[]>([]); // ids đang xử lý (loading)
+
 
 
 
@@ -689,6 +681,14 @@ export default function StaffDashboard({ orderId }: Props) {
     }
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('user');
+    router.push('/login');
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -991,71 +991,6 @@ export default function StaffDashboard({ orderId }: Props) {
     return { total, average, maxMonth };
   }, [revenues]);
 
-  useEffect(() => {
-    // chỉ fetch khi switch tab sang reviews
-    if (selectedTab !== 'reviews') return;
-    fetchReviews();
-  }, [selectedTab, reviewsFilterStatus]);
-
-  const fetchReviews = async () => {
-    try {
-      setLoadingReviews(true);
-      // backend: nếu status=ALL thì backend trả tất cả, hoặc ta truyền 'ALL'
-      const statusParam = reviewsFilterStatus || 'ALL';
-      const res = await axios.get(`http://localhost:8080/apis/v1/reviews/staff?status=${statusParam}`);
-      console.log("Fetched reviews:", res.data);
-      setReviews(res.data || []);
-    } catch (err) {
-      console.error("Lỗi khi lấy reviews:", err);
-      setReviews([]);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
-
-  const setProcessing = (id: number, adding: boolean) => {
-    setProcessingIds(prev => adding ? [...prev, id] : prev.filter(x => x !== id));
-  };
-
-  const handleUpdateStatus = async (reviewId: number, status: 'APPROVED' | 'REJECTED' | 'HIDDEN', reason = '') => {
-    try {
-      setProcessing(reviewId, true);
-      await axios.put(`http://localhost:8080/apis/v1/reviews/${reviewId}/status`, {
-        status,
-        reason
-      });
-      // cập nhật local list nhanh UI
-      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, status } : r));
-    } catch (err) {
-      console.error("Lỗi cập nhật status:", err);
-      alert("Không thể cập nhật trạng thái. Thử lại.");
-    } finally {
-      setProcessing(reviewId, false);
-    }
-  };
-
-  const handleReply = async (reviewId: number) => {
-    if (!replyText.trim()) {
-      alert("Nhập nội dung phản hồi trước khi gửi.");
-      return;
-    }
-    try {
-      setProcessing(reviewId, true);
-      // backend expects raw body string
-      await axios.put(`http://localhost:8080/apis/v1/reviews/${reviewId}/reply`, replyText, {
-        headers: { 'Content-Type': 'text/plain' }
-      });
-      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, reply: replyText } : r));
-      setReplyText('');
-      alert("Đã phản hồi review.");
-    } catch (err) {
-      console.error("Lỗi reply:", err);
-      alert("Không thể phản hồi. Thử lại.");
-    } finally {
-      setProcessing(reviewId, false);
-    }
-  };
-
 
 
   if (isLoading) {
@@ -1063,9 +998,43 @@ export default function StaffDashboard({ orderId }: Props) {
   }
 
 
+
+
+
+
+
+
+
+  // === Chỉ render UI dựa trên state ===
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
+      <header className="border-b bg-white sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Tent className="h-8 w-8 text-green-600" />
+            <span className="text-2xl font-bold text-green-800">OG Camping Staff</span>
+          </Link>
+
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm">
+              <Bell className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Avatar>
+              <AvatarImage src="/staff-avatar.png" />
+              <AvatarFallback>ST</AvatarFallback>
+            </Avatar>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
 
       <div className="container mx-auto px-4 py-8">
 
@@ -1097,17 +1066,11 @@ export default function StaffDashboard({ orderId }: Props) {
 
         {/* Main Content */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="flex gap-2 flex-nowrap overflow-x-auto">
-            <TabsTrigger value="orders" className="whitespace-nowrap px-3 py-1">Đơn hàng</TabsTrigger>
-            <TabsTrigger value="dish" className="whitespace-nowrap px-3 py-1">Danh mục món ăn</TabsTrigger>
-            <TabsTrigger value="customers" className="whitespace-nowrap px-3 py-1">Khách hàng</TabsTrigger>
-            <TabsTrigger value="reports" className="whitespace-nowrap px-3 py-1">Báo cáo</TabsTrigger>
-            <TabsTrigger value="reviews" className="whitespace-nowrap px-3 py-1">Đánh giá</TabsTrigger>
-            <TabsTrigger value="reviews" asChild>
-              <Link href="/staff/shifts" className="whitespace-nowrap px-3 py-1">
-                Lịch trực
-              </Link>
-            </TabsTrigger>
+          <TabsList className="grid w-full lg:w-auto grid-cols-4">
+            <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
+            <TabsTrigger value="dish">Danh mục món ăn</TabsTrigger>
+            <TabsTrigger value="customers">Khách hàng</TabsTrigger>
+            <TabsTrigger value="reports">Báo cáo</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6">
@@ -1756,7 +1719,7 @@ export default function StaffDashboard({ orderId }: Props) {
 
 
                 {/* Bên phải: chi tiết đơn hàng */}
-                <div className="w-2/3">
+                <div className="w-3/3">
                   {selectedCustomerOrder ? (
                     <Card className="shadow rounded-lg overflow-hidden">
                       <CardHeader className="bg-blue-600 text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1913,224 +1876,10 @@ export default function StaffDashboard({ orderId }: Props) {
             </div>
           </TabsContent>
 
-          <TabsContent value="reviews" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Đánh giá</CardTitle>
-                    <CardDescription>Kiểm duyệt review: chờ duyệt, đã duyệt, từ chối</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => fetchReviews()}>
-                      <Filter className="w-4 h-4 mr-2" /> Làm mới
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
 
-              <CardContent>
-                <div className="flex gap-4 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Tìm theo tên khách / nội dung..."
-                      className="pl-10"
-                      value={searchReviews}
-                      onChange={(e) => setSearchReviews(e.target.value)}
-                    />
-                  </div>
 
-                  <Select value={reviewsFilterStatus} onValueChange={(v) => setReviewsFilterStatus(v as any)}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Trạng thái" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Tất cả</SelectItem>
-                      <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-                      <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-                      <SelectItem value="REJECTED">Từ chối</SelectItem>
-                      <SelectItem value="HIDDEN">Ẩn</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="overflow-y-auto max-h-[560px] border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Khách</TableHead>
-                        <TableHead>Dịch vụ</TableHead>
-                        <TableHead>Rating</TableHead>
-                        <TableHead>Nội dung</TableHead>
-                        <TableHead className="text-center">Ảnh/Video</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                        <TableHead>Ngày</TableHead>
-                        <TableHead>Thao tác</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loadingReviews ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center">Đang tải...</TableCell>
-                        </TableRow>
-                      ) : (
-                        reviews
-                          .filter(r => {
-                            const q = searchReviews.trim().toLowerCase();
 
-                            if (!q) return true;
-                            return (
-                              (r.customerName || '').toLowerCase().includes(q) ||
-                              (r.content || '').toLowerCase().includes(q) ||
-                              (r.serviceName || '').toLowerCase().includes(q)
-                            );
-                          })
-                          .map((r) => (
-                            <TableRow key={r.id}>
-                              <TableCell className="font-medium">{r.id}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <Avatar>
-                                    {r.customerAvatar ? (
-                                      <AvatarImage src={`http://localhost:8080${r.customerAvatar}`} />
-                                    ) : (
-                                      <AvatarFallback>{(r.customerName || '?').slice(0, 2)}</AvatarFallback>
-                                    )}
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-medium">{r.customerName}</p>
-                                    <p className="text-sm text-gray-500">{r.customerEmail || ''}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{r.serviceName}</TableCell>
-                              <TableCell>{'⭐'.repeat(r.rating || 0)}</TableCell>
-                              <TableCell className="max-w-[300px] truncate">{r.content || '-'}</TableCell>
-                              <TableCell className="text-center">
-                                {((r.images || []).length + (r.videos || []).length) > 0 ? (
-                                  <Button variant="ghost" size="sm" onClick={() => setSelectedReview(r)}>
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                ) : (
-                                  <span className="text-gray-400">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {r.status === 'PENDING' && <Badge className="bg-yellow-100 text-yellow-800">Chờ duyệt</Badge>}
-                                {r.status === 'APPROVED' && <Badge className="bg-green-100 text-green-800">Đã duyệt</Badge>}
-                                {r.status === 'REJECTED' && <Badge className="bg-red-100 text-red-800">Từ chối</Badge>}
-                                {r.status === 'HIDDEN' && <Badge variant="secondary">Ẩn</Badge>}
-                              </TableCell>
-                              <TableCell>{new Date(r.createdAt).toLocaleString("vi-VN")}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={processingIds.includes(r.id) || r.status === 'APPROVED'}
-                                    onClick={() => handleUpdateStatus(r.id, 'APPROVED')}
-                                  >
-                                    ✅
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={processingIds.includes(r.id) || r.status === 'REJECTED'}
-                                    onClick={() => {
-                                      const reason = prompt("Lý do từ chối review (tùy chọn):", "") || "";
-                                      if (confirm("Xác nhận từ chối review này?")) {
-                                        handleUpdateStatus(r.id, 'REJECTED', reason);
-                                      }
-                                    }}
-                                  >
-                                    ❌
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setSelectedReview(r);
-                                      setReplyText(r.reply || '');
-                                    }}
-                                  >
-                                    <MessageCircle className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Modal xem chi tiết review + reply */}
-            {selectedReview && (
-              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-start z-50 pt-20 px-4">
-                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold">Review #{selectedReview.id}</h3>
-                      <p className="text-sm text-gray-500">Người review: {selectedReview.customerName}</p>
-                      <p className="text-sm text-gray-500">Dịch vụ: {selectedReview.serviceName}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" onClick={() => setSelectedReview(null)}>Đóng</Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-semibold">Nội dung</p>
-                      <div className="p-3 bg-gray-50 rounded">{selectedReview.content || '-'}</div>
-                    </div>
-
-                    {selectedReview.images && selectedReview.images.length > 0 && (
-                      <div>
-                        <p className="font-semibold mb-2">Ảnh</p>
-                        <div className="flex gap-2 overflow-x-auto">
-                          {selectedReview.images.map((img: string, idx: number) => (
-                            <img key={idx} src={`http://localhost:8080${img}`} alt={`img-${idx}`} className="w-32 h-24 object-cover rounded-md border" />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedReview.videos && selectedReview.videos.length > 0 && (
-                      <div>
-                        <p className="font-semibold mb-2">Video</p>
-                        <div className="flex gap-2 overflow-x-auto">
-                          {selectedReview.videos.map((v: string, idx: number) => (
-                            <video key={idx} src={`http://localhost:8080${v}`} controls className="w-48 h-32 rounded-md border" />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="font-semibold">Phản hồi hiện tại</p>
-                      <div className="p-3 bg-gray-50 rounded">{selectedReview.reply || <span className="text-gray-400">Chưa có phản hồi</span>}</div>
-                    </div>
-
-                    <div>
-                      <p className="font-semibold mb-2">Viết phản hồi</p>
-                      <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="outline" onClick={() => { setReplyText(''); setSelectedReview(null); }}>Hủy</Button>
-                        <Button onClick={() => handleReply(selectedReview.id)} disabled={processingIds.includes(selectedReview.id)}>Gửi phản hồi</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </TabsContent>
 
         </Tabs>
       </div>
