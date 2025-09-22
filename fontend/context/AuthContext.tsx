@@ -57,17 +57,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 //          const userData = {
 //            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
 //            email: decoded.sub, // JWT sub thường là email
+          // setUser({
+          //   id: decoded.id,
+          //   email: decoded.sub,
+          //   role: decoded.role,
+          //   name: decoded.name,
+          //   avatar: decoded.avatar,
+          // };
           setUser({
             id: decoded.id,
             email: decoded.sub,
             role: decoded.role,
             name: decoded.name,
             avatar: decoded.avatar,
-          };
-          console.log('Setting user from JWT token:', userData);
-          setUser(userData);
+          });
           setToken(storedToken);
-          console.log(decoded)
         } else {
           console.log('Token expired, logging out');
           // Token expired → clear

@@ -88,16 +88,15 @@ export default function Navbar() {
         {/* User actions */}
         <div className="flex items-center gap-2">
           {/* Cart Icon */}
-//          <Button variant="ghost" size="sm" asChild className="relative">
-//            <Link href="/cart">
-//              <ShoppingCart className="h-5 w-5" />
- //             {cartCount > 0 && (
- //               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
- //                 {cartCount}
- //               </Badge>
- //             )}
-  //          </Link>
- //         </Button>
+         {/* <Button variant="ghost" size="sm" asChild className="relative">
+            <Link href="/cart">              <ShoppingCart className="h-5 w-5" />
+             {cartCount > 0 && (
+               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
+                 {cartCount}
+               </Badge>
+             )}
+          </Link>
+          </Button> */}
        
           {isLoggedIn && user ? (
             <>

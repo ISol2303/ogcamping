@@ -35,11 +35,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
             </ChatProvider>
           </CartProvider>
-//          <ChatProvider>
-//            <ClientNavbarWrapper />
- //           {children}
- //           <Toaster />
- //         </ChatProvider>
+          {/* <ChatProvider>
+            <ClientNavbarWrapper />
+            {children}
+           <Toaster />
+          </ChatProvider> */}
         </AuthProvider>
       </body>
     </html>
