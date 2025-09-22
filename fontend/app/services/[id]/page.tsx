@@ -155,65 +155,10 @@ export default function ServiceDetailPage() {
   )
 
   const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0)
-  // const handleDashboardNavigation = () => {
-  //   if (user?.role === 'ADMIN') {
-  //     router.push('/admin')
-  //   } else if (user?.role === 'STAFF') {
-  //     router.push('/staff')
-  //   } else {
-  //     router.push('/dashboard')
-  //   }
-  // }
-  const handleGoToCart = () => {
-    router.push("/cart");
-  };
-  const handleBooking = () => {
-    let hasError = false;
-    const token = localStorage.getItem("authToken");
-
-    // ✅ Kiểm tra ngày khởi hành
-    if (!selectedDate) {
-      setDateError("Vui lòng chọn ngày khởi hành");
-      hasError = true;
-    } else if (!selectedAvailability) {
-      setDateError("Chưa có lịch đặt cho ngày này");
-      hasError = true;
-    } else if (selectedAvailability.totalSlots - selectedAvailability.bookedSlots <= 0) {
-      setDateError("Ngày này đã hết chỗ");
-      hasError = true;
-    } else {
-      setDateError("");
-    }
-
-    // ✅ Kiểm tra số người
-    if (!selectedPeople || selectedPeople <= 0) {
-      setPeopleError("Vui lòng chọn số người");
-      hasError = true;
-    } else {
-      setPeopleError("");
-    }
-
-    if (hasError) return;
-
-    // ✅ Nếu chưa login → lưu redirect gốc + chuyển login
-    console.log("Token:", token);
-    
-    if (!isLoggedIn) {
-      localStorage.setItem("redirectAfterLogin", window.location.pathname + window.location.search);
-      router.push("/login");
-      return;
-    }
-
-    // ✅ Nếu đã login → sang booking page
-    const totalPeople = selectedPeople + (allowExtraChecked ? extraPeople : 0);
-    const extraFee = allowExtraChecked && extraPeople > 0
-      ? extraPeople * (service.extraFeePerPerson || 0)
-      : 0
-    const total = service.price + extraFee
-    router.push(
-      `/booking/${service.id}?date=${selectedDate}&people=${selectedPeople}&allowExtra=${allowExtraChecked}&extraPeople=${extraPeople}`
-    );
-  };
+  // const handleGoToCart = () => {
+  //   router.push("/cart");
+  // };
+  
 
 
   const handleAddToCart = () => {
@@ -349,7 +294,14 @@ export default function ServiceDetailPage() {
             </div>
 
             {/* Service Details */}
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs
+              defaultValue={
+                typeof window !== "undefined" && window.location.hash === "#reviews"
+                  ? "reviews"
+                  : "overview"
+              }
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Tổng quan</TabsTrigger>
                 <TabsTrigger value="itinerary">Lịch trình</TabsTrigger>
@@ -587,9 +539,6 @@ export default function ServiceDetailPage() {
                 </div>
 
 
-                <Button className="w-full" size="lg" onClick={handleBooking}>
-                  Đặt ngay
-                </Button>
                 <Button className="w-full mt-2" size="lg" onClick={handleAddToCart}>
                   Thêm vào kế hoạch
                 </Button>

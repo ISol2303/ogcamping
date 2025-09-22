@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -91,6 +92,46 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public PaymentResponseDTO createMobilePayment(PaymentRequestDTO req) {
+        Booking booking = bookingRepository.findById(req.getBookingId())
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.PENDING)
+            throw new RuntimeException("Only PENDING bookings can be paid");
+
+        // Sinh mã giao dịch 1 lần duy nhất (txnRef)
+        String txnRef = UUID.randomUUID().toString();
+
+        Payment payment = Payment.builder()
+                .booking(booking)
+                .amount(booking.calculateTotalPrice().doubleValue())
+                .method(req.getMethod())
+                .status(PaymentStatus.PENDING)
+                .providerTransactionId(txnRef)   // lưu trùng với vnp_TxnRef
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        paymentRepository.save(payment);
+        booking.setPayment(payment);
+
+        String paymentUrl = null;
+        if (req.getMethod() == PaymentMethod.VNPAY) {
+            paymentUrl = generateVNPayMobileUrl(booking.getId(), txnRef);
+        }
+
+        return PaymentResponseDTO.builder()
+                .id(payment.getId())
+                .bookingId(payment.getBooking().getId())
+                .method(payment.getMethod())
+                .status(payment.getStatus())
+                .amount(payment.getAmount())
+                .providerTransactionId(payment.getProviderTransactionId())
+                .createdAt(payment.getCreatedAt())
+                .paymentUrl(paymentUrl)
+                .build();
+    }
+
+    @Override
     public String generateVNPayUrl(Long bookingId, String txnRef) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -141,6 +182,60 @@ public class PaymentServiceImpl implements PaymentService {
                 .collect(Collectors.joining("&"));
     }
 
+    @Override
+    public String generateVNPayMobileUrl(Long bookingId, String txnRef) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Lấy tổng tiền từ booking (đã tính tổng service + combo + equipment)
+        long amount = (long) (booking.getTotalPrice() * 100);
+
+        // Lấy tên dịch vụ đầu tiên trong booking item để hiển thị trên VNPay
+        String orderInfo = booking.getItems().stream()
+                .filter(item -> item.getType() == ItemType.SERVICE)
+                .map(item -> item.getService().getName())
+                .findFirst()
+                .orElse("Booking+Payment");
+
+        // Loại bỏ ký tự đặc biệt & thay space bằng '+'
+        orderInfo = orderInfo.replaceAll("[^a-zA-Z0-9 ]", "").replace(" ", "+");
+
+        LocalDateTime now = LocalDateTime.now();
+        String createDate = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String expireDate = now.plusMinutes(15).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+        // Mobile return URL - sử dụng mobile callback endpoint với IP thay vì localhost
+        String mobileReturnUrl = vnpayReturnUrl.replace("/callback", "/callback/mobile")
+                .replace("localhost", "192.168.56.1");
+
+        Map<String, String> vnpParams = new TreeMap<>();
+        vnpParams.put("vnp_Version", "2.1.0");
+        vnpParams.put("vnp_Command", "pay");
+        vnpParams.put("vnp_TmnCode", vnpayTmnCode);
+        vnpParams.put("vnp_Amount", String.valueOf(amount));
+        vnpParams.put("vnp_CurrCode", "VND");
+        vnpParams.put("vnp_TxnRef", txnRef);
+        vnpParams.put("vnp_OrderInfo", orderInfo);
+        vnpParams.put("vnp_OrderType", "other");
+        vnpParams.put("vnp_Locale", "vn");
+        vnpParams.put("vnp_ReturnUrl", mobileReturnUrl);
+        vnpParams.put("vnp_CreateDate", createDate);
+        vnpParams.put("vnp_ExpireDate", expireDate);
+        vnpParams.put("vnp_IpAddr", "127.0.0.1");
+
+        // Tạo hash data
+        String hashData = vnpParams.entrySet().stream()
+                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8).replace("%20", "+"))
+                .collect(Collectors.joining("&"));
+
+        String secureHash = hmacSHA512(vnpayHashSecret, hashData);
+        vnpParams.put("vnp_SecureHash", secureHash);
+
+        // Build URL
+        return vnpayUrl + "?" + vnpParams.entrySet().stream()
+                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"));
+    }
 
     private String hmacSHA512(String secretKey, String data) {
         try {
@@ -182,9 +277,12 @@ public class PaymentServiceImpl implements PaymentService {
                             throw new RuntimeException("Missing check-in/check-out date for service " + service.getName());
                         }
 
-                        LocalDate current = item.getCheckInDate();
-                        while (!current.isAfter(item.getCheckOutDate().minusDays(1))) {
-                            LocalDate dateToCheck = current;
+                        LocalDateTime current = item.getCheckInDate();
+                        LocalDateTime end = item.getCheckOutDate();
+
+                        while (!current.isAfter(end.minusDays(1))) {
+                            // convert LocalDateTime -> LocalDate vì availability được quản lý theo ngày
+                            LocalDate dateToCheck = current.toLocalDate();
 
                             ServiceAvailability availability = serviceAvailabilityRepository
                                     .findByServiceIdAndDate(service.getId(), dateToCheck)
@@ -202,6 +300,7 @@ public class PaymentServiceImpl implements PaymentService {
                         }
                     }
                 }
+
 
 
                 bookingRepository.save(booking);

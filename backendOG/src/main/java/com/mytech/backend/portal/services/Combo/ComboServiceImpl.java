@@ -8,6 +8,7 @@ import com.mytech.backend.portal.models.Combo.ComboItem;
 import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.repositories.ComboRepository;
 import com.mytech.backend.portal.repositories.ServiceRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -51,12 +52,11 @@ public class ComboServiceImpl implements ComboService {
                 .maxDays(request.getMaxDays())
                 .highlights(request.getHighlights())
                 .tags(request.getTags())
-
                 .rating(0.0)
                 .reviewCount(0)
 
                 .build();
-        
+
         List<ComboItem> items = request.getServices().stream().map(s -> {
             Service service = serviceRepository.findById(s.getServiceId())
                     .orElseThrow(() -> new RuntimeException("Service not found: " + s.getServiceId()));
@@ -74,42 +74,52 @@ public class ComboServiceImpl implements ComboService {
 
     // ================= UPDATE COMBO =================
     @Override
+    @Transactional
     public ComboResponseDTO updateCombo(Long id, ComboRequestDTO request, MultipartFile imageFile) {
-        Combo combo = comboRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Combo not found"));
-        combo.setName(request.getName());
-        combo.setDescription(request.getDescription());
-        combo.setPrice(request.getPrice());
-        combo.setOriginalPrice(request.getOriginalPrice());
-        combo.setDiscount(request.getDiscount());
-        combo.setActive(request.getActive());
-        combo.setLocation(request.getLocation());
-        combo.setDuration(request.getDuration());
-        combo.setMinPeople(request.getMinPeople());
-        combo.setMaxPeople(request.getMaxPeople());
+        Combo existing = comboRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Combo not found with id: " + id));
 
-        combo.setHighlights(request.getHighlights());
-        combo.setTags(request.getTags());
-
+        // cập nhật ảnh
+        String imageUrl = existing.getImageUrl();
         if (imageFile != null && !imageFile.isEmpty()) {
-            String imageUrl = saveFile(imageFile);
-            combo.setImageUrl(imageUrl);
+            imageUrl = saveFile(imageFile);
         }
-        combo.getItems().clear();
+
+        // cập nhật các field
+        existing.setName(request.getName());
+        existing.setDescription(request.getDescription());
+        existing.setPrice(request.getPrice());
+        existing.setOriginalPrice(request.getOriginalPrice());
+        existing.setDiscount(request.getDiscount());
+        existing.setActive(request.getActive());
+        existing.setImageUrl(imageUrl);
+        existing.setLocation(request.getLocation());
+        existing.setDuration(request.getDuration());
+        existing.setMinPeople(request.getMinPeople());
+        existing.setMaxPeople(request.getMaxPeople());
+        existing.setMinDays(request.getMinDays());
+        existing.setMaxDays(request.getMaxDays());
+        existing.setHighlights(request.getHighlights());
+        existing.setTags(request.getTags());
+
+        // cập nhật items (xóa cũ, thêm mới)
+        existing.getItems().clear();
         List<ComboItem> items = request.getServices().stream().map(s -> {
             Service service = serviceRepository.findById(s.getServiceId())
                     .orElseThrow(() -> new RuntimeException("Service not found: " + s.getServiceId()));
             return ComboItem.builder()
-                    .combo(combo)
+                    .combo(existing)
                     .service(service)
                     .quantity(s.getQuantity())
                     .build();
         }).toList();
-        combo.getItems().addAll(items);
-        Combo saved = comboRepository.save(combo);
+        existing.getItems().addAll(items);
 
+        Combo saved = comboRepository.save(existing);
         return mapToResponse(saved, request.getEquipment(), request.getFoods());
     }
+
+
 
 
     // ================= DELETE COMBO =================
@@ -144,7 +154,8 @@ public class ComboServiceImpl implements ComboService {
                 .map(ci -> new ComboItemResponseDTO(
                         ci.getService().getId(),
                         ci.getService().getName(),
-                        ci.getQuantity()
+                        ci.getQuantity(),
+                        ci.getService().getPrice()
                 ))
                 .toList();
 
@@ -161,6 +172,8 @@ public class ComboServiceImpl implements ComboService {
                 .reviewCount(combo.getReviewCount())
                 .location(combo.getLocation())
                 .duration(combo.getDuration())
+                .minDays(combo.getMinDays())
+                .maxDays(combo.getMaxDays())
                 .minPeople(combo.getMinPeople())
                 .maxPeople(combo.getMaxPeople())
                 .highlights(combo.getHighlights())

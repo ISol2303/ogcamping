@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success - Redirecting...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fallback-button {
+            margin-top: 2rem;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .fallback-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>Payment Successful!</h2>
+        <p>Redirecting to OG Camping app...</p>
+        <p id="countdown">Redirecting in 3 seconds...</p>
+        
+        <div id="fallback" style="display: none;">
+            <p>If the app doesn't open automatically:</p>
+            <a href="#" id="manualRedirect" class="fallback-button">Open OG Camping App</a>
+            <br><br>
+            <a href="ogcamping://home" class="fallback-button">Go to Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookingId = urlParams.get('bookingId') || '0';
+        const status = urlParams.get('status') || 'success';
+        const txnRef = urlParams.get('txnRef') || '';
+        const error = urlParams.get('error') || '';
+
+        // Build mobile app URL
+        let mobileUrl = `ogcamping://payment/result?bookingId=${bookingId}&status=${status}`;
+        if (txnRef) mobileUrl += `&txnRef=${txnRef}`;
+        if (error) mobileUrl += `&error=${encodeURIComponent(error)}`;
+
+        console.log('Redirecting to:', mobileUrl);
+
+        // Countdown timer
+        let countdown = 3;
+        const countdownElement = document.getElementById('countdown');
+        const fallbackElement = document.getElementById('fallback');
+        
+        const timer = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = `Redirecting in ${countdown} seconds...`;
+            
+            if (countdown <= 0) {
+                clearInterval(timer);
+                
+                // Try to redirect to mobile app
+                try {
+                    window.location.href = mobileUrl;
+                    
+                    // Show fallback options after 2 seconds
+                    setTimeout(() => {
+                        fallbackElement.style.display = 'block';
+                        countdownElement.style.display = 'none';
+                    }, 2000);
+                } catch (e) {
+                    console.error('Redirect failed:', e);
+                    fallbackElement.style.display = 'block';
+                    countdownElement.style.display = 'none';
+                }
+            }
+        }, 1000);
+
+        // Manual redirect button
+        document.getElementById('manualRedirect').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = mobileUrl;
+        });
+
+        // Multiple redirect attempts for better compatibility
+        function attemptRedirect() {
+            console.log('Attempting redirect to:', mobileUrl);
+            
+            // Method 1: Direct window.location
+            try {
+                window.location.href = mobileUrl;
+            } catch (e) {
+                console.log('Method 1 failed:', e);
+            }
+            
+            // Method 2: Create invisible iframe (for some Android browsers)
+            setTimeout(() => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = mobileUrl;
+                    document.body.appendChild(iframe);
+                    
+                    // Remove iframe after attempt
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 1000);
+                } catch (e) {
+                    console.log('Method 2 failed:', e);
+                }
+            }, 100);
+            
+            // Method 3: Try Intent URL for Android
+            setTimeout(() => {
+                try {
+                    const intentUrl = `intent://payment/result?bookingId=${bookingId}&status=${status}&txnRef=${txnRef}#Intent;scheme=ogcamping;package=com.example.og_camping_private;end`;
+                    window.location.href = intentUrl;
+                } catch (e) {
+                    console.log('Method 3 failed:', e);
+                }
+            }, 200);
+        }
+        
+        // Try immediate redirect
+        attemptRedirect();
+    </script>
+</body>
+</html>

@@ -1,18 +1,15 @@
 package com.mytech.backend.portal.apis;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mytech.backend.portal.dto.Combo.ComboRequestDTO;
 import com.mytech.backend.portal.dto.Combo.ComboResponseDTO;
 import com.mytech.backend.portal.services.Combo.ComboService;
-
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-
 
 @RestController
 @RequestMapping("/apis/v1/combos")
@@ -35,16 +32,19 @@ public class ComboController {
 
         return ResponseEntity.ok(response);
     }
-
-
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping("/{id}")
     public ResponseEntity<ComboResponseDTO> update(
-            @PathVariable Long id,
-            @RequestPart("data") ComboRequestDTO request,
+            @PathVariable("id") Long id,
+            @RequestPart("combo") String comboJson,
             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
-    ) {
-        return ResponseEntity.ok(comboService.updateCombo(id, request, imageFile));
+    ) throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ComboRequestDTO dto = objectMapper.readValue(comboJson, ComboRequestDTO.class);
+        return ResponseEntity.ok(comboService.updateCombo(id, dto, imageFile));
     }
+
+
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Complete - Opening App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .status {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .open-app-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            margin: 0.5rem;
+            min-width: 200px;
+        }
+        
+        .open-app-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+        
+        .open-app-btn:active {
+            transform: translateY(0);
+        }
+        
+        .info {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+        
+        .countdown {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin: 1rem 0;
+        }
+        
+        .debug-info {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Payment Successful!</h1>
+        <div class="status" id="status">Preparing to open OG Camping app...</div>
+        <div class="countdown" id="countdown"></div>
+        
+        <button class="open-app-btn" id="openAppBtn" onclick="openApp(); return false;">
+            📱 Open OG Camping App
+        </button>
+        
+        <button class="open-app-btn" onclick="testDirectLink(); return false;" style="background: linear-gradient(45deg, #4CAF50, #45a049);">
+            🔗 Test Direct Link
+        </button>
+        
+        <button class="open-app-btn" onclick="tryLocationAssign(); return false;" style="background: linear-gradient(45deg, #9C27B0, #673AB7);">
+            🔄 Try Location Assign
+        </button>
+        
+        <div class="info">
+            <p>Click the button above to return to the OG Camping app</p>
+            <p>If the app doesn't open, please make sure it's installed</p>
+        </div>
+        
+        <div class="debug-info" id="debugInfo"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookingId = urlParams.get('bookingId') || '0';
+        const status = urlParams.get('status') || 'success';
+        const txnRef = urlParams.get('txnRef') || '';
+        const error = urlParams.get('error') || '';
+
+        // Build app URL
+        let appUrl = `ogcamping://payment/result?bookingId=${bookingId}&status=${status}`;
+        if (txnRef) appUrl += `&txnRef=${txnRef}`;
+        if (error) appUrl += `&error=${encodeURIComponent(error)}`;
+
+        console.log('App URL:', appUrl);
+        document.getElementById('debugInfo').innerHTML = `
+            <strong>Debug Info:</strong><br>
+            URL: ${appUrl}<br>
+            BookingID: ${bookingId}<br>
+            Status: ${status}<br>
+            TxnRef: ${txnRef}<br>
+            User Agent: ${navigator.userAgent}
+        `;
+
+        // Update status based on payment result
+        if (status === 'success') {
+            document.querySelector('.success-icon').textContent = '✅';
+            document.querySelector('h1').textContent = 'Payment Successful!';
+        } else {
+            document.querySelector('.success-icon').textContent = '❌';
+            document.querySelector('h1').textContent = 'Payment Failed';
+            document.querySelector('.container').style.background = 'rgba(255, 0, 0, 0.1)';
+        }
+
+        // Function to open app
+        function openApp() {
+            console.log('🚀 Opening app with URL:', appUrl);
+            document.getElementById('status').textContent = 'Trying to open OG Camping app...';
+            
+            // Method 1: Try iframe first (most reliable for custom schemes)
+            try {
+                console.log('Method 1: Trying iframe method');
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.style.width = '1px';
+                iframe.style.height = '1px';
+                iframe.src = appUrl;
+                document.body.appendChild(iframe);
+                
+                // Remove iframe after attempt
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe);
+                        console.log('Removed iframe');
+                    }
+                }, 1000);
+                
+                console.log('Iframe created with URL:', appUrl);
+            } catch (e) {
+                console.error('Method 1 (iframe) failed:', e);
+            }
+            
+            // Method 2: Try window.location.href in current tab
+            setTimeout(() => {
+                try {
+                    console.log('Method 2: Trying window.location.href in current tab');
+                    window.location.href = appUrl;
+                } catch (e) {
+                    console.error('Method 2 failed:', e);
+                }
+            }, 500);
+            
+            // Method 3: Try Intent URL for Android
+            setTimeout(() => {
+                try {
+                    const intentUrl = `intent://payment/result?bookingId=${bookingId}&status=${status}&txnRef=${txnRef}#Intent;scheme=ogcamping;package=com.example.og_camping_private;end`;
+                    console.log('Method 3: Trying Intent URL:', intentUrl);
+                    
+                    // Use iframe for Intent URL too
+                    const iframe2 = document.createElement('iframe');
+                    iframe2.style.display = 'none';
+                    iframe2.src = intentUrl;
+                    document.body.appendChild(iframe2);
+                    
+                    setTimeout(() => {
+                        if (document.body.contains(iframe2)) {
+                            document.body.removeChild(iframe2);
+                        }
+                    }, 1000);
+                } catch (e) {
+                    console.error('Method 3 failed:', e);
+                }
+            }, 1000);
+            
+            // Update status after all attempts
+            setTimeout(() => {
+                document.getElementById('status').textContent = 'If app didn\'t open, please check if OG Camping is installed.';
+            }, 2500);
+        }
+
+        // Test function for direct link
+        function testDirectLink() {
+            console.log('🧪 Testing direct link:', appUrl);
+            document.getElementById('status').textContent = 'Testing direct link...';
+            
+            try {
+                // Method 1: Try location.replace (doesn't create new tab)
+                console.log('Testing location.replace');
+                window.location.replace(appUrl);
+            } catch (e) {
+                console.error('Location.replace failed:', e);
+                
+                // Method 2: Try creating link and clicking
+                try {
+                    const link = document.createElement('a');
+                    link.href = appUrl;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log('Direct link clicked');
+                } catch (e2) {
+                    console.error('Direct link failed:', e2);
+                }
+            }
+        }
+        
+        // Alternative method using location.assign
+        function tryLocationAssign() {
+            console.log('🔄 Trying location.assign:', appUrl);
+            document.getElementById('status').textContent = 'Using location.assign...';
+            
+            try {
+                window.location.assign(appUrl);
+            } catch (e) {
+                console.error('Location.assign failed:', e);
+            }
+        }
+
+        // Auto countdown and open app
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+        
+        function updateCountdown() {
+            if (countdown > 0) {
+                countdownElement.textContent = `Auto-opening in ${countdown} seconds...`;
+                countdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                countdownElement.textContent = '';
+                document.getElementById('status').textContent = 'Click the button to open the app';
+                // Don't auto-open, let user click button
+            }
+        }
+        
+        // Start countdown
+        updateCountdown();
+
+        // Handle page visibility change (when user comes back)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                console.log('Page became visible, trying to open app');
+                openApp();
+            }
+        });
+    </script>
+</body>
+</html>

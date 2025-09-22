@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sparkles, ShoppingCart } from "lucide-react"
+import { ShoppingCart, Sparkles } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
@@ -38,7 +38,9 @@ export default function Navbar() {
       router.push("/dashboard")
     }
   }
-
+  const handleGoToCart = () => {
+    router.push("/cart");
+  };
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -66,6 +68,9 @@ export default function Navbar() {
           <Link href="/equipment" className={linkClass("/equipment")}>
             Thuê thiết bị
           </Link>
+          <Link href="/combos" className={linkClass("/combos")}>
+            Combo
+          </Link>
           <Link href="/ai-consultant" className={linkClass("/ai-consultant")}>
             Tư vấn AI
           </Link>
@@ -83,17 +88,17 @@ export default function Navbar() {
         {/* User actions */}
         <div className="flex items-center gap-2">
           {/* Cart Icon */}
-          <Button variant="ghost" size="sm" asChild className="relative">
-            <Link href="/cart">
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
-                  {cartCount}
-                </Badge>
-              )}
-            </Link>
-          </Button>
-
+//          <Button variant="ghost" size="sm" asChild className="relative">
+//            <Link href="/cart">
+//              <ShoppingCart className="h-5 w-5" />
+ //             {cartCount > 0 && (
+ //               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
+ //                 {cartCount}
+ //               </Badge>
+ //             )}
+  //          </Link>
+ //         </Button>
+       
           {isLoggedIn && user ? (
             <>
               {/* Avatar + tên */}
@@ -107,7 +112,9 @@ export default function Navbar() {
               <span className="text-gray-800 font-medium">
                 {user.name || user.email}
               </span>
-
+              <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+                <ShoppingCart className="h-5 w-5 text-gray-800" />
+              </button>
               {/* Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -157,7 +157,7 @@ public class UserServiceImpl implements UserService {
         dto.setCreatedAt(user.getCreatedAt());
         if (customer != null) {
             dto.setAddress(customer.getAddress());
-            dto.setName(customer.getName());
+//            dto.setName(customer.getName());
         }
         return dto;
     }

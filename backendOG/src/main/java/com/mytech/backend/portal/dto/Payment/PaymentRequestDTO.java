@@ -1,7 +1,7 @@
 package com.mytech.backend.portal.dto.Payment;
 
 import com.mytech.backend.portal.models.Payment.PaymentMethod;
-import  lombok.*;
+import lombok.Data;
 @Data
 public class PaymentRequestDTO {
     private Long bookingId;

@@ -1,11 +1,10 @@
 package com.mytech.backend.portal.services.Booking;
 
-import com.mytech.backend.portal.dto.Booking.BookingItemResponseDTO;
-import com.mytech.backend.portal.dto.Booking.BookingRequestDTO;
-import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
-import com.mytech.backend.portal.dto.Booking.BookingServiceDTO;
+import com.mytech.backend.portal.dto.Booking.*;
+import com.mytech.backend.portal.dto.BookingDTO;
 import com.mytech.backend.portal.dto.Payment.PaymentResponseDTO;
 import com.mytech.backend.portal.dto.Rating.ReviewRequestDTO;
+import com.mytech.backend.portal.dto.Staff.AssignedStaffResponse;
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingItem;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
@@ -20,11 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -96,19 +97,26 @@ public class BookingServiceImpl implements BookingService {
                     }
                 }
 
-                // Check availability từng ngày
-                LocalDate current = s.getCheckInDate();
-                while (!current.isAfter(s.getCheckOutDate().minusDays(1))) {
-                    LocalDate dateToCheck = current;
+                LocalDateTime current = s.getCheckInDate();
+                LocalDateTime end = s.getCheckOutDate();
+
+                while (!current.isAfter(end.minusDays(1))) {
+                    // Chuyển sang LocalDate để query availability theo ngày
+                    LocalDate dateToCheck = current.toLocalDate();
+
                     ServiceAvailability availability = serviceAvailabilityRepository
                             .findByServiceIdAndDate(service.getId(), dateToCheck)
-                            .orElseThrow(() -> new RuntimeException("No availability config for date: " + dateToCheck));
+                            .orElseThrow(() -> new RuntimeException(
+                                    "No availability config for date: " + dateToCheck));
 
                     if (availability.getBookedSlots() >= availability.getTotalSlots()) {
                         throw new RuntimeException("No available slots on " + dateToCheck);
                     }
+
+                    // Tiến tới ngày tiếp theo
                     current = current.plusDays(1);
                 }
+
 
                 double base = service.getPrice() != null ? service.getPrice() : 0.0;
                 int capacity = service.getMaxCapacity() != null ? service.getMaxCapacity() : 0;
@@ -138,22 +146,26 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // 4. Xử lý combo
-        if (req.getComboIds() != null) {
-            for (Long comboId : req.getComboIds()) {
-                Combo combo = comboRepository.findById(comboId)
-                        .orElseThrow(() -> new RuntimeException("Combo not found: " + comboId));
+        if (req.getCombos() != null) {
+            for (BookingComboDTO c : req.getCombos()) {
+                Combo combo = comboRepository.findById(c.getComboId())
+                        .orElseThrow(() -> new RuntimeException("Combo not found: " + c.getComboId()));
 
                 BookingItem item = BookingItem.builder()
-                        .booking(booking) // 🔥 quan trọng
+                        .booking(booking)
                         .combo(combo)
                         .type(ItemType.COMBO)
                         .quantity(1)
                         .price(combo.getPrice())
+                        .checkInDate(c.getCheckInDate())
+                        .checkOutDate(c.getCheckOutDate())
+                        .numberOfPeople(c.getNumberOfPeople())
                         .build();
 
                 bookingItems.add(item);
             }
         }
+
 
         // 5. Xử lý equipment
         if (req.getEquipmentIds() != null) {
@@ -162,7 +174,7 @@ public class BookingServiceImpl implements BookingService {
                         .orElseThrow(() -> new RuntimeException("Equipment not found: " + equipmentId));
 
                 BookingItem item = BookingItem.builder()
-                        .booking(booking) // 🔥 quan trọng
+                        .booking(booking)
                         .equipment(equipment)
                         .type(ItemType.EQUIPMENT)
                         .quantity(1)
@@ -182,13 +194,6 @@ public class BookingServiceImpl implements BookingService {
 
         return mapToDTO(booking);
     }
-
-
-
-
-
-
-
 
     @Override
     public BookingResponseDTO getBooking(Long id) {
@@ -224,9 +229,12 @@ public class BookingServiceImpl implements BookingService {
         for (BookingItem item : booking.getItems()) {
             if (item.getType() == ItemType.SERVICE && item.getService() != null) {
                 Service service = item.getService();
-                LocalDate current = booking.getCheckInDate();
-                while (!current.isAfter(booking.getCheckOutDate().minusDays(1))) {
-                    final LocalDate dateToCheck = current; // final variable
+                LocalDateTime current = booking.getCheckInDate();   // LocalDateTime
+                LocalDateTime end = booking.getCheckOutDate();      // LocalDateTime
+
+                while (!current.isAfter(end.minusDays(1))) {
+                    final LocalDate dateToCheck = current.toLocalDate(); // convert về LocalDate để query availability theo ngày
+
                     ServiceAvailability availability = serviceAvailabilityRepository
                             .findByServiceIdAndDate(service.getId(), dateToCheck)
                             .orElseThrow(() -> new RuntimeException("Availability not found for date: " + dateToCheck));
@@ -241,6 +249,7 @@ public class BookingServiceImpl implements BookingService {
                 }
             }
         }
+
 
         return mapToDTO(booking);
     }
@@ -321,15 +330,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     // Mapper Booking -> DTO
-    private BookingResponseDTO mapToDTO(Booking booking) {
+    public BookingResponseDTO mapToDTO(Booking booking) {
         List<BookingItemResponseDTO> services = booking.getItems().stream()
                 .filter(i -> i.getType() == ItemType.SERVICE && i.getService() != null)
                 .map(i -> BookingItemResponseDTO.builder()
                         .id(i.getId())
                         .serviceId(i.getService().getId())
                         .bookingId(i.getBooking().getId())
-                        .numberOfPeople(i.getNumberOfPeople().longValue())
+                        .numberOfPeople(
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
+                        )
                         .name(i.getService().getName())
+                        .type(ItemType.SERVICE)
                         .checkInDate(i.getCheckInDate())
                         .checkOutDate(i.getCheckOutDate())
                         .quantity(i.getQuantity())
@@ -342,6 +354,14 @@ public class BookingServiceImpl implements BookingService {
                 .filter(i -> i.getType() == ItemType.COMBO && i.getCombo() != null)
                 .map(i -> BookingItemResponseDTO.builder()
                         .id(i.getId())
+                        .comboId(i.getCombo().getId())
+                        .bookingId(booking.getId())
+                        .type(ItemType.COMBO)
+                        .numberOfPeople(
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
+                        )
+                        .checkInDate(i.getCheckInDate())
+                        .checkOutDate(i.getCheckOutDate())
                         .name(i.getCombo().getName())
                         .quantity(i.getQuantity())
                         .price(i.getPrice())
@@ -349,10 +369,12 @@ public class BookingServiceImpl implements BookingService {
                         .build())
                 .toList();
 
+
         List<BookingItemResponseDTO> equipments = booking.getItems().stream()
                 .filter(i -> i.getType() == ItemType.EQUIPMENT && i.getEquipment() != null)
                 .map(i -> BookingItemResponseDTO.builder()
                         .id(i.getId())
+                        .type(ItemType.EQUIPMENT)
                         .name(i.getEquipment().getName())
                         .quantity(i.getQuantity())
                         .price(i.getPrice())
@@ -366,11 +388,25 @@ public class BookingServiceImpl implements BookingService {
                 .services(services)
                 .combos(combos)
                 .equipments(equipments)
+                .bookingDate(booking.getCreatedAt())
                 .checkInDate(booking.getCheckInDate())
                 .checkOutDate(booking.getCheckOutDate())
+                .hasReview(booking.isHasReview())
                 .numberOfPeople(booking.getNumberOfPeople())
                 .status(booking.getStatus())
-                .totalPrice(booking.getTotalPrice().doubleValue())
+                .staff(booking.getAssignedStaff() != null
+                                ? new AssignedStaffResponse(
+                                booking.getAssignedStaff().getId(),
+                                booking.getAssignedStaff().getName(),
+                                booking.getAssignedStaff().getRole().name()
+                        )
+                                : null
+                )
+                .totalPrice(
+                        booking.getTotalPrice() != null
+                                ? booking.getTotalPrice().doubleValue()
+                                : 0.0
+                )
                 .payment(booking.getPayment() != null ? PaymentResponseDTO.builder()
                         .id(booking.getPayment().getId())
                         .method(booking.getPayment().getMethod())
@@ -380,9 +416,43 @@ public class BookingServiceImpl implements BookingService {
                         .createdAt(booking.getPayment().getCreatedAt())
                         .build() : null)
                 .note(booking.getNote())
+                .internalNotes(booking.getInternalNotes())
                 .build();
     }
 
+    public List<BookingGetByServiceDTO> getBookingsByService(Long serviceId) {
+        List<BookingItem> items = bookingItemRepository.findItemsByServiceId(serviceId);
+
+        // Group theo booking
+        return items.stream()
+                .collect(Collectors.groupingBy(BookingItem::getBooking))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    Booking booking = entry.getKey();
+                    List<BookingItemDTO> itemDTOs = entry.getValue().stream()
+                            .map(bi -> new BookingItemDTO(
+                                    bi.getId(),
+                                    bi.getQuantity(),
+                                    bi.getPrice(),
+                                    bi.getCheckInDate(),
+                                    bi.getCheckOutDate()
+                            ))
+                            .toList();
+
+                    // Trả về DTO
+                    return new BookingGetByServiceDTO(
+                            booking.getId(),
+                            booking.getCustomer().getFirstName() + " " + booking.getCustomer().getLastName(),
+                            booking.getCheckInDate(),
+                            booking.getCheckOutDate(),
+                            booking.getNumberOfPeople(),
+                            booking.getStatus().name(),
+                            itemDTOs
+                    );
+                })
+                .toList();
+    }
 
 
     public List<BookingResponseDTO> getAllBookings() {
@@ -409,6 +479,55 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.deleteById(id);
     }
+    public BookingStatsDTO getStatsByService(Long serviceId) {
+        Long totalBookings = bookingItemRepository.countByServiceId(serviceId);
+        Long revenue = bookingItemRepository.sumRevenueByServiceId(serviceId);
 
+        // TODO: bạn có thể bổ sung logic lấy monthlyBookings, monthlyRevenue, rating, completionRate
+        return new BookingStatsDTO(
+                totalBookings,
+                0L, // monthlyBookings
+                revenue != null ? revenue : 0L,
+                0L, // monthlyRevenue
+                0.0, // averageRating
+                0.0  // completionRate
+        );
+    }
+    // ===== Update methods =====
+    @Override
+    public BookingResponseDTO updateBookingStatus(Long bookingId, BookingStatus status) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        booking.setStatus(status);
+        return mapToDTO(bookingRepository.save(booking));
+    }
+
+
+    @Override
+    public BookingResponseDTO updateInternalNotes(Long bookingId, String internalNotes) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        booking.setInternalNotes(internalNotes);
+        return mapToDTO(bookingRepository.save(booking));
+    }
+    public Booking confirmCheckIn(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setCheckInDate(LocalDateTime.now());
+        booking.setStatus(BookingStatus.IN_PROGRESS);
+
+        return bookingRepository.save(booking);
+    }
+
+    public Booking confirmCheckOut(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setCheckOutDate(LocalDateTime.now());
+        booking.setStatus(BookingStatus.COMPLETED);
+
+        return bookingRepository.save(booking);
+    }
 
 }

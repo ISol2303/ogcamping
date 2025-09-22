@@ -5,14 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingServiceDTO {
     private Long serviceId;          // ID dịch vụ lưu trú
-    private LocalDate checkInDate;   // Ngày check-in riêng
-    private LocalDate checkOutDate;  // Ngày check-out riêng
+    private LocalDateTime checkInDate;   // Ngày check-in riêng
+    private LocalDateTime checkOutDate;  // Ngày check-out riêng
     private Integer numberOfPeople;  // Số người dùng dịch vụ này
 }

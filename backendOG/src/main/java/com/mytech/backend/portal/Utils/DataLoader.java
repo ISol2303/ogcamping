@@ -1,6 +1,5 @@
 package com.mytech.backend.portal.Utils;
 
-
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingItem;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
@@ -20,6 +19,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Configuration
@@ -47,8 +47,10 @@ public class DataLoader {
                     .build());
 
             Customer c1 = Customer.builder()
-                    .name("Nguyen An")
-                    .email("an@example.com")
+                    .firstName("ADMIN")
+                    .lastName("MANAGER")
+                    .name("ADMIN MANAGER")
+                    .email("admin@gmail.com")
                     .phone("0909123456")
                     .address("Ha Noi")
                     .user(u1)   // 🔗 liên kết User
@@ -58,21 +60,64 @@ public class DataLoader {
             // --- 2. User + Customer khác ---
             User u2 = userRepository.save(User.builder()
                     .name("Tran Binh")
-                    .email("binh@example.com")
+                    .email("staff@gmail.com")
                     .password(passwordEncoder.encode("123456"))
                     .phone("0909988776")
-                    .role(User.Role.CUSTOMER)
+                    .role(User.Role.STAFF)
                     .status(User.Status.ACTIVE)
                     .build());
 
             Customer c2 = Customer.builder()
+                    .firstName("Tran")
+                    .lastName("Binh")
                     .name("Tran Binh")
-                    .email("binh@example.com")
+                    .email("staff@gmail.com")
                     .phone("0909988776")
                     .address("Da Nang")
                     .user(u2)
                     .build();
             customerRepo.save(c2);
+
+            // --- 2. User + Customer khác ---
+            User u5 = userRepository.save(User.builder()
+                    .name("Hoai Tam")
+                    .email("staff1@gmail.com")
+                    .password(passwordEncoder.encode("123456"))
+                    .phone("0909988244")
+                    .role(User.Role.STAFF)
+                    .status(User.Status.ACTIVE)
+                    .build());
+
+            Customer c5 = Customer.builder()
+                    .firstName("Tran")
+                    .lastName("Binh")
+                    .email("staff1@gmail.com")
+                    .phone("0909988244")
+                    .address("Da Nang")
+                    .user(u5)
+                    .build();
+            customerRepo.save(c5);
+
+            // --- 2. User + Customer khác ---
+            User u6 = userRepository.save(User.builder()
+                    .name("Lê Văn Cường")
+                    .email("staff2@gmail.com")
+                    .password(passwordEncoder.encode("123456"))
+                    .phone("0909988241")
+                    .role(User.Role.STAFF)
+                    .status(User.Status.ACTIVE)
+                    .build());
+
+            Customer c6 = Customer.builder()
+                    .firstName("LE")
+                    .lastName("CUONG")
+                    .name("Le Cuong")
+                    .email("staff2@gmail.com")
+                    .phone("0909988241")
+                    .address("Da Nang")
+                    .user(u6)
+                    .build();
+            customerRepo.save(c6);
 
             // --- Additional Customers ---
             User u3 = userRepository.save(User.builder()
@@ -85,6 +130,8 @@ public class DataLoader {
                     .build());
 
             Customer c3 = Customer.builder()
+                    .firstName("Le")
+                    .lastName("Cuong")
                     .name("Le Cuong")
                     .email("cuong@example.com")
                     .phone("0912345678")
@@ -103,6 +150,8 @@ public class DataLoader {
                     .build());
 
             Customer c4 = Customer.builder()
+                    .firstName("Pham")
+                    .lastName("Dung")
                     .name("Pham Dung")
                     .email("dung@example.com")
                     .phone("0933445566")
@@ -236,88 +285,127 @@ public class DataLoader {
                     .build());
             // --- 3. Tạo Booking mẫu ---
             // 1. Tạo booking
-            Booking booking = Booking.builder()
+            Booking booking1 = Booking.builder()
                     .customer(c1)
-                    .checkInDate(LocalDate.now().plusDays(5))
-                    .checkOutDate(LocalDate.now().plusDays(7))
+                    .checkInDate(LocalDateTime.now().plusDays(5))
+                    .checkOutDate(LocalDateTime.now().plusDays(7))
                     .numberOfPeople(2)
                     .note("Kỷ niệm")
                     .status(BookingStatus.PENDING)
                     .build();
+            
+            Booking booking2 = Booking.builder()
+                    .customer(c2)
+                    .checkInDate(LocalDateTime.now().minusDays(2))
+                    .checkOutDate(LocalDateTime.now().minusDays(1))
+                    .numberOfPeople(2)
+                    .note("1 ngày")
+                    .status(BookingStatus.COMPLETED)
+                    .build();
+
 
 // 2. Tạo BookingItem cho service
             BookingItem item = BookingItem.builder()
-                    .booking(booking)
+                    .booking(booking1)
+                    .service(s1)
+                    .type(ItemType.SERVICE)
+                    .quantity(1)
+                    .price(s1.getPrice())
+                    .build();
+            
+            BookingItem item02 = BookingItem.builder()
+                    .booking(booking2)
                     .service(s1)
                     .type(ItemType.SERVICE)
                     .quantity(1)
                     .price(s1.getPrice())
                     .build();
             // 3. Gán items vào booking
-            booking.setItems(List.of(item));
+            booking1.setItems(List.of(item));
+            booking2.setItems(List.of(item02));
 
 // 4. Lưu booking (cascade sẽ lưu luôn BookingItem nếu cascade.ALL)
-            bookingRepo.save(booking);
+            bookingRepo.save(booking1);
+            bookingRepo.save(booking2);
             // --- 4. Tạo Combo ---
             Combo familyCombo = Combo.builder()
                     .name("Family Camping Pack")
-                    .description("Combo gia đình: Camping Sapa + Glamping Hạ Long + Buffet BBQ + Trekking Tour")
+                    .description("Combo gia đình: Camping ven sông + Buffet BBQ + Trekking nhẹ quanh rừng Củ Chi")
                     .price(3_000_000.0)
                     .active(true)
                     .minDays(1).maxDays(3)
                     .maxPeople(8)
+                    .discount(15)
+                    .duration("3 ngày")
                     .location("Củ Chi, TP.HCM")
+                    .imageUrl("/uploads/combos/combo1.jpg")
                     .build();
 
             Combo adventureCombo = Combo.builder()
                     .name("Adventure Explorer Pack")
-                    .description("Combo phiêu lưu: Glamping biển Phú Quốc + Tour kayak Vịnh Hạ Long + Trekking Tour Sapa")
+                    .description("Combo phiêu lưu: Zipline + Chèo thuyền kayak trên hồ Củ Chi + Trải nghiệm rừng cao su")
                     .price(2_800_000.0)
                     .active(true)
-                    .minDays(3).maxDays(4)
+                    .minDays(1).maxDays(2)
                     .maxPeople(4)
+                    .discount(10)
+                    .imageUrl("/uploads/combos/combo2.jpg")
+                    .duration("2 ngày")
                     .location("Củ Chi, TP.HCM")
                     .build();
 
             Combo natureCombo = Combo.builder()
                     .name("Nature Retreat Pack")
-                    .description("Combo thiên nhiên: Camping hồ Ba Bể + Glamping núi Bà Nà + Buffet nướng Đà Lạt")
+                    .description("Combo thiên nhiên: Trekking trong rừng Củ Chi + Picnic ngoài trời + Hướng dẫn sinh thái")
                     .price(2_500_000.0)
                     .active(true)
-                    .minDays(2).maxDays(3)
-                    .maxPeople(7)
+                    .minDays(1).maxDays(2)
+                    .maxPeople(6)
+                    .discount(12)
+                    .imageUrl("/uploads/combos/combo3.jpg")
+                    .duration("2 ngày")
                     .location("Củ Chi, TP.HCM")
                     .build();
 
-            Combo beachCombo = Combo.builder()
-                    .name("Beach Getaway Pack")
-                    .description("Combo biển: Glamping biển Phú Quốc + Buffet hải sản Nha Trang + Camping đồi cát Mũi Né")
+            Combo teamBuildingCombo = Combo.builder()
+                    .name("Team Building Pack")
+                    .description("Combo nhóm: Các trò chơi tập thể + BBQ ngoài trời + Trải nghiệm sinh tồn nhẹ")
                     .price(3_200_000.0)
                     .active(true)
-                    .minDays(2).maxDays(3)
-                    .maxPeople(10)
+                    .minDays(1).maxDays(2)
+                    .maxPeople(12)
+                    .imageUrl("/uploads/combos/combo4.jpg")
+                    .discount(15)
+                    .duration("2 ngày")
                     .location("Củ Chi, TP.HCM")
                     .build();
 
-            Combo mountainCombo = Combo.builder()
-                    .name("Mountain Escape Pack")
-                    .description("Combo núi: Glamping đồng cỏ Cát Tiên + Tour leo núi Fansipan + Camping rừng thông Đà Lạt")
+            Combo weekendEscapeCombo = Combo.builder()
+                    .name("Weekend Escape Pack")
+                    .description("Combo cuối tuần: Cắm trại ven hồ + Thuyền nhỏ + BBQ tối + Hoạt động ngoài trời")
                     .price(2_700_000.0)
                     .active(true)
-                    .minDays(1).maxDays(3)
-                    .maxPeople(2)
+                    .minDays(1).maxDays(2)
+                    .maxPeople(6)
+                    .imageUrl("/uploads/combos/combo5.jpg")
+                    .discount(10)
+                    .duration("2 ngày")
                     .location("Củ Chi, TP.HCM")
                     .build();
 
-            Combo riverCombo = Combo.builder()
+            Combo riverAdventureCombo = Combo.builder()
                     .name("River Adventure Pack")
-                    .description("Combo sông nước: Tour chèo thuyền Cửu Chân + Camping hồ Ba Bể + Buffet BBQ ngoài trời")
+                    .description("Combo sông nước: Chèo thuyền kayak + Cắm trại ven sông + BBQ ngoài trời + Trò chơi nhóm")
                     .price(1_800_000.0)
                     .active(true)
-                    .minDays(1).maxDays(3)
+                    .minDays(1).maxDays(2)
+                    .imageUrl("/uploads/combos/combo6.jpg")
                     .maxPeople(8)
+                    .discount(8)
+                    .duration("2 ngày")
                     .location("Củ Chi, TP.HCM")
                     .build();
+
             // --- 5. Tạo ComboItem ---
             ComboItem item1 = ComboItem.builder().combo(familyCombo).service(s1).quantity(1).build();
             ComboItem item2 = ComboItem.builder().combo(familyCombo).service(s2).quantity(1).build();
@@ -336,28 +424,28 @@ public class DataLoader {
             ComboItem item10 = ComboItem.builder().combo(natureCombo).service(s5).quantity(4).build(); // cho 4 người
             natureCombo.setItems(List.of(item8, item9, item10));
 
-            ComboItem item11 = ComboItem.builder().combo(beachCombo).service(s5).quantity(1).build();
-            ComboItem item12 = ComboItem.builder().combo(beachCombo).service(s4).quantity(4).build(); // cho 4 người
-            ComboItem item13 = ComboItem.builder().combo(beachCombo).service(s6).quantity(1).build();
-            beachCombo.setItems(List.of(item11, item12, item13));
+            ComboItem item11 = ComboItem.builder().combo(teamBuildingCombo).service(s5).quantity(1).build();
+            ComboItem item12 = ComboItem.builder().combo(teamBuildingCombo).service(s4).quantity(4).build(); // cho 4 người
+            ComboItem item13 = ComboItem.builder().combo(teamBuildingCombo).service(s6).quantity(1).build();
+            teamBuildingCombo.setItems(List.of(item11, item12, item13));
 
-            ComboItem item14 = ComboItem.builder().combo(mountainCombo).service(s2).quantity(1).build();
-            ComboItem item15 = ComboItem.builder().combo(mountainCombo).service(s4).quantity(4).build(); // cho 4 người
-            ComboItem item16 = ComboItem.builder().combo(mountainCombo).service(s2).quantity(1).build();
-            mountainCombo.setItems(List.of(item14, item15, item16));
+            ComboItem item14 = ComboItem.builder().combo(weekendEscapeCombo).service(s2).quantity(1).build();
+            ComboItem item15 = ComboItem.builder().combo(weekendEscapeCombo).service(s4).quantity(4).build(); // cho 4 người
+            ComboItem item16 = ComboItem.builder().combo(weekendEscapeCombo).service(s2).quantity(1).build();
+            weekendEscapeCombo.setItems(List.of(item14, item15, item16));
 
-            ComboItem item17 = ComboItem.builder().combo(riverCombo).service(s14).quantity(4).build(); // cho 4 người
-            ComboItem item18 = ComboItem.builder().combo(riverCombo).service(s6).quantity(1).build();
-            ComboItem item19 = ComboItem.builder().combo(riverCombo).service(s3).quantity(4).build(); // cho 4 người
-            riverCombo.setItems(List.of(item17, item18, item19));
+            ComboItem item17 = ComboItem.builder().combo(riverAdventureCombo).service(s14).quantity(4).build(); // cho 4 người
+            ComboItem item18 = ComboItem.builder().combo(riverAdventureCombo).service(s6).quantity(1).build();
+            ComboItem item19 = ComboItem.builder().combo(riverAdventureCombo).service(s3).quantity(4).build(); // cho 4 người
+            riverAdventureCombo.setItems(List.of(item17, item18, item19));
 
             // --- 6. Lưu Combo + ComboItem ---
             comboRepo.save(familyCombo);
             comboRepo.save(adventureCombo);
             comboRepo.save(natureCombo);
-            comboRepo.save(beachCombo);
-            comboRepo.save(mountainCombo);
-            comboRepo.save(riverCombo);
+            comboRepo.save(teamBuildingCombo);
+            comboRepo.save(weekendEscapeCombo);
+            comboRepo.save(riverAdventureCombo);
 
             System.out.println("DataLoader: Customers, Services, Bookings, Combos đã được seed thành công!");
         };

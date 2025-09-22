@@ -1,7 +1,11 @@
 package com.mytech.backend.portal.dto.Payment;
+
 import com.mytech.backend.portal.models.Payment.PaymentMethod;
 import com.mytech.backend.portal.models.Payment.PaymentStatus;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 

@@ -2,6 +2,7 @@ package com.mytech.backend.portal.services.Customer;
 
 import com.mytech.backend.portal.dto.Customer.CustomerRequestDTO;
 import com.mytech.backend.portal.dto.Customer.CustomerResponseDTO;
+import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -66,9 +67,24 @@ public class CustomerServiceImpl implements CustomerService {
         return CustomerResponseDTO.builder()
                 .id(customer.getId())
                 .name(customer.getName())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
                 .email(customer.getEmail())
                 .phone(customer.getPhone())
                 .address(customer.getAddress())
+                .userId(customer.getUser() != null ? customer.getUser().getId() : null)
+                .user(customer.getUser() != null ? UserDTO.builder()
+                        .id(customer.getUser().getId())
+                        .name(customer.getUser().getName())
+                        .email(customer.getUser().getEmail())
+                        .phone(customer.getUser().getPhone())
+                        .role(customer.getUser().getRole().name())
+                        .avatar(customer.getUser().getAvatar())
+                        .status(customer.getUser().getStatus().name())
+                        .agreeMarketing(customer.getUser().getAgreeMarketing())
+                        .CreatedAt(customer.getUser().getCreatedAt())
+                        .build() : null)
                 .build();
     }
+
 }

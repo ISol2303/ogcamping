@@ -1,5 +1,9 @@
 package com.mytech.backend.portal.dto.Booking;
-import lombok.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -9,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class BookingRequestDTO {
     private List<BookingServiceDTO> services;
-    private List<Long> comboIds;
+    private List<BookingComboDTO> combos;
     private List<Long> equipmentIds;
     private String note;
 }

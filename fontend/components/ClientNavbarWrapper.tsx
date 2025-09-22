@@ -7,12 +7,12 @@ import ChatBot from "@/components/chat-bot"
 
 export default function ClientNavbarWrapper() {
   const pathname = usePathname()
-  const isAdminRoute = pathname.startsWith("/admin")
+  const isAdminOrStaffRoute = pathname.startsWith("/admin") || pathname.startsWith("/staff");
 
   return (
     <>
-      {isAdminRoute ? <AdminNavbar /> : <Navbar />}
-      {!isAdminRoute && <ChatBot />}{/* Ẩn ChatBot trong admin */}
+      {isAdminOrStaffRoute ? <AdminNavbar /> : <Navbar />}
+      {!isAdminOrStaffRoute && <ChatBot />}{/* Ẩn ChatBot trong admin */}
     </>
   )
 }

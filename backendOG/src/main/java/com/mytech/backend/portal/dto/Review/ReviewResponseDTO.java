@@ -5,6 +5,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.mytech.backend.portal.models.Review.ReviewStatus;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,4 +31,10 @@ public class ReviewResponseDTO {
 
     private String reply;
     private LocalDateTime createdAt;
+    
+    private ReviewStatus status;
+    private Long moderatedById;
+    private String moderatedByName;
+    private LocalDateTime moderatedAt;
+    private String moderationReason;
 }

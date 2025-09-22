@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 public class UserDTO {
     private Long id;
     private String name;
+    private String firstName;
+    private String lastName;
     private String email;
     private String role;
     private String avatar;
@@ -26,6 +28,4 @@ public class UserDTO {
     private Boolean agreeMarketing;
     private String address;
     private LocalDateTime CreatedAt;
-
-
 }

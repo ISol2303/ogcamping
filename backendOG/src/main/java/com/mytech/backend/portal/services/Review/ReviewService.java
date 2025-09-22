@@ -8,10 +8,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.mytech.backend.portal.dto.Review.ReviewRequestDTO;
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
+import com.mytech.backend.portal.dto.Review.ReviewStatusUpdateDTO;
+import com.mytech.backend.portal.models.Review.ReviewStatus;
 
 public interface ReviewService {
 
-    ReviewResponseDTO createReview(Long customerId, Long serviceId, ReviewRequestDTO request);
+    ReviewResponseDTO createReview(Long customerId, Long serviceId,ReviewRequestDTO request);
 
     List<ReviewResponseDTO> getReviewsForService(Long serviceId);
 
@@ -19,13 +21,18 @@ public interface ReviewService {
 
     ReviewResponseDTO replyToReview(Long reviewId, String reply);
     
- // Nhận images/videos dạng MultipartFile
+    // Nhận images/videos dạng MultipartFile
     ReviewResponseDTO createReviewWithFiles(
             Long customerId,
             Long serviceId,
+            Long bookingId,
             Integer rating,
             String content,
             List<MultipartFile> images,
             List<MultipartFile> videos
         );
+    List<ReviewResponseDTO> listAllReviews();
+    List<ReviewResponseDTO> listReviewsByStatus(ReviewStatus status);
+    ReviewResponseDTO updateReviewStatus(Long reviewId, ReviewStatusUpdateDTO dto, Long moderatorId, String moderatorName);
+
 }

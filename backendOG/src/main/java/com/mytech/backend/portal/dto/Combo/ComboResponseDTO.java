@@ -21,12 +21,14 @@ public class ComboResponseDTO {
     private String imageUrl;
     private Boolean active;
 
+
     private Double rating;
     private Integer reviewCount;
 
     private String location;
     private String duration;
-
+    private Integer minDays;
+    private Integer maxDays;
     private Integer minPeople;
     private Integer maxPeople;
 

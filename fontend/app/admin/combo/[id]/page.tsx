@@ -103,10 +103,15 @@ export default function ComboDetailPage() {
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [showMessage, setShowMessage] = useState(false)
 
   useEffect(() => {
     fetchComboData()
-    console.log(combo);
+    const success = sessionStorage.getItem("successUpdate")
+    if (success) {
+      setShowMessage(true)
+      sessionStorage.removeItem("successUpdate") // xoá ngay để tránh hiển thị lại khi reload
+    }
   }, [comboId])
   const fetchComboData = async () => {
     try {
@@ -271,6 +276,11 @@ export default function ComboDetailPage() {
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <Link href="/admin/combo" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+              <ArrowLeft className="w-5 h-5" />
+              <span>Quay lại Combo</span>
+            </Link>
+            <div className="h-6 w-px bg-gray-300"></div>
             <Link href="/admin" className="flex items-center gap-2">
               <Tent className="h-8 w-8 text-green-600" />
               <span className="text-2xl font-bold text-green-800">OG Camping Admin</span>
@@ -324,6 +334,11 @@ export default function ComboDetailPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {showMessage && (
+          <div className="mb-4 p-3 rounded bg-green-100 text-green-800 font-medium">
+            Cập nhật combo thành công!
+          </div>
+        )}
         {/* Combo Header */}
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">

@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import {jwtDecode} from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 // Kiểu dữ liệu User
 type User = {
@@ -12,8 +12,8 @@ type User = {
 };
 
 type JwtPayload = {
-  id: string;        
-  sub: string;       
+  id: string;
+  sub: string;
   role: string;
   name?: string;
   avatar?: string;
@@ -54,9 +54,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Token valid:', decoded.exp * 1000 > Date.now());
         
         if (decoded.exp * 1000 > Date.now()) {
-          const userData = {
-            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
-            email: decoded.sub, // JWT sub thường là email
+//          const userData = {
+//            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
+//            email: decoded.sub, // JWT sub thường là email
+          setUser({
+            id: decoded.id,
+            email: decoded.sub,
             role: decoded.role,
             name: decoded.name,
             avatar: decoded.avatar,
@@ -64,6 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log('Setting user from JWT token:', userData);
           setUser(userData);
           setToken(storedToken);
+          console.log(decoded)
         } else {
           console.log('Token expired, logging out');
           // Token expired → clear
@@ -109,7 +113,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (remember) {
         localStorage.setItem("authToken", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+       // localStorage.setItem("user", JSON.stringify(userData));
+        // localStorage.setItem("user", userData);
       } else {
         sessionStorage.setItem("authToken", token);
         sessionStorage.setItem("user", JSON.stringify(userData));
@@ -125,6 +130,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     localStorage.removeItem("authToken");
     sessionStorage.removeItem("authToken");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("userId");
+    localStorage.removeItem("userId");
     setUser(null);
     setToken(null);
   };

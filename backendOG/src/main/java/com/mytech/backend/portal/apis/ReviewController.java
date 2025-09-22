@@ -6,13 +6,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
-import com.mytech.backend.portal.dto.Review.ReviewRequestDTO;
+
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
+import com.mytech.backend.portal.dto.Review.ReviewStatusUpdateDTO;
 import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.Review.ReviewStatus;
 import com.mytech.backend.portal.services.UserService;
 import com.mytech.backend.portal.services.Review.ReviewService;
 
@@ -32,6 +36,7 @@ public class ReviewController {
             @PathVariable("serviceId") Long serviceId,
             @RequestPart("rating") String ratingStr,
             @RequestPart(value = "content", required = false) String content,
+            @RequestPart(value = "bookingId") String bookingIdStr,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestPart(value = "videos", required = false) List<MultipartFile> videos,
             Authentication authentication) {
@@ -48,9 +53,9 @@ public class ReviewController {
 
         Long customerId = user.getId();
         int rating = Integer.parseInt(ratingStr);
-
+        Long bookingId = Long.parseLong(bookingIdStr);
         return ResponseEntity.ok(
-                reviewService.createReviewWithFiles(customerId, serviceId,rating, content, images, videos)
+        		reviewService.createReviewWithFiles(customerId, serviceId, bookingId, rating, content, images, videos)
         );
     }
 
@@ -67,11 +72,48 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getReviewsByCustomer(customerId));
     }
 
-    // Admin reply review
+    // Staff reply review
     @PutMapping("/{reviewId}/reply")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
     public ResponseEntity<ReviewResponseDTO> replyReviews(
-            @PathVariable Long reviewId,
+    		@PathVariable("reviewId") Long reviewId,
             @RequestBody String reply) {
         return ResponseEntity.ok(reviewService.replyToReview(reviewId, reply));
+    }
+    
+    // Staff: list theo status
+    @GetMapping("/staff")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<List<ReviewResponseDTO>> listByStatus(
+            @RequestParam(value = "status", required = false) String status) {
+
+        // nếu không có param hoặc là "ALL" -> trả tất cả
+        if (status == null || status.equalsIgnoreCase("ALL")) {
+            return ResponseEntity.ok(reviewService.listAllReviews());
+        }
+
+        try {
+            ReviewStatus rs = ReviewStatus.valueOf(status.toUpperCase());
+            return ResponseEntity.ok(reviewService.listReviewsByStatus(rs));
+        } catch (IllegalArgumentException ex) {
+            // trả về 400 nếu client gửi trạng thái không hợp lệ
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status: " + status);
+        }
+    }
+    
+    // Staff: cập nhật status (duyệt / từ chối / ẩn)
+    @PutMapping("/{reviewId}/status")
+    @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
+    public ResponseEntity<ReviewResponseDTO> updateStatus(
+    		@PathVariable("reviewId") Long reviewId,
+            @RequestBody ReviewStatusUpdateDTO dto,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        User moderator = userService.findByEmail(email);
+
+        return ResponseEntity.ok(
+                reviewService.updateReviewStatus(reviewId, dto, moderator.getId(), moderator.getName())
+        );
     }
 }

@@ -29,33 +29,46 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/AuthContext"
 
 
 export default function CartPage() {
     const { cartItems, updateQuantity, removeFromCart } = useCart()
     const { user: authUser, isLoggedIn: authIsLoggedIn } = useAuth()
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    //const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    // const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    const { user, logout } = useAuth()
     const router = useRouter()
 
     const [promoCode, setPromoCode] = useState("");
     const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+
     // Load initial data
-    useEffect(() => {
-        const token = localStorage.getItem('authToken')
-        const userData = localStorage.getItem('user')
-        console.log('Initial load - token:', !!token, 'userData:', !!userData)
+//    useEffect(() => {
+//        const token = localStorage.getItem('authToken')
+//        const userData = localStorage.getItem('user')
+  //      console.log('Initial load - token:', !!token, 'userData:', !!userData)
         
-        if (token && userData) {
-            setIsLoggedIn(true)
-            setUser(JSON.parse(userData))
-        } else {
-            setIsLoggedIn(false)
-            setUser(null)
-        }
-        setIsLoading(false)
-    }, [])
+ //      if (token && userData) {
+  //          setIsLoggedIn(true)
+  //          setUser(JSON.parse(userData))
+  //      } else {
+  //          setIsLoggedIn(false)
+  //          setUser(null)
+  //      }
+  //      setIsLoading(false)
+  //  }, [])
+  
+    // useEffect(() => {
+    //     const token = localStorage.getItem('authToken')
+    //     const userData = localStorage.getItem('user')
+    //     if (token && userData) {
+    //         setIsLoggedIn(true)
+    //         setUser(JSON.parse(userData))
+    //     }
+    // }, [])
 
     // Sync with AuthContext (ưu tiên AuthContext)
     useEffect(() => {
@@ -100,7 +113,6 @@ export default function CartPage() {
             sessionStorage.removeItem('user')
         }
         setIsLoggedIn(false)
-        setUser(null)
     }
 
     // Handle dashboard navigation based on role
@@ -164,7 +176,6 @@ export default function CartPage() {
     if (cartItems.length === 0) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-
                 {/* Empty Cart */}
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
@@ -203,7 +214,7 @@ export default function CartPage() {
             alert("Giỏ hàng trống");
             return;
         }
-        if (!user || !user.id) {
+        if (!user || !user.email) {
             alert("Bạn cần đăng nhập trước khi thanh toán");
             return;
         }
@@ -216,7 +227,6 @@ export default function CartPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
 
-            {/* Breadcrumb */}
             <div className="container mx-auto px-4 py-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Link href="/" className="hover:text-green-600 transition-colors">

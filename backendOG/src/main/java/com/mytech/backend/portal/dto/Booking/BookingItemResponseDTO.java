@@ -1,10 +1,12 @@
 package com.mytech.backend.portal.dto.Booking;
 
-import lombok.*;
-
-import java.time.LocalDate;
-
 import com.mytech.backend.portal.models.Booking.ItemType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -18,10 +20,11 @@ public class BookingItemResponseDTO {
     private Long bookingId;
     private ItemType type;
     private Long numberOfPeople;
-    private LocalDate checkInDate;
-    private LocalDate checkOutDate;
+    private LocalDateTime checkInDate;
+    private LocalDateTime checkOutDate;
     private String name;
     private Integer quantity;
     private Double price;
     private Double total;
+    private boolean hasReview;
 }

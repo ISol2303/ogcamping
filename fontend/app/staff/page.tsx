@@ -44,7 +44,6 @@ import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 
-
 interface Order {
   id: string;
   orderCode: string;
@@ -1720,7 +1719,7 @@ export default function StaffDashboard({ orderId }: Props) {
 
 
                 {/* Bên phải: chi tiết đơn hàng */}
-                <div className="w-2/3">
+                <div className="w-3/3">
                   {selectedCustomerOrder ? (
                     <Card className="shadow rounded-lg overflow-hidden">
                       <CardHeader className="bg-blue-600 text-white p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1876,6 +1875,12 @@ export default function StaffDashboard({ orderId }: Props) {
               </div>
             </div>
           </TabsContent>
+
+
+
+
+
+
         </Tabs>
       </div>
     </div>

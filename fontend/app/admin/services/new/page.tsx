@@ -212,6 +212,7 @@ export default function NewPackagePage() {
     setCurrentStep((prev) => Math.min(prev + 1, 3));
   };
 
+
   // Handle navigation to the previous step
   const handleBack = () => {
     setError(null);
@@ -320,6 +321,7 @@ export default function NewPackagePage() {
           </CardContent>
         </Card>
       </div>
+
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 // Import interfaces from package.ts
 import { Category, AreaData, Equipment } from './package';
@@ -175,6 +175,26 @@ export interface ApiError {
 /**
  * Fetch the current authenticated user
  */
+export const fetchUser = async (token: string, id: number): Promise<User> => {
+  try {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const response = await axios.get(`${API_URL}/apis/v1/users/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    const status = error.response?.status || 500;
+    const data = error.response?.data || {};
+    const message = data.error || error.message || 'Failed to fetch user';
+
+    console.error('Error fetching user:', { status, message, data });
+
+    throw { status, data, message };
+  }
+};
 export const fetchCurrentUser = async (token: string, p0: number): Promise<User> => {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';

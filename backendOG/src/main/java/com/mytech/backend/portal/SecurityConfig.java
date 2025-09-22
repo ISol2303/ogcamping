@@ -25,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 
@@ -49,19 +50,19 @@ public class SecurityConfig {
 	    source.registerCorsConfiguration("/**", configuration);
 	    return source;
 	  }
-	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests((authorite) -> authorite
-				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
-
-		http.formLogin((form) -> form.defaultSuccessUrl("/"));
-
-		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-
-		http.csrf(csrf -> csrf.disable());
-
-		return http.build();
-	}
+//	@Bean
+//	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//		http.authorizeHttpRequests((authorite) -> authorite
+//				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
+//
+//		http.formLogin((form) -> form.defaultSuccessUrl("/"));
+//
+//		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+//
+//		http.csrf(csrf -> csrf.disable());
+//
+//		return http.build();
+//	}
 @Bean
 @Order(1)
 SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
@@ -86,28 +87,37 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	@Order(2)
 	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
 	    http
-	        .securityMatcher("/apis/**") // Áp dụng cho tất cả API
+	        .securityMatcher("/apis/**","/public/**","/api/**") // Áp dụng cho tất cả API
 	        .authorizeHttpRequests(auth -> auth
 	        	.requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/categories").permitAll()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears").permitAll()
 	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears/**").permitAll()
+                    .requestMatchers("/public/**").permitAll()
 	        	.requestMatchers(
 	                    "/apis/v1/login",
 	                    "/apis/v1/register",
 	                    "/apis/test/**",
 	                    "/apis/v1/services/**",
-	                    "/apis/v1/combos",
-	                    "/apis/dishes/all",
-	                    "/apis/v1/users/forgot-password",
-	                    "/apis/v1/users/reset-password",
-	                    "/apis/v1/bookings",  // Tạm thời cho phép không cần auth
             "/apis/v1/customers/by-user/**",  // Cho phép lấy customer theo user ID
             "/apis/orders/gear/**",  // Cho phép truy cập lịch sử đơn hàng gear
             "/apis/gear-orders/**",  // Cho phép truy cập API gear orders mới
             "/apis/orders/test-gear/**"  // Cho phép test API kiểm tra số lượng thiết bị
+	                    "/apis/v1/combos/**",
+	                    "/apis/dishes/all",
+	                    "/apis/v1/users/forgot-password",
+                        "/apis/v1/users/reset-password",
+                        "/apis/v1/users/**",
+                        "/apis/v1/bookings/**",
+                        "/apis/v1/admin/shifts/**",
+                        "/apis/v1/shifts/**",
+                        "/apis/v1/customers/**",
+                        "/apis/v1/payments/**"
 	                ).permitAll()
+                    .requestMatchers("/apis/v1/payments/callback").permitAll()
+                    .requestMatchers("/apis/v1/payments/callback/mobile").permitAll()
+                    .requestMatchers("/apis/v1/payments/create/mobile").permitAll()
 	            .anyRequest().authenticated()
 	        )
 	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -127,7 +137,7 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/", "/index.html", "/assets/**").permitAll()
+						.requestMatchers("/", "/index.html", "/assets/**", "/mobile-redirect.html", "/payment-redirect.html", "/app-redirect.html").permitAll()
 						.anyRequest().permitAll()
 				)
 				.csrf(csrf -> csrf.disable());
@@ -135,18 +145,23 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	}
 
 
-//	@Bean
-//    CorsFilter corsFilter() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
-//        config.addAllowedHeader("*");
-//        config.addAllowedMethod("*");
-//        config.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return new CorsFilter(source);
-//    }
+	@Bean
+    CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
+        config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
+        config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
+        config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
+        config.addAllowedOriginPattern("http://localhost:*"); // Pattern for any port
+        config.addAllowedOriginPattern("http://192.168.*:*"); // Pattern for mobile network
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
+    }
 
 	@Bean
 	AuthTokenFilter authenticationJwtTokenFilter() {

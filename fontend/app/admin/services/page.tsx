@@ -8,10 +8,151 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { fetchCurrentUser, fetchServices } from '../../api/admin';
+import { fetchUser, fetchServices } from '../../api/admin';
 import jwtDecode from 'jwt-decode';
 import { PackageFormData } from '@/app/api/package';
-import { Service } from '@/app/api/serviceApi';
+
+
+interface Stat {
+  title: string;
+  value: string;
+  icon: string;
+  color: string;
+  change: string;
+}
+
+interface Booking {
+  _id: string;
+  customer: string;
+  service: string;
+  date: string;
+  amount: number;
+  status: 'confirmed' | 'completed' | 'pending' | 'cancelled';
+}
+
+interface Staff {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'staff';
+  department: string;
+  joinDate: string;
+  status: 'active' | 'inactive';
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  location: string;
+
+  minDays: number;
+  maxDays: number;
+  minCapacity: number;
+  maxCapacity: number;
+  isExperience: boolean;
+  active: boolean | null;
+
+  averageRating: number;
+  totalReviews: number;
+  duration: string;   // ví dụ "2-3 ngày"
+  capacity: string;   // ví dụ "4-6 người"
+
+  tag: 'POPULAR' | 'NEW' | 'DISCOUNT' | null;
+  imageUrl: string;
+  extraImageUrls: string[];
+
+  highlights: string[];
+  included: string[];
+
+  allowExtraPeople: boolean | null;
+  extraFeePerPerson: number | null;
+  maxExtraPeople: number | null;
+
+  requireAdditionalSiteIfOver: boolean | null;
+
+  itinerary: Itinerary[];
+  availability: ServiceAvailability[];
+}
+
+export interface Itinerary {
+  day: number;
+  title: string;
+  activities: string[];
+}
+
+export interface ServiceAvailability {
+  id: number;
+  date: string;
+  totalSlots: number;
+  bookedSlots: number;
+}
+
+
+interface Equipment {
+  _id: string;
+  name: string;
+  category: string;
+  price_per_day: number;
+  available: number;
+  total: number;
+  status: 'available' | 'out_of_stock';
+}
+
+interface Customer {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  bookings: number;
+  spent: number;
+  created_at: string;
+}
+
+interface User {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  name: string;
+  email: string;
+  role: string | string[];
+  avatar?: string;
+  phone?: string;
+  department?: string;
+  joinDate?: string;
+  status?: string;
+  agreeMarketing?: boolean;
+  address?: string;
+  createdAt?: string;
+  token?: string;
+}
+
+interface Location {
+  _id: string;
+  name: string;
+  address: string;
+  capacity: number;
+  status: 'active' | 'inactive';
+}
+
+interface InventoryItem {
+  _id: string;
+  name: string;
+  quantity: number;
+  threshold: number;
+  status: 'sufficient' | 'low' | 'out_of_stock';
+}
+
+interface Promotion {
+  _id: string;
+  code: string;
+  discount: number;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'expired';
+}
 
 
 
@@ -30,7 +171,7 @@ export default function ServicesPage() {
           return;
         }
 
-        const userData = await fetchCurrentUser(token, 1);
+        const userData = await fetchUser(token, 1);
         if (userData.token) {
           if (localStorage.getItem('authToken')) {
             localStorage.setItem('authToken', userData.token);
@@ -155,6 +296,10 @@ export default function ServicesPage() {
           <Link href="/admin/services" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
             <Tent className="inline-block w-5 h-5 mr-2" />
             Services
+          </Link>
+          <Link href="/admin/combo" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
+            <Tent className="inline-block w-5 h-5 mr-2" />
+            Combo
           </Link>
           <Link href="/admin/equipment" className="block px-4 py-2 text-gray-600 hover:bg-gray-100">
             <Package className="inline-block w-5 h-5 mr-2" />

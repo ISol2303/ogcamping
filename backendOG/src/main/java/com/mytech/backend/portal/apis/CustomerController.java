@@ -4,7 +4,6 @@ import com.mytech.backend.portal.dto.Customer.CustomerRequestDTO;
 import com.mytech.backend.portal.dto.Customer.CustomerResponseDTO;
 import com.mytech.backend.portal.services.Customer.CustomerService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +13,8 @@ import java.util.List;
 @RequestMapping("/apis/v1/customers")
 @RequiredArgsConstructor
 public class CustomerController {
-	@Autowired
-    private CustomerService customerService;
+
+    private final CustomerService customerService;
 
     @GetMapping("/{id}")
     public ResponseEntity<CustomerResponseDTO> getCustomer(@PathVariable Long id) {

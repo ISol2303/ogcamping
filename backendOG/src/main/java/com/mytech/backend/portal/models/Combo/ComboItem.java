@@ -19,5 +19,7 @@ public class ComboItem {
     @ManyToOne @JoinColumn(name="service_id", nullable=false)
     private Service service;
 
+    private Double price;
+
     private Integer quantity;   // nếu cần
 }

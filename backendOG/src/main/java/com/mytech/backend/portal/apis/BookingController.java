@@ -1,13 +1,22 @@
 package com.mytech.backend.portal.apis;
 
+import com.mytech.backend.portal.dto.Booking.BookingGetByServiceDTO;
 import com.mytech.backend.portal.dto.Booking.BookingRequestDTO;
 import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
+import com.mytech.backend.portal.dto.Booking.BookingStatsDTO;
 import com.mytech.backend.portal.dto.Rating.ReviewRequestDTO;
+import com.mytech.backend.portal.dto.Shift.AssignBookingRequest;
+import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
 import com.mytech.backend.portal.models.Combo.Combo;
+import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.repositories.BookingItemRepository;
+import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.ComboRepository;
+import com.mytech.backend.portal.repositories.UserRepository;
 import com.mytech.backend.portal.services.Booking.BookingService;
+import com.mytech.backend.portal.services.Shift.ShiftService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +33,15 @@ public class BookingController {
     private final BookingService bookingService;
     private final ComboRepository comboRepository;
     private final BookingItemRepository bookingItemRepository;
+    private final ShiftService shiftService; // dùng method assignBookingManually
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
+    @GetMapping
+    public ResponseEntity<List<BookingResponseDTO>> getAllBookings() {
+        List<BookingResponseDTO> bookings = bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
+    }
     @PostMapping
     public ResponseEntity<BookingResponseDTO> placeBooking(
             @RequestParam(name = "customerId") Long customerId,
@@ -102,6 +119,63 @@ public class BookingController {
     public ResponseEntity<Long> getTotalConfirmedComboBookings() {
         long total = bookingService.getTotalConfirmedBookingsFromAllCombos();
         return ResponseEntity.ok(total);
+    }
+    // Lấy tất cả booking đã đặt service
+    @GetMapping("/service/{serviceId}")
+    public ResponseEntity<List<BookingGetByServiceDTO>> getBookingsByService(@PathVariable Long serviceId) {
+        List<BookingGetByServiceDTO> bookings = bookingService.getBookingsByService(serviceId);
+        return ResponseEntity.ok(bookings);
+    }
+    @GetMapping("/services/{serviceId}")
+    public ResponseEntity<BookingStatsDTO> getStats(@PathVariable Long serviceId) {
+        return ResponseEntity.ok(bookingService.getStatsByService(serviceId));
+    }
+
+    // Cập nhật trạng thái booking
+    @PutMapping("/{id}/status")
+    public ResponseEntity<BookingResponseDTO> updateBookingStatus(
+            @PathVariable("id") Long bookingId,
+            @RequestParam("status") BookingStatus status) {
+
+        BookingResponseDTO updated = bookingService.updateBookingStatus(bookingId, status);
+        return ResponseEntity.ok(updated);
+    }
+
+    // Cập nhật ghi chú nội bộ
+    @PutMapping("/{id}/internal-notes")
+    public ResponseEntity<BookingResponseDTO> updateInternalNotes(
+            @PathVariable("id") Long bookingId,
+            @RequestBody String notes) {
+
+        BookingResponseDTO updated = bookingService.updateInternalNotes(bookingId, notes);
+        return ResponseEntity.ok(updated);
+    }
+    @PutMapping("/{id}/checkin")
+    public ResponseEntity<BookingResponseDTO> confirmCheckIn(@PathVariable Long id) {
+        Booking booking = bookingService.confirmCheckIn(id);
+        return ResponseEntity.ok(bookingService.mapToDTO(booking));
+    }
+
+    @PutMapping("/{id}/checkout")
+    public ResponseEntity<BookingResponseDTO> confirmCheckOut(@PathVariable Long id) {
+        Booking booking = bookingService.confirmCheckOut(id);
+        return ResponseEntity.ok(bookingService.mapToDTO(booking));
+    }
+    // Admin gán nhân viên cho booking
+    @PutMapping("/{bookingId}/assign")
+    @Transactional
+    public ResponseEntity<?> assignBooking(@PathVariable Long bookingId, @RequestBody AssignBookingRequest req) {
+        // sử dụng ShiftService.assignBookingManually
+        Booking updated = shiftService.assignBookingManually(bookingId, req.getStaffId());
+        return ResponseEntity.ok(updated);
+    }
+
+    // Lấy booking theo nhân viên
+    @GetMapping("/by-staff/{staffId}")
+    public ResponseEntity<List<Booking>> getBookingsByStaff(@PathVariable Long staffId) {
+        User staff = userRepository.findById(staffId).orElseThrow(() -> new RuntimeException("Staff not found"));
+        List<Booking> list = bookingRepository.findByAssignedStaff(staff);
+        return ResponseEntity.ok(list);
     }
 
 }

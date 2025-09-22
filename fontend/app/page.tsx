@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Tent, Mountain, Users, Star, MessageCircle, Calendar, Shield, Zap, ArrowRight, Sparkles, Settings, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useAuth } from "@/context/AuthContext"
+import {Dialog, DialogContent, DialogHeader,DialogTitle, DialogFooter} from "@/components/ui/dialog"
 interface Service {
   id: number
   name: string
@@ -31,23 +32,16 @@ interface Blog {
 }
 
 export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
+  const {user, isLoggedIn, token}= useAuth()
   const [services, setServices] = useState<Service[]>([]) // lưu dịch vụ từ API
+  const [showReviewPopup, setShowReviewPopup] = useState(false)
+  const [serviceToReview, setServiceToReview] = useState<number | null>(null)
   const router = useRouter()
   
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
   // Kiểm tra login và fetch service
   useEffect(() => {
-    // check login từ localStorage
-    const token = localStorage.getItem("authToken")
-    const userData = localStorage.getItem("user")
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-
     // fetch services từ API
     const fetchServices = async () => {
       try {
@@ -68,26 +62,9 @@ export default function HomePage() {
     DISCOUNT: { text: "Khuyến mãi", className: "bg-yellow-500 hover:bg-yellow-600" },
   }
 
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem("authToken")
-    localStorage.removeItem("user")
-    setIsLoggedIn(false)
-    setUser(null)
-  }
   const handleGoToCart = () => {
     router.push("/cart");
   };
-  // Chuyển dashboard theo role
-  const handleDashboardNavigation = () => {
-    if (user?.role === "ADMIN") {
-      router.push("/admin")
-    } else if (user?.role === "STAFF") {
-      router.push("/staff")
-    } else {
-      router.push("/dashboard")
-    }
-  }
   //BLOGS
   const handleBlogsNavigation = () => {
     if (user?.role === "ADMIN") {
@@ -122,8 +99,121 @@ export default function HomePage() {
     return [validDuration, validCapacity].filter(Boolean).join(" | ")
   }
 
+  // --- CHANGED: Fetch booking gần nhất đã hoàn thành trong 7 ngày để hỏi review ---
+  useEffect(() => {
+    if (!isLoggedIn || !user) return
+
+    let cancelled = false // --- ADDED: avoid setState after unmount
+
+    const fetchBookings = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/apis/v1/bookings/customer/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        if (!res.ok) {
+          console.error("Failed to fetch bookings", res.status)
+          return
+        }
+
+        const bookings = await res.json()
+        const now = new Date()
+
+        // Lọc booking thỏa điều kiện:
+        // - completed
+        // - có checkOutDate
+        // - booking.hasReview === false (nếu true thì đã review toàn bộ booking => KHÔNG show popup)
+        // - checkout < now && trong 7 ngày
+        // - booking phải có ít nhất 1 service item chưa được review (item.hasReview === false OR item.hasReview undefined)
+        const candidates = (bookings || [])
+          .filter((b: any) => {
+            if (b.status !== "COMPLETED") return false
+            if (!b.checkOutDate) return false
+            // --- CHANGED: if booking-level hasReview true => skip ---
+            if (b.hasReview === true) return false
+
+            const checkout = new Date(b.checkOutDate)
+            if (isNaN(checkout.getTime())) return false
+
+            const diffDays = (now.getTime() - checkout.getTime()) / (1000 * 60 * 60 * 24)
+            if (!(checkout < now && diffDays <= 7)) return false
+
+            // ensure there's at least one service item in booking that has not been reviewed yet
+            if (!Array.isArray(b.services) || b.services.length === 0) return false
+
+            const hasUnreviewedService = b.services.some((s: any) => {
+              // if item-level hasReview exists, respect it; otherwise assume not reviewed
+              const itemHasReview = typeof s.hasReview !== "undefined" ? s.hasReview : false
+              return itemHasReview === false
+            })
+
+            return hasUnreviewedService
+          })
+          // thêm trường parsed date để sắp xếp
+          .map((b: any) => ({ ...b, __checkoutDate: new Date(b.checkOutDate) }))
+          // sắp xếp checkout gần nhất (mới nhất) lên trước
+          .sort((a: any, b: any) => b.__checkoutDate.getTime() - a.__checkoutDate.getTime())
+
+        if (cancelled) return
+
+        if (candidates.length > 0) {
+          const recent = candidates[0]
+          // tìm service item đầu tiên chưa review trong booking
+          const svcItem = recent.services.find((s: any) => {
+            const itemHasReview = typeof s.hasReview !== "undefined" ? s.hasReview : false
+            return itemHasReview === false
+          })
+
+          if (svcItem) {
+            setServiceToReview(svcItem.serviceId)
+            setShowReviewPopup(true)
+          } else {
+            // fallback: không có item phù hợp (hiếm xảy ra vì đã filter trước)
+            setShowReviewPopup(false)
+          }
+        } else {
+          setShowReviewPopup(false)
+        }
+      } catch (err) {
+        console.error("Error fetching bookings:", err)
+        if (!cancelled) setShowReviewPopup(false)
+      }
+    }
+
+    fetchBookings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoggedIn, user, token]) // --- CHANGED: thêm token vào deps để fetch lại khi token thay đổi
+
+
+  const handleGoReview = () => {
+    if (serviceToReview) {
+      setShowReviewPopup(false)
+      router.push(`/services/${serviceToReview}#reviews`); // chuyển đến phần reviews của dịch vụ
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* Popup mời review */}
+      <Dialog open={showReviewPopup} onOpenChange={setShowReviewPopup}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Chia sẻ trải nghiệm của bạn</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-600">
+            Bạn vừa hoàn thành một chuyến cắm trại gần đây. Hãy để lại đánh giá để giúp chúng tôi cải thiện dịch vụ nhé!
+          </p>
+          <DialogFooter className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={() => setShowReviewPopup(false)}>
+              Để sau
+            </Button>
+            <Button onClick={handleGoReview}>Viết đánh giá</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Hero Section */}
       <section className="py-24 px-4 relative overflow-hidden">
         {/* Background decorations */}
