@@ -7,8 +7,8 @@ class BookingRepository {
   BookingRepository(this._apiService);
 
   Future<Booking> createBooking({
-    required String userId,
-    required List<BookingItem> items,
+    required String customerId,
+    required List<dynamic> items, // Accept dynamic items (CartItem)
     required DateTime checkInDate,
     required DateTime checkOutDate,
     required int participants,
@@ -16,25 +16,88 @@ class BookingRepository {
     String? notes,
   }) async {
     try {
+      // Separate services and combos like in NextJS code
+      final services =
+          items.where((item) => item.type == BookingType.SERVICE).map((item) {
+        // Extract numeric ID from composite ID (e.g., "1_2025-09-22" -> 1)
+        final numericId = _extractNumericId(item.id);
+        print('Service item.id: ${item.id} -> numericId: $numericId');
+
+        // Get numberOfPeople from CartItem field
+        final numberOfPeople = item.numberOfPeople ?? participants;
+        print('Service numberOfPeople: $numberOfPeople');
+
+        // Use dates from CartItem if available, otherwise use method parameters
+        final itemCheckInDate = item.checkInDate ?? checkInDate;
+        final itemCheckOutDate = item.checkOutDate ?? checkOutDate;
+        
+        print('Service dates - CheckIn: $itemCheckInDate, CheckOut: $itemCheckOutDate');
+        
+        return {
+          'serviceId': numericId,
+          'checkInDate': '${itemCheckInDate.toIso8601String().split('T')[0]}T08:00:00',
+          'checkOutDate': '${itemCheckOutDate.toIso8601String().split('T')[0]}T12:00:00',
+          'numberOfPeople': numberOfPeople,
+        };
+      }).toList();
+
+      final combos =
+          items.where((item) => item.type == BookingType.COMBO).map((item) {
+        // Extract numeric ID from composite ID
+        final numericId = _extractNumericId(item.id);
+        print('Combo item.id: ${item.id} -> numericId: $numericId');
+
+        // Use dates from CartItem if available, otherwise use method parameters
+        final itemCheckInDate = item.checkInDate ?? checkInDate;
+        final itemCheckOutDate = item.checkOutDate ?? checkOutDate;
+        
+        print('Combo dates - CheckIn: $itemCheckInDate, CheckOut: $itemCheckOutDate');
+        
+        return {
+          'comboId': numericId,
+          'quantity': item.quantity,
+          'checkInDate': '${itemCheckInDate.toIso8601String().split('T')[0]}T08:00:00',
+          'checkOutDate': '${itemCheckOutDate.toIso8601String().split('T')[0]}T12:00:00',
+          'extraPeople': 0,
+        };
+      }).toList();
+
       final bookingData = {
-        'userId': userId,
-        'items': items.map((item) => item.toJson()).toList(),
-        'checkInDate': checkInDate.toIso8601String(),
-        'checkOutDate': checkOutDate.toIso8601String(),
-        'participants': participants,
-        'totalAmount': totalAmount,
-        'notes': notes,
+        'services': services,
+        'combos': combos,
+        'note': notes ?? '',
       };
 
-      final response = await _apiService.createBooking(bookingData);
+      print('Creating booking with data: $bookingData');
+      print('CustomerId: $customerId');
 
-      if (response['success'] == true) {
-        return Booking.fromJson(response['booking']);
-      }
+      final response = await _apiService.createBookingWithCustomerId(
+          customerId, bookingData);
 
-      throw Exception('Failed to create booking');
+      print('Booking response: $response');
+
+      // Backend trả về booking object trực tiếp, không wrap trong success
+      return Booking.fromJson(response);
     } catch (e) {
+      print('BookingRepository.createBooking error: $e');
       throw Exception('Failed to create booking: $e');
+    }
+  }
+
+  // Helper method to extract numeric ID from composite ID
+  int _extractNumericId(String compositeId) {
+    try {
+      // Handle composite IDs like "1_2025-09-22" -> extract "1"
+      if (compositeId.contains('_')) {
+        final parts = compositeId.split('_');
+        return int.parse(parts[0]);
+      }
+      // Handle simple numeric IDs
+      return int.parse(compositeId);
+    } catch (e) {
+      print('Error extracting numeric ID from: $compositeId, error: $e');
+      // Return 0 as fallback, but this should be handled properly
+      return 0;
     }
   }
 

@@ -2,6 +2,7 @@ package com.mytech.backend.portal.services.Customer;
 
 import com.mytech.backend.portal.dto.Customer.CustomerRequestDTO;
 import com.mytech.backend.portal.dto.Customer.CustomerResponseDTO;
+import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import lombok.RequiredArgsConstructor;
@@ -55,16 +56,28 @@ public class CustomerServiceImpl implements CustomerService {
                 .toList();
     }
 
-    public CustomerResponseDTO mapToDTO(Customer customer) {
-        CustomerResponseDTO dto = new CustomerResponseDTO();
-        dto.setId(customer.getId());
-        dto.setName(customer.getName());
-        dto.setFirstName(customer.getFirstName());
-        dto.setLastName(customer.getLastName());
-        dto.setEmail(customer.getEmail());
-        dto.setPhone(customer.getPhone());
-        dto.setAddress(customer.getAddress());
-        dto.setUserId(customer.getUser() != null ? customer.getUser().getId() : null);
-        return dto;
+    private CustomerResponseDTO mapToDTO(Customer customer) {
+        return CustomerResponseDTO.builder()
+                .id(customer.getId())
+                .name(customer.getName())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .email(customer.getEmail())
+                .phone(customer.getPhone())
+                .address(customer.getAddress())
+                .userId(customer.getUser() != null ? customer.getUser().getId() : null)
+                .user(customer.getUser() != null ? UserDTO.builder()
+                        .id(customer.getUser().getId())
+                        .name(customer.getUser().getName())
+                        .email(customer.getUser().getEmail())
+                        .phone(customer.getUser().getPhone())
+                        .role(customer.getUser().getRole().name())
+                        .avatar(customer.getUser().getAvatar())
+                        .status(customer.getUser().getStatus().name())
+                        .agreeMarketing(customer.getUser().getAgreeMarketing())
+                        .CreatedAt(customer.getUser().getCreatedAt())
+                        .build() : null)
+                .build();
     }
+
 }

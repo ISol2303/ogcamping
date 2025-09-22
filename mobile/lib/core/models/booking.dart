@@ -19,14 +19,31 @@ class BookingItem {
 
   factory BookingItem.fromJson(Map<String, dynamic> json) {
     return BookingItem(
-      id: json['id'],
-      type: BookingType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type'],
-      ),
-      quantity: json['quantity'],
-      price: json['price'].toDouble(),
-      details: Map<String, dynamic>.from(json['details']),
+      id: json['id'] ?? '',
+      type: _parseBookingType(json['type']),
+      quantity: json['quantity'] ?? 1,
+      price: (json['price'] ?? 0).toDouble(),
+      details: json['details'] != null 
+          ? Map<String, dynamic>.from(json['details'])
+          : <String, dynamic>{},
     );
+  }
+  
+  static BookingType _parseBookingType(dynamic type) {
+    if (type == null) return BookingType.SERVICE;
+    
+    final typeStr = type.toString().toUpperCase();
+    switch (typeStr) {
+      case 'SERVICE':
+        return BookingType.SERVICE;
+      case 'EQUIPMENT':
+        return BookingType.EQUIPMENT;
+      case 'COMBO':
+        return BookingType.COMBO;
+      default:
+        print('Unknown booking type: $type, defaulting to SERVICE');
+        return BookingType.SERVICE;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -70,25 +87,68 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
-    return Booking(
-      id: json['id'],
-      userId: json['userId'],
-      items: (json['items'] as List)
-          .map((item) => BookingItem.fromJson(item))
-          .toList(),
-      checkInDate: DateTime.parse(json['checkInDate']),
-      checkOutDate: DateTime.parse(json['checkOutDate']),
-      participants: json['participants'],
-      totalAmount: json['totalAmount'].toDouble(),
-      status: BookingStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-      ),
-      notes: json['notes'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt:
-          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      paymentId: json['paymentId'],
-    );
+    print('Parsing Booking from JSON: $json');
+    
+    try {
+      return Booking(
+        id: json['id']?.toString() ?? '',
+        userId: json['userId']?.toString() ?? json['customerId']?.toString() ?? '',
+        items: json['items'] != null 
+            ? (json['items'] as List).map((item) {
+                try {
+                  return BookingItem.fromJson(item);
+                } catch (e) {
+                  print('Error parsing BookingItem: $e, item: $item');
+                  return BookingItem(
+                    id: item['id'] ?? '',
+                    type: BookingType.SERVICE,
+                    quantity: 1,
+                    price: 0.0,
+                    details: {},
+                  );
+                }
+              }).toList()
+            : <BookingItem>[],
+        checkInDate: json['checkInDate'] != null 
+            ? DateTime.tryParse(json['checkInDate']) ?? DateTime.now()
+            : DateTime.now(),
+        checkOutDate: json['checkOutDate'] != null 
+            ? DateTime.tryParse(json['checkOutDate']) ?? DateTime.now()
+            : DateTime.now(),
+        participants: json['participants'] ?? json['numberOfPeople'] ?? 1,
+        totalAmount: (json['totalAmount'] ?? json['total'] ?? 0).toDouble(),
+        status: _parseStatus(json['status']),
+        notes: json['notes'] ?? json['note'],
+        createdAt: json['createdAt'] != null 
+            ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null 
+            ? DateTime.tryParse(json['updatedAt'])
+            : null,
+        paymentId: json['paymentId']?.toString(),
+      );
+    } catch (e) {
+      print('Error parsing Booking: $e');
+      rethrow;
+    }
+  }
+
+  static BookingStatus _parseStatus(dynamic status) {
+    if (status == null) return BookingStatus.pending;
+    
+    final statusStr = status.toString().toUpperCase();
+    switch (statusStr) {
+      case 'PENDING':
+        return BookingStatus.pending;
+      case 'CONFIRMED':
+        return BookingStatus.confirmed;
+      case 'CANCELLED':
+        return BookingStatus.cancelled;
+      case 'COMPLETED':
+        return BookingStatus.completed;
+      default:
+        return BookingStatus.pending;
+    }
   }
 
   Map<String, dynamic> toJson() {

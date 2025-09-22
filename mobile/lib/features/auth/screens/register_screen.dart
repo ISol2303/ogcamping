@@ -44,14 +44,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.register(
-      _emailController.text.trim(),
-      _passwordController.text,
-      _fullNameController.text.trim(),
+    final success = await authProvider.registerWithEmail(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      name: _fullNameController.text.trim(),
     );
 
-    if (success && mounted) {
-      context.goNamed(AppRoutes.home);
+    if (mounted) {
+      if (success) {
+        context.goNamed(AppRoutes.home);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Đăng ký thất bại'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

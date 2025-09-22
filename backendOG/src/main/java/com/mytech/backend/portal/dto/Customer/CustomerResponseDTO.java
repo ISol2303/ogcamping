@@ -1,4 +1,5 @@
 package com.mytech.backend.portal.dto.Customer;
+import com.mytech.backend.portal.dto.UserDTO;
 import lombok.*;
 
 @Data
@@ -13,5 +14,6 @@ public class CustomerResponseDTO {
     private String email;
     private String phone;
     private String address;
-    private Long userId;
+    private Long userId;  
+    private UserDTO user;
 }

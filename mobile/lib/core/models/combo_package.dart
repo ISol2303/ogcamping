@@ -1,61 +1,105 @@
+class ComboItem {
+  final int serviceId;
+  final String serviceName;
+  final int quantity;
+  final double price;
+
+  ComboItem({
+    required this.serviceId,
+    required this.serviceName,
+    required this.quantity,
+    required this.price,
+  });
+
+  factory ComboItem.fromJson(Map<String, dynamic> json) {
+    return ComboItem(
+      serviceId: json['serviceId'] ?? 0,
+      serviceName: json['serviceName'] ?? '',
+      quantity: json['quantity'] ?? 1,
+      price: (json['price'] ?? 0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'serviceId': serviceId,
+      'serviceName': serviceName,
+      'quantity': quantity,
+      'price': price,
+    };
+  }
+}
+
 class ComboPackage {
-  final String id;
+  final int id;
   final String name;
   final String description;
-  final List<String> images;
-  final double originalPrice;
-  final double discountedPrice;
-  final double discountPercentage;
-  final List<String> serviceIds;
-  final List<String> equipmentIds;
-  final List<String> includedMeals;
-  final List<String> activities;
-  final int maxParticipants;
-  final int durationDays;
-  final bool isPopular;
-  final double rating;
-  final int reviewCount;
-  final DateTime createdAt;
+  final double price;
+  final double? originalPrice;
+  final int discount;
+  final String imageUrl;
+  final bool active;
+  final double? rating;
+  final int? reviewCount;
+  final String location;
+  final String duration;
+  final int minDays;
+  final int maxDays;
+  final int? minPeople;
+  final int? maxPeople;
+  final List<String> highlights;
+  final List<String> tags;
+  final List<ComboItem> items;
+  final List<String> equipment;
+  final List<String> foods;
 
   ComboPackage({
     required this.id,
     required this.name,
     required this.description,
-    required this.images,
-    required this.originalPrice,
-    required this.discountedPrice,
-    required this.discountPercentage,
-    required this.serviceIds,
-    required this.equipmentIds,
-    required this.includedMeals,
-    required this.activities,
-    required this.maxParticipants,
-    required this.durationDays,
-    required this.isPopular,
-    required this.rating,
-    required this.reviewCount,
-    required this.createdAt,
+    required this.price,
+    this.originalPrice,
+    required this.discount,
+    required this.imageUrl,
+    required this.active,
+    this.rating,
+    this.reviewCount,
+    required this.location,
+    required this.duration,
+    required this.minDays,
+    required this.maxDays,
+    this.minPeople,
+    this.maxPeople,
+    required this.highlights,
+    required this.tags,
+    required this.items,
+    required this.equipment,
+    required this.foods,
   });
 
   factory ComboPackage.fromJson(Map<String, dynamic> json) {
     return ComboPackage(
       id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      images: List<String>.from(json['images']),
-      originalPrice: json['originalPrice'].toDouble(),
-      discountedPrice: json['discountedPrice'].toDouble(),
-      discountPercentage: json['discountPercentage'].toDouble(),
-      serviceIds: List<String>.from(json['serviceIds']),
-      equipmentIds: List<String>.from(json['equipmentIds']),
-      includedMeals: List<String>.from(json['includedMeals']),
-      activities: List<String>.from(json['activities']),
-      maxParticipants: json['maxParticipants'],
-      durationDays: json['durationDays'],
-      isPopular: json['isPopular'],
-      rating: json['rating'].toDouble(),
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      price: (json['price'] ?? 0).toDouble(),
+      originalPrice: json['originalPrice']?.toDouble(),
+      discount: json['discount'] ?? 0,
+      imageUrl: json['imageUrl'] ?? '',
+      active: json['active'] ?? true,
+      rating: json['rating']?.toDouble(),
       reviewCount: json['reviewCount'],
-      createdAt: DateTime.parse(json['createdAt']),
+      location: json['location'] ?? '',
+      duration: json['duration'] ?? '',
+      minDays: json['minDays'] ?? 1,
+      maxDays: json['maxDays'] ?? 1,
+      minPeople: json['minPeople'],
+      maxPeople: json['maxPeople'],
+      highlights: List<String>.from(json['highlights'] ?? []),
+      tags: List<String>.from(json['tags'] ?? []),
+      items: (json['items'] as List? ?? []).map((item) => ComboItem.fromJson(item)).toList(),
+      equipment: List<String>.from(json['equipment'] ?? []),
+      foods: List<String>.from(json['foods'] ?? []),
     );
   }
 
@@ -64,22 +108,56 @@ class ComboPackage {
       'id': id,
       'name': name,
       'description': description,
-      'images': images,
+      'price': price,
       'originalPrice': originalPrice,
-      'discountedPrice': discountedPrice,
-      'discountPercentage': discountPercentage,
-      'serviceIds': serviceIds,
-      'equipmentIds': equipmentIds,
-      'includedMeals': includedMeals,
-      'activities': activities,
-      'maxParticipants': maxParticipants,
-      'durationDays': durationDays,
-      'isPopular': isPopular,
+      'discount': discount,
+      'imageUrl': imageUrl,
+      'active': active,
       'rating': rating,
       'reviewCount': reviewCount,
-      'createdAt': createdAt.toIso8601String(),
+      'location': location,
+      'duration': duration,
+      'minDays': minDays,
+      'maxDays': maxDays,
+      'minPeople': minPeople,
+      'maxPeople': maxPeople,
+      'highlights': highlights,
+      'tags': tags,
+      'items': items.map((item) => item.toJson()).toList(),
+      'equipment': equipment,
+      'foods': foods,
     };
   }
 
-  double get savings => originalPrice - discountedPrice;
+  double get discountedPrice {
+    if (originalPrice != null) {
+      return originalPrice! * (1 - discount / 100);
+    }
+    return price;
+  }
+
+  double get savings {
+    if (originalPrice != null) {
+      return originalPrice! - discountedPrice;
+    }
+    return 0;
+  }
+
+  bool get isPopular => discount > 10 || (rating != null && rating! >= 4.5);
+
+  String get fullImageUrl {
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    return 'http://192.168.56.1:8080$imageUrl';
+  }
+
+  // Backward compatibility getters
+  int get durationDays => maxDays;
+  int get maxParticipants => maxPeople ?? 8;
+  List<String> get activities => highlights;
+  List<String> get includedMeals => foods;
+  double get discountPercentage => discount.toDouble();
+  List<String> get serviceIds => items.map((item) => item.serviceId.toString()).toList();
+  List<String> get equipmentIds => equipment;
 }

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success - Opening App...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .manual-link {
+            margin-top: 2rem;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>Payment Successful!</h2>
+        <p>Opening OG Camping app...</p>
+        <p id="status">Redirecting...</p>
+        
+        <div id="manual" style="display: none;">
+            <p>If the app doesn't open automatically:</p>
+            <a href="#" id="openApp" class="manual-link">Open OG Camping App</a>
+            <br><br>
+            <a href="#" id="directLink" class="manual-link">Try Direct Link</a>
+            <br><br>
+            <p id="debugInfo" style="font-size: 12px; color: #ccc;"></p>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookingId = urlParams.get('bookingId') || '0';
+        const status = urlParams.get('status') || 'success';
+        const txnRef = urlParams.get('txnRef') || '';
+        const error = urlParams.get('error') || '';
+
+        // Build app URL
+        let appUrl = `ogcamping://payment/result?bookingId=${bookingId}&status=${status}`;
+        if (txnRef) appUrl += `&txnRef=${txnRef}`;
+        if (error) appUrl += `&error=${encodeURIComponent(error)}`;
+
+        console.log('App URL:', appUrl);
+        
+        // Show debug info
+        document.getElementById('debugInfo').textContent = `Debug: ${appUrl}`;
+
+        // Function to attempt opening the app
+        function openApp() {
+            console.log('Attempting to open app...');
+            console.log('App URL:', appUrl);
+            
+            // Method 1: Try window.open (better for mobile browsers)
+            try {
+                const popup = window.open(appUrl, '_blank');
+                console.log('Tried window.open:', appUrl);
+                
+                // Close popup if it opened (means app didn't handle the URL)
+                setTimeout(() => {
+                    if (popup && !popup.closed) {
+                        popup.close();
+                    }
+                }, 1000);
+            } catch (e) {
+                console.error('window.open failed:', e);
+            }
+            
+            // Method 2: Try Intent URL for Android (more reliable)
+            setTimeout(() => {
+                try {
+                    const intentUrl = `intent://payment/result?bookingId=${bookingId}&status=${status}&txnRef=${txnRef}#Intent;scheme=ogcamping;package=com.example.og_camping_private;end`;
+                    console.log('Trying Intent URL:', intentUrl);
+                    const popup2 = window.open(intentUrl, '_blank');
+                    
+                    setTimeout(() => {
+                        if (popup2 && !popup2.closed) {
+                            popup2.close();
+                        }
+                    }, 1000);
+                } catch (e) {
+                    console.error('Intent URL failed:', e);
+                }
+            }, 200);
+            
+            // Method 3: Try window.location as fallback
+            setTimeout(() => {
+                try {
+                    window.location.href = appUrl;
+                    console.log('Tried window.location:', appUrl);
+                } catch (e) {
+                    console.error('window.location failed:', e);
+                }
+            }, 400);
+        }
+
+        // Try to open app immediately (may be blocked by Chrome)
+        openApp();
+
+        // Show manual option after 2 seconds (faster for better UX)
+        setTimeout(() => {
+            document.getElementById('status').textContent = 'If app didn\'t open, click below:';
+            document.getElementById('manual').style.display = 'block';
+        }, 2000);
+        
+        // Also try opening app on any user interaction
+        let hasUserInteracted = false;
+        document.addEventListener('click', function() {
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                console.log('User clicked, trying to open app again');
+                openApp();
+            }
+        });
+        
+        document.addEventListener('touchstart', function() {
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                console.log('User touched, trying to open app again');
+                openApp();
+            }
+        });
+
+        // Manual open button
+        document.getElementById('openApp').addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Manual button clicked - preventing default and calling openApp');
+            
+            // Update UI immediately
+            document.getElementById('status').textContent = 'Trying to open app...';
+            
+            // Call openApp function
+            openApp();
+            
+            // Prevent any form of page reload
+            return false;
+        });
+
+        // Direct link button (creates actual link element)
+        document.getElementById('directLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Direct link button clicked');
+            
+            // Create a real link element and click it
+            const link = document.createElement('a');
+            link.href = appUrl;
+            link.target = '_blank';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            // Trigger click
+            link.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(link);
+            }, 100);
+            
+            document.getElementById('status').textContent = 'Tried direct link method';
+            return false;
+        });
+
+        // Also try opening app when page becomes visible (user switches back)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                openApp();
+            }
+        });
+    </script>
+</body>
+</html>

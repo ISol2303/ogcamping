@@ -83,7 +83,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   ),
                 ),
               ),
-              
+
               // Filter Chips
               SizedBox(
                 height: 50,
@@ -103,7 +103,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       label: const Text('Camping'),
                       selected: _selectedType == ServiceType.camping,
                       onSelected: (selected) {
-                        _onTypeFilterChanged(selected ? ServiceType.camping : null);
+                        _onTypeFilterChanged(
+                            selected ? ServiceType.camping : null);
                       },
                     ),
                     const SizedBox(width: 8),
@@ -111,7 +112,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       label: const Text('Glamping'),
                       selected: _selectedType == ServiceType.glamping,
                       onSelected: (selected) {
-                        _onTypeFilterChanged(selected ? ServiceType.glamping : null);
+                        _onTypeFilterChanged(
+                            selected ? ServiceType.glamping : null);
                       },
                     ),
                   ],
@@ -124,7 +126,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
       ),
       body: Consumer<ServicesProvider>(
         builder: (context, servicesProvider, child) {
-          if (servicesProvider.servicesLoading && servicesProvider.services.isEmpty) {
+          if (servicesProvider.servicesLoading &&
+              servicesProvider.services.isEmpty) {
             return const LoadingWidget(message: 'Đang tải dịch vụ...');
           }
 
@@ -172,7 +175,7 @@ class _ServiceCard extends StatelessWidget {
       child: InkWell(
         onTap: () => context.pushNamed(
           AppRoutes.serviceDetail,
-          pathParameters: {'id': service.id},
+          pathParameters: {'id': service.id.toString()},
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,18 +189,37 @@ class _ServiceCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.nature,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  // Service Image
+                  if (service.imageUrl.isNotEmpty)
+                    Image.network(
+                      'http://192.168.56.1:8080${service.imageUrl}',
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.nature,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Center(
+                      child: Icon(
+                        Icons.nature,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
                   Positioned(
                     top: 12,
                     right: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: service.type == ServiceType.glamping
                             ? Colors.purple
@@ -205,7 +227,9 @@ class _ServiceCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        service.type == ServiceType.glamping ? 'Glamping' : 'Camping',
+                        service.type == ServiceType.glamping
+                            ? 'Glamping'
+                            : 'Camping',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -219,7 +243,8 @@ class _ServiceCard extends StatelessWidget {
                       top: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(12),
@@ -237,7 +262,7 @@ class _ServiceCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Content
             Padding(
               padding: const EdgeInsets.all(16),
@@ -251,9 +276,10 @@ class _ServiceCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           service.name,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -263,43 +289,54 @@ class _ServiceCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             service.rating.toString(),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                           ),
                           Text(
                             ' (${service.reviewCount})',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Location
                   Row(
                     children: [
                       Icon(
                         Icons.location_on,
                         size: 16,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         service.location,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Description
                   Text(
                     service.description,
@@ -307,16 +344,17 @@ class _ServiceCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Amenities
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
                     children: service.amenities.take(3).map((amenity) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(12),
@@ -324,16 +362,18 @@ class _ServiceCard extends StatelessWidget {
                         child: Text(
                           amenity,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
                             fontSize: 12,
                           ),
                         ),
                       );
                     }).toList(),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Price and Capacity
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -343,16 +383,23 @@ class _ServiceCard extends StatelessWidget {
                         children: [
                           Text(
                             '${service.pricePerNight.toStringAsFixed(0)}đ',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                           Text(
-                            'mỗi đêm',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            _getDurationText(service),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                           ),
                         ],
                       ),
@@ -361,14 +408,21 @@ class _ServiceCard extends StatelessWidget {
                           Icon(
                             Icons.people,
                             size: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Tối đa ${service.maxCapacity} người',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                           ),
                         ],
                       ),
@@ -381,5 +435,22 @@ class _ServiceCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getDurationText(CampingService service) {
+    if (service.maxDays == 0) {
+      return 'mỗi đêm';
+    }
+    
+    final days = service.maxDays;
+    final nights = days - 1;
+    
+    if (days == 1) {
+      return 'trong ngày';
+    } else if (days == 2) {
+      return '2 ngày 1 đêm';
+    } else {
+      return '$days ngày $nights đêm';
+    }
   }
 }

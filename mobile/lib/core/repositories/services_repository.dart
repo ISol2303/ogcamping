@@ -11,9 +11,26 @@ class ServicesRepository {
 
   Future<List<CampingService>> getCampingServices() async {
     try {
+      print('ServicesRepository: Fetching services from API...');
       final response = await _apiService.getCampingServices();
-      return response.map((json) => CampingService.fromJson(json)).toList();
+      print('ServicesRepository: Got ${response.length} services from API');
+      
+      final services = <CampingService>[];
+      for (int i = 0; i < response.length; i++) {
+        try {
+          final service = CampingService.fromJson(response[i]);
+          services.add(service);
+        } catch (e) {
+          print('ServicesRepository: Error parsing service at index $i: $e');
+          print('ServicesRepository: Service data: ${response[i]}');
+          // Continue with other services instead of failing completely
+        }
+      }
+      
+      print('ServicesRepository: Successfully parsed ${services.length} services');
+      return services;
     } catch (e) {
+      print('ServicesRepository: Failed to load camping services: $e');
       throw Exception('Failed to load camping services: $e');
     }
   }
@@ -47,9 +64,26 @@ class ServicesRepository {
 
   Future<List<ComboPackage>> getComboPackages() async {
     try {
+      print('ServicesRepository: Fetching combos from API...');
       final response = await _apiService.getComboPackages();
-      return response.map((json) => ComboPackage.fromJson(json)).toList();
+      print('ServicesRepository: Got ${response.length} combos from API');
+      
+      final combos = <ComboPackage>[];
+      for (int i = 0; i < response.length; i++) {
+        try {
+          final combo = ComboPackage.fromJson(response[i]);
+          combos.add(combo);
+        } catch (e) {
+          print('ServicesRepository: Error parsing combo at index $i: $e');
+          print('ServicesRepository: Combo data: ${response[i]}');
+          // Continue with other combos instead of failing completely
+        }
+      }
+      
+      print('ServicesRepository: Successfully parsed ${combos.length} combos');
+      return combos;
     } catch (e) {
+      print('ServicesRepository: Failed to load combo packages: $e');
       throw Exception('Failed to load combo packages: $e');
     }
   }
@@ -95,6 +129,19 @@ class ServicesRepository {
       ).toList();
     } catch (e) {
       throw Exception('Failed to search equipment: $e');
+    }
+  }
+
+  Future<List<ServiceAvailability>> getServiceAvailability(String serviceId) async {
+    try {
+      print('ServicesRepository: Fetching availability for service $serviceId');
+      final response = await _apiService.getServiceAvailability(serviceId);
+      final availabilities = response.map((json) => ServiceAvailability.fromJson(json)).toList();
+      print('ServicesRepository: Successfully parsed ${availabilities.length} availability slots');
+      return availabilities;
+    } catch (e) {
+      print('ServicesRepository: Failed to load availability: $e');
+      throw Exception('Failed to load service availability: $e');
     }
   }
 }

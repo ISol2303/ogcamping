@@ -26,7 +26,11 @@ class AuthRepository {
 
   Future<AuthResult> register(String email, String password, String fullName) async {
     try {
-      final response = await _apiService.register(email, password, fullName);
+      final response = await _apiService.register(
+        email: email,
+        password: password,
+        name: fullName,
+      );
       
       if (response['success'] == true) {
         final user = User.fromJson(response['user']);

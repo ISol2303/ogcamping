@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
@@ -40,69 +41,12 @@ public class PaymentController {
         return ResponseEntity.ok(resp);
     }
 
-    //    @GetMapping("/callback")
-//    public ResponseEntity<String> vnPayCallback(@RequestParam Map<String, String> params) {
-//        String txnRef = params.get("vnp_TxnRef");
-//        String rspCode = params.getOrDefault("vnp_ResponseCode", "99");
-//        boolean success = "00".equals(rspCode);
-//
-//        paymentService.confirmPaymentVNPay(txnRef, success);
-//        return ResponseEntity.ok(success ? "Thanh toán thành công" : "Thanh toán thất bại");
-//    }
-//@GetMapping("/callback")
-//public ResponseEntity<Void> vnPayCallback(@RequestParam Map<String, String> params) {
-//    try {
-//        String txnRef = params.get("vnp_TxnRef");
-//        String rspCode = params.getOrDefault("vnp_ResponseCode", "99");
-//        boolean success = "00".equals(rspCode);
-//
-//        PaymentResponseDTO paymentResponse = paymentService.confirmPaymentVNPay(txnRef, success);
-//        Long bookingId = paymentResponse.getBookingId();
-//        if (bookingId == null) {
-//            throw new RuntimeException("BookingId is null from paymentResponse");
-//        }
-//
-//        Booking booking = bookingRepository.findById(bookingId)
-//                .orElseThrow(() -> new RuntimeException("Booking not found with id: " + bookingId));
-//
-//        String status = success ? "success" : "failure";
-//
-//        long serviceCount = booking.getItems().stream()
-//                .filter(item -> item.getType() == ItemType.SERVICE)
-//                .count();
-//
-//        String redirectUrl;
-//
-//        if (serviceCount == 1 && booking.getItems().size() == 1) {
-//            Long serviceId = booking.getItems().stream()
-//                    .filter(item -> item.getType() == ItemType.SERVICE)
-//                    .map(item -> item.getService().getId())
-//                    .findFirst()
-//                    .orElse(0L);
-//
-//            redirectUrl = String.format(
-//                    "http://localhost:3000/checkout/success?bookingId=%d&status=%s",
-//                    serviceId, bookingId, status
-//            );
-//        } else {
-//            redirectUrl = String.format(
-//                    "http://localhost:3000/checkout/success?bookingId=%d&status=%s",
-//                    bookingId, status
-//            );
-//        }
-//
-//        return ResponseEntity.status(HttpStatus.FOUND)
-//                .location(URI.create(redirectUrl))
-//                .build();
-//
-//    } catch (Exception e) {
-//        e.printStackTrace();
-//        String fallbackUrl = "http://localhost:3000/booking/error?reason=" + UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8);
-//        return ResponseEntity.status(HttpStatus.FOUND)
-//                .location(URI.create(fallbackUrl))
-//                .build();
-//    }
-//}
+    @PostMapping("/create/mobile")
+    public ResponseEntity<PaymentResponseDTO> createMobilePayment(@RequestBody PaymentRequestDTO req) {
+        PaymentResponseDTO resp = paymentService.createMobilePayment(req);
+        return ResponseEntity.ok(resp);
+    }
+
     @GetMapping("/callback")
     public ResponseEntity<Void> vnPayCallback(@RequestParam Map<String, String> params) {
         try {
@@ -116,6 +60,7 @@ public class PaymentController {
 
             String status = success ? "success" : "failure";
 
+            // Redirect to website (original behavior)
             String redirectUrl = String.format(
                     "http://localhost:3000/checkout/success?bookingId=%d&status=%s",
                     bookingId, status
@@ -137,8 +82,72 @@ public class PaymentController {
                 fallbackBookingId = 0L;
             }
 
+            // Redirect to website for failure case (original behavior)
             String fallbackUrl = String.format(
                     "http://localhost:3000/checkout/failure?bookingId=%d&error=%s",
+                    fallbackBookingId,
+                    UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8)
+            );
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(fallbackUrl))
+                    .build();
+        }
+    }
+
+    @GetMapping("/callback/mobile")
+    @CrossOrigin(origins = "*")
+    public ResponseEntity<Void> vnPayMobileCallback(@RequestParam Map<String, String> params) {
+        log.info("=== VNPay mobile callback START ===");
+        log.info("Received params: {}", params);
+        
+        // Simple response first to test connectivity
+        try {
+            Thread.sleep(100); // Small delay to ensure logs are written
+        } catch (InterruptedException ignored) {}
+        
+        try {
+            String txnRef = params.get("vnp_TxnRef");
+            String rspCode = params.getOrDefault("vnp_ResponseCode", "99");
+            boolean success = "00".equals(rspCode);
+            
+            log.info("Processing payment - txnRef: {}, rspCode: {}, success: {}", txnRef, rspCode, success);
+
+            PaymentResponseDTO paymentResponse = paymentService.confirmPaymentVNPay(txnRef, success);
+            log.info("Payment confirmed: {}", paymentResponse);
+            
+            Long bookingId = Optional.ofNullable(paymentResponse.getBookingId())
+                    .orElseThrow(() -> new IllegalArgumentException("BookingId is null from paymentResponse"));
+
+            String status = success ? "success" : "failure";
+
+            // Redirect về HTML page với user interaction để bypass Chrome restrictions
+            String redirectUrl = String.format(
+                    "/app-redirect.html?bookingId=%d&status=%s&txnRef=%s",
+                    bookingId, status, txnRef
+            );
+            
+            log.info("Redirecting to: {}", redirectUrl);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(redirectUrl))
+                    .build();
+        } catch (Exception e) {
+            log.error("VNPay mobile callback error: {}", e.getMessage(), e);
+
+            // fallback: nếu params có bookingId thì lấy ra, nếu không thì để 0
+            Long fallbackBookingId = null;
+            try {
+                String txnRef = params.get("vnp_TxnRef");
+                PaymentResponseDTO tmp = paymentService.findByTransactionId(txnRef); // viết hàm findByTxnRef trong service
+                fallbackBookingId = tmp != null ? tmp.getBookingId() : 0L;
+            } catch (Exception ignored) {
+                fallbackBookingId = 0L;
+            }
+
+            // Redirect về HTML page for failure case
+            String fallbackUrl = String.format(
+                    "/app-redirect.html?bookingId=%d&status=failure&error=%s",
                     fallbackBookingId,
                     UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8)
             );
@@ -153,5 +162,10 @@ public class PaymentController {
     public ResponseEntity<PaymentResponseDTO> getPayment(@PathVariable("txnId") String txnId) {
         return ResponseEntity.ok(paymentService.findByTransactionId(txnId));
     }
-
+    
+    @GetMapping("/test/mobile-callback")
+    public ResponseEntity<String> testMobileCallback(@RequestParam Map<String, String> params) {
+        log.info("Test mobile callback received with params: {}", params);
+        return ResponseEntity.ok("Mobile callback endpoint is working! Params: " + params.toString());
+    }
 }

@@ -11,8 +11,10 @@ import '../../features/equipment/screens/equipment_detail_screen.dart';
 import '../../features/combo/screens/combo_screen.dart';
 import '../../features/combo/screens/combo_detail_screen.dart';
 import '../../features/booking/screens/cart_screen.dart';
+import '../../features/booking/screens/booking_confirmation_screen.dart';
 import '../../features/booking/screens/booking_screen.dart';
 import '../../features/booking/screens/booking_history_screen.dart';
+import '../../features/booking/screens/payment_success_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
@@ -26,6 +28,34 @@ class AppRouter {
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
       initialLocation: '/splash',
+      redirect: (context, state) {
+        // Debug logging for deep link handling
+        print('🔗 GoRouter redirect - Current location: ${state.uri}');
+        print('🔗 Scheme: ${state.uri.scheme}, Host: ${state.uri.host}, Path: ${state.uri.path}');
+        
+        final uri = state.uri;
+        
+        // ✅ Handle VNPay payment callback deeplink: ogcamping://payment/result
+        if (uri.scheme == 'ogcamping' && 
+            uri.host == 'payment' && 
+            uri.path == '/result') {
+          
+          print('💳 VNPay Payment Callback Deep Link Detected: $uri');
+          
+          final queryParams = uri.queryParameters;
+          final bookingId = queryParams['bookingId'] ?? '0';
+          final status = queryParams['status'] ?? 'failure';
+          final txnRef = queryParams['txnRef'];
+          final error = queryParams['error'];
+          
+          print('💳 Payment Result - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
+
+          // Navigate to Payment Success Screen with parameters
+          return '/payment-success?bookingId=$bookingId&status=$status${txnRef != null ? '&txnRef=$txnRef' : ''}${error != null ? '&error=${Uri.encodeComponent(error)}' : ''}';
+        }
+        
+        return null;
+      },
       routes: [
         // Splash Screen
         GoRoute(
@@ -137,6 +167,12 @@ class AppRouter {
           builder: (context, state) => const CartScreen(),
         ),
         GoRoute(
+          path: '/booking-confirmation',
+          name: 'booking-confirmation',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const BookingConfirmationScreen(),
+        ),
+        GoRoute(
           path: '/booking',
           name: 'booking',
           parentNavigatorKey: _rootNavigatorKey,
@@ -147,6 +183,26 @@ class AppRouter {
           name: 'booking-history',
           parentNavigatorKey: _rootNavigatorKey,
           builder: (context, state) => const BookingHistoryScreen(),
+        ),
+        GoRoute(
+          path: '/payment-success',
+          name: 'payment-success',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final bookingId = state.uri.queryParameters['bookingId'] ?? '0';
+            final status = state.uri.queryParameters['status'] ?? 'failure';
+            final txnRef = state.uri.queryParameters['txnRef'];
+            final error = state.uri.queryParameters['error'];
+            
+            print('🎉 Payment Success Screen - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
+
+            return PaymentSuccessScreen(
+              bookingId: bookingId,
+              status: status,
+              txnRef: txnRef,
+              error: error,
+            );
+          },
         ),
       ],
     );
@@ -169,8 +225,10 @@ class AppRoutes {
   static const profile = 'profile';
   static const editProfile = 'edit-profile';
   static const cart = 'cart';
+  static const bookingConfirmation = 'booking-confirmation';
   static const booking = 'booking';
   static const bookingHistory = 'booking-history';
+  static const paymentSuccess = 'payment-success';
 }
 
 // Extension for easy navigation

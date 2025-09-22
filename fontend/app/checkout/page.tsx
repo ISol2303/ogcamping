@@ -130,7 +130,7 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true);
 
-      const storedUser = localStorage.getItem("user");
+      const storedUser = sessionStorage.getItem("user");
       if (!storedUser) {
         alert("Bạn cần đăng nhập trước khi đặt chỗ");
         return;

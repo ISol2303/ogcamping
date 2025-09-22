@@ -28,7 +28,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final bookingProvider = context.read<BookingProvider>();
 
     if (authProvider.user != null) {
-      await bookingProvider.loadUserBookings(authProvider.user!.id);
+      await bookingProvider.loadUserBookings(authProvider.user!.id.toString());
     }
   }
 

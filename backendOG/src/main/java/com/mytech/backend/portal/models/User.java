@@ -29,6 +29,12 @@ public class User {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = true)
+    private String firstName;
+
+    @Column(nullable = true)
+    private String lasttName;
+
     @NotBlank
     @Email
     @Column(nullable = false, unique = true)

@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/providers/theme_provider.dart';
+import '../../../core/models/camping_service.dart';
 import '../../../core/navigation/app_router.dart';
 import '../../../shared/widgets/loading_widget.dart';
-import '../../../shared/widgets/error_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,6 +31,40 @@ class _HomeScreenState extends State<HomeScreen> {
       servicesProvider.loadCombos(),
       servicesProvider.loadEquipment(),
     ]);
+  }
+
+  String _getDurationText(CampingService service) {
+    if (service.maxDays == 0) {
+      return 'mỗi đêm';
+    }
+    
+    final days = service.maxDays;
+    final nights = days - 1;
+    
+    if (days == 1) {
+      return 'trong ngày';
+    } else if (days == 2) {
+      return '2 ngày 1 đêm';
+    } else {
+      return '$days ngày $nights đêm';
+    }
+  }
+
+  String _getComboDurationText(combo) {
+    if (combo.maxDays == 0) {
+      return 'mỗi đêm';
+    }
+    
+    final days = combo.maxDays;
+    final nights = days - 1;
+    
+    if (days == 1) {
+      return 'trong ngày';
+    } else if (days == 2) {
+      return '2 ngày 1 đêm';
+    } else {
+      return '$days ngày $nights đêm';
+    }
   }
 
   @override
@@ -330,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       onTap: () => context.pushNamed(
                         AppRoutes.comboDetail,
-                        pathParameters: {'id': combo.id},
+                        pathParameters: {'id': combo.id.toString()},
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,16 +375,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .surfaceVariant,
+                                image: combo.imageUrl.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(combo.fullImageUrl),
+                                        fit: BoxFit.cover,
+                                        onError: (exception, stackTrace) {},
+                                      )
+                                    : null,
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.image,
-                                  size: 48,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                              ),
+                              child: combo.imageUrl.isEmpty
+                                  ? Center(
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 48,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                    )
+                                  : null,
                             ),
                           ),
                           Padding(
@@ -370,36 +413,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '${combo.discountedPrice.toStringAsFixed(0)}đ',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${combo.originalPrice.toStringAsFixed(0)}đ',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            decoration:
-                                                TextDecoration.lineThrough,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.6),
-                                          ),
-                                    ),
-                                  ],
+                                Text(
+                                  _getComboDurationText(combo),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ],
                             ),
@@ -418,8 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFeaturedServices(ServicesProvider servicesProvider) {
-    final availableServices =
-        servicesProvider.availableServices.take(3).toList();
+    final availableServices = servicesProvider.availableServices;
 
     if (availableServices.isEmpty) {
       return const SizedBox.shrink();
@@ -464,11 +487,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(8),
+                      image: service.imageUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(service.fullImageUrl),
+                              fit: BoxFit.cover,
+                              onError: (exception, stackTrace) {},
+                            )
+                          : null,
                     ),
-                    child: Icon(
-                      Icons.nature,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                    child: service.imageUrl.isEmpty
+                        ? Icon(
+                            Icons.nature,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          )
+                        : null,
                   ),
                   title: Text(
                     service.name,
@@ -480,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(service.location),
                       const SizedBox(height: 4),
                       Text(
-                        '${service.pricePerNight.toStringAsFixed(0)}đ/đêm',
+                        _getDurationText(service),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -491,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () => context.pushNamed(
                     AppRoutes.serviceDetail,
-                    pathParameters: {'id': service.id},
+                    pathParameters: {'id': service.id.toString()},
                   ),
                 ),
               );

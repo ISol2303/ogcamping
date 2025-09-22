@@ -105,9 +105,12 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
                         "/apis/v1/bookings/**",
                         "/apis/v1/admin/shifts/**",
                         "/apis/v1/shifts/**",
-                        "/apis/v1/customers/**"
+                        "/apis/v1/customers/**",
+                        "/apis/v1/payments/**"
 	                ).permitAll()
                     .requestMatchers("/apis/v1/payments/callback").permitAll()
+                    .requestMatchers("/apis/v1/payments/callback/mobile").permitAll()
+                    .requestMatchers("/apis/v1/payments/create/mobile").permitAll()
 	            .anyRequest().authenticated()
 	        )
 	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -127,7 +130,7 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
 		http
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/", "/index.html", "/assets/**").permitAll()
+						.requestMatchers("/", "/index.html", "/assets/**", "/mobile-redirect.html", "/payment-redirect.html", "/app-redirect.html").permitAll()
 						.anyRequest().permitAll()
 				)
 				.csrf(csrf -> csrf.disable());
@@ -139,6 +142,9 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
     CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
+        config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
+        config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
+        config.addAllowedOriginPattern("http://localhost:*"); // Pattern for any port
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);

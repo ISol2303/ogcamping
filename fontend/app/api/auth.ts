@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 interface LoginRequest {
   email: string;
@@ -35,10 +35,13 @@ interface AuthResponse {
 }
 
 interface UserProfile {
+  id: string;
   email: string;
   name: string;
   role: string;
   avatar?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -58,10 +61,12 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
 
     let token: string = payload?.token;
     const tokenType: string = payload?.tokenType || 'Bearer';
-    const id: string= payload?.id;     //thêm id
+    const id: string = payload?.id;     //thêm id
     const email: string = payload?.email;
     const name: string = payload?.fullname || payload?.name || 'Unknown User';
     const role: string = payload?.role || 'CUSTOMER';
+    const firstName: string = payload?.firstName;
+    const lastName: string = payload?.lastName;
 
     if (!token || !email) {
       throw new Error('Dữ liệu phản hồi không hợp lệ: Thiếu token hoặc email.');
@@ -86,7 +91,7 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
       throw new Error('Token không hợp lệ từ máy chủ.');
     }
 
-    const userId = decoded.sub;
+    const userId = decoded.id;
     const userRole = decoded.role?.replace('ROLE_', '') || role;
 
     // ✅ SỬA 1: Lưu token và user cơ bản ngay lập tức (trước khi gọi API profile)
@@ -97,11 +102,11 @@ export const loginApi = async (data: LoginRequest): Promise<AuthResponse> => {
     }
     sessionStorage.setItem('authToken', token);
     sessionStorage.setItem('userId', userId);
-    sessionStorage.setItem('user', JSON.stringify({ email, name, role: userRole }));
+    sessionStorage.setItem('user', JSON.stringify({ id, email, name, role: userRole, firstName, lastName }));
 
     // ✅ SỬA 2: Bây giờ mới gọi API lấy profile (có token rồi nên không bị lỗi lần đầu login)
 
-    let userProfile: UserProfile = { email, name, role: userRole };
+    let userProfile: UserProfile = { id, email, name, role: userRole, firstName, lastName };
     try {
       const profile = await getUserProfile(token);
       userProfile = { ...userProfile, ...profile };
@@ -184,13 +189,16 @@ export const getUserProfile = async (token: string): Promise<UserProfile> => {
       },
       timeout: 5000,
     });
-    const { email, name, role, avatar } = response.data;
+    const { id, email, name, role, avatar, firstName, lastName } = response.data;
     console.log('Fetched user profile:', { email, name, role, avatar });
     return {
+      id: id,
       email: email || '',
       name: name || 'Unknown User',
       role: role ? role.replace('ROLE_', '') : 'CUSTOMER',
       avatar: avatar || undefined,
+      firstName: firstName,
+      lastName: lastName
     };
   } catch (error: any) {
     console.error('Get user profile error:', error);

@@ -1,33 +1,46 @@
 class User {
-  final String id;
+  final int id;
   final String email;
-  final String fullName;
-  final String? phoneNumber;
+  final String name;
+  final String role;
   final String? avatar;
+  final String? phone;
+  final String? department;
+  final DateTime? joinDate;
+  final String status;
+  final bool agreeMarketing;
+  final String? address;
   final DateTime createdAt;
-  final DateTime? updatedAt;
 
   User({
     required this.id,
     required this.email,
-    required this.fullName,
-    this.phoneNumber,
+    required this.name,
+    required this.role,
     this.avatar,
+    this.phone,
+    this.department,
+    this.joinDate,
+    required this.status,
+    required this.agreeMarketing,
+    this.address,
     required this.createdAt,
-    this.updatedAt,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       email: json['email'],
-      fullName: json['fullName'],
-      phoneNumber: json['phoneNumber'],
+      name: json['name'] ?? '',
+      role: json['role'] ?? 'CUSTOMER',
       avatar: json['avatar'],
+      phone: json['phone'],
+      department: json['department'],
+      joinDate: json['joinDate'] != null ? DateTime.parse(json['joinDate']) : null,
+      status: json['status'] ?? 'ACTIVE',
+      agreeMarketing: json['agreeMarketing'] ?? false,
+      address: json['address'],
       createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
-          : null,
     );
   }
 
@@ -35,31 +48,50 @@ class User {
     return {
       'id': id,
       'email': email,
-      'fullName': fullName,
-      'phoneNumber': phoneNumber,
+      'name': name,
+      'role': role,
       'avatar': avatar,
+      'phone': phone,
+      'department': department,
+      'joinDate': joinDate?.toIso8601String(),
+      'status': status,
+      'agreeMarketing': agreeMarketing,
+      'address': address,
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
   User copyWith({
-    String? id,
+    int? id,
     String? email,
-    String? fullName,
-    String? phoneNumber,
+    String? name,
+    String? role,
     String? avatar,
+    String? phone,
+    String? department,
+    DateTime? joinDate,
+    String? status,
+    bool? agreeMarketing,
+    String? address,
     DateTime? createdAt,
-    DateTime? updatedAt,
   }) {
     return User(
       id: id ?? this.id,
       email: email ?? this.email,
-      fullName: fullName ?? this.fullName,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
+      name: name ?? this.name,
+      role: role ?? this.role,
       avatar: avatar ?? this.avatar,
+      phone: phone ?? this.phone,
+      department: department ?? this.department,
+      joinDate: joinDate ?? this.joinDate,
+      status: status ?? this.status,
+      agreeMarketing: agreeMarketing ?? this.agreeMarketing,
+      address: address ?? this.address,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  // Backward compatibility getters
+  String get fullName => name;
+  String? get phoneNumber => phone;
 }

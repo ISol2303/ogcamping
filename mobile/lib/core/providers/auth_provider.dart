@@ -1,12 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
+import '../models/customer.dart';
 import '../repositories/auth_repository.dart';
+import '../services/api_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthRepository _authRepository;
+  final ApiService _apiService = ApiService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
   
   User? _user;
+  Customer? _customer;
   String? _token;
   bool _isLoading = false;
   String? _error;
@@ -17,6 +25,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Getters
   User? get user => _user;
+  Customer? get customer => _customer;
   String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -144,10 +153,12 @@ class AuthProvider extends ChangeNotifier {
       await _authRepository.logout();
       await _clearUserFromStorage();
       
-      _user = null;
-      _token = null;
-      _error = null;
+      // Sign out from Google if user was signed in with Google
+      await signOutGoogle();
       
+      _user = null;
+      _customer = null;
+      _token = null;
       _setLoading(false);
     } catch (e) {
       _setError(e.toString());
@@ -170,6 +181,189 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _setError(e.toString());
       _setLoading(false);
+    }
+  }
+
+  // New login methods using real API
+  Future<bool> loginWithEmail(String email, String password) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _apiService.loginWithEmail(email, password);
+      
+      if (response['success'] == true) {
+        final userData = response['user'];
+        final token = response['token'];
+        
+        _user = User.fromJson(userData);
+        _token = token;
+        
+        // Load customer info
+        await _loadCustomerInfo(_user!.id);
+        
+        await _saveUserToStorage();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Login failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> loginWithGoogle(String googleToken) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _apiService.loginWithGoogle(googleToken);
+      
+      if (response['success'] == true) {
+        final userData = response['user'];
+        final token = response['token'];
+        
+        _user = User.fromJson(userData);
+        _token = token;
+        
+        // Load customer info
+        await _loadCustomerInfo(_user!.id);
+        
+        await _saveUserToStorage();
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Google login failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  Future<void> _loadCustomerInfo(int userId) async {
+    try {
+      _customer = await _apiService.getCustomerById(userId);
+    } catch (e) {
+      print('Failed to load customer info: $e');
+      // Don't throw error, customer info is optional
+    }
+  }
+
+  // Google Sign-In implementation
+  Future<bool> signInWithGoogle() async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      // Step 1: Sign in with Google
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        _setLoading(false);
+        return false; // User cancelled
+      }
+
+      // Step 2: Get authentication details
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      if (googleAuth.idToken == null || googleAuth.accessToken == null) {
+        _setError('Failed to get Google authentication tokens');
+        _setLoading(false);
+        return false;
+      }
+
+      // Step 3: Send tokens to backend OAuth2 endpoint
+      final response = await _apiService.oauth2GoogleLogin(
+        googleAuth.idToken!,
+        googleAuth.accessToken!,
+      );
+
+      if (response['success'] == true) {
+        _token = response['token'];
+        
+        // Load user info
+        if (response['user'] != null) {
+          _user = User.fromJson(response['user']);
+          await _loadCustomerInfo(_user!.id);
+        }
+
+        // Save to storage
+        await _saveUserToStorage();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Google login failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Google Sign-In error: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  // Sign out from Google
+  Future<void> signOutGoogle() async {
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      print('Google sign out error: $e');
+    }
+  }
+
+  // Register with email/password
+  Future<bool> registerWithEmail({
+    required String email,
+    required String password,
+    required String name,
+    String? phone,
+    String? address,
+  }) async {
+    _setLoading(true);
+    _setError(null);
+
+    try {
+      final response = await _apiService.register(
+        email: email,
+        password: password,
+        name: name,
+        phone: phone,
+        address: address,
+      );
+
+      if (response['success'] == true) {
+        _token = response['token'];
+        
+        // Load user info
+        if (response['user'] != null) {
+          _user = User.fromJson(response['user']);
+          await _loadCustomerInfo(_user!.id);
+        }
+
+        // Save to storage
+        await _saveUserToStorage();
+        
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Registration failed');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Registration error: $e');
+      _setLoading(false);
+      return false;
     }
   }
 }

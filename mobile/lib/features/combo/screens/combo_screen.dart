@@ -44,19 +44,20 @@ class _ComboScreenState extends State<ComboScreen> {
 
   List<ComboPackage> _getFilteredCombos(ServicesProvider provider) {
     List<ComboPackage> combos = provider.combos;
-    
+
     if (_showPopularOnly) {
       combos = combos.where((combo) => combo.isPopular).toList();
     }
-    
+
     if (_searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
-      combos = combos.where((combo) =>
-        combo.name.toLowerCase().contains(query) ||
-        combo.description.toLowerCase().contains(query)
-      ).toList();
+      combos = combos
+          .where((combo) =>
+              combo.name.toLowerCase().contains(query) ||
+              combo.description.toLowerCase().contains(query))
+          .toList();
     }
-    
+
     return combos;
   }
 
@@ -93,7 +94,7 @@ class _ComboScreenState extends State<ComboScreen> {
                   ),
                 ),
               ),
-              
+
               // Filter Chips
               SizedBox(
                 height: 50,
@@ -132,7 +133,8 @@ class _ComboScreenState extends State<ComboScreen> {
       ),
       body: Consumer<ServicesProvider>(
         builder: (context, servicesProvider, child) {
-          if (servicesProvider.combosLoading && servicesProvider.combos.isEmpty) {
+          if (servicesProvider.combosLoading &&
+              servicesProvider.combos.isEmpty) {
             return const LoadingWidget(message: 'Đang tải combo...');
           }
 
@@ -182,7 +184,7 @@ class _ComboCard extends StatelessWidget {
       child: InkWell(
         onTap: () => context.pushNamed(
           AppRoutes.comboDetail,
-          pathParameters: {'id': combo.id},
+          pathParameters: {'id': combo.id.toString()},
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +217,8 @@ class _ComboCard extends StatelessWidget {
                       top: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           borderRadius: BorderRadius.circular(12),
@@ -234,7 +237,8 @@ class _ComboCard extends StatelessWidget {
                     top: 12,
                     right: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(12),
@@ -252,7 +256,7 @@ class _ComboCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Content
             Padding(
               padding: const EdgeInsets.all(16),
@@ -266,9 +270,10 @@ class _ComboCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           combo.name,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -278,23 +283,28 @@ class _ComboCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             combo.rating.toString(),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                           ),
                           Text(
                             ' (${combo.reviewCount})',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Description
                   Text(
                     combo.description,
@@ -302,42 +312,54 @@ class _ComboCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Duration and Participants
                   Row(
                     children: [
                       Icon(
                         Icons.schedule,
                         size: 16,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${combo.durationDays} ngày',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
                       ),
                       const SizedBox(width: 16),
                       Icon(
                         Icons.people,
                         size: 16,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Tối đa ${combo.maxParticipants} người',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Activities
                   if (combo.activities.isNotEmpty) ...[
                     Wrap(
@@ -345,15 +367,20 @@ class _ComboCard extends StatelessWidget {
                       runSpacing: 4,
                       children: combo.activities.take(3).map((activity) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             activity,
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSecondaryContainer,
                               fontSize: 12,
                             ),
                           ),
@@ -362,7 +389,7 @@ class _ComboCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  
+
                   // Meals
                   if (combo.includedMeals.isNotEmpty) ...[
                     Row(
@@ -376,10 +403,13 @@ class _ComboCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Bao gồm: ${combo.includedMeals.join(', ')}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -388,7 +418,7 @@ class _ComboCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  
+
                   // Price
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -400,32 +430,44 @@ class _ComboCard extends StatelessWidget {
                             children: [
                               Text(
                                 '${combo.discountedPrice.toStringAsFixed(0)}đ',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '${combo.originalPrice.toStringAsFixed(0)}đ',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                ),
+                                '${combo.originalPrice?.toStringAsFixed(0)}đ',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                               ),
                             ],
                           ),
                           Text(
                             'Tiết kiệm ${combo.savings.toStringAsFixed(0)}đ',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(16),
@@ -433,7 +475,9 @@ class _ComboCard extends StatelessWidget {
                         child: Text(
                           'Combo',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

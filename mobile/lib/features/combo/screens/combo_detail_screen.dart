@@ -24,6 +24,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
   ComboPackage? _combo;
   bool _isLoading = true;
   String? _error;
+  DateTime? _selectedDate;
+  int _numberOfPeople = 1;
 
   @override
   void initState() {
@@ -39,14 +41,16 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
 
     try {
       final servicesProvider = context.read<ServicesProvider>();
-      final combo = servicesProvider.getComboById(widget.comboId);
+      final combo = await servicesProvider.getComboById(widget.comboId);
       
       if (combo != null) {
         setState(() {
           _combo = combo;
+          // Set initial numberOfPeople to minPeople
+          _numberOfPeople = combo.minPeople ?? 1;
           _isLoading = false;
         });
-        
+
         // Load reviews
         await servicesProvider.loadReviews(widget.comboId, 'combo');
       } else {
@@ -64,20 +68,32 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
   }
 
   void _addToCart() {
-    if (_combo == null) return;
+    if (_combo == null || _selectedDate == null) return;
 
     final bookingProvider = context.read<BookingProvider>();
-    bookingProvider.addComboToCart(_combo!);
+    bookingProvider.addComboToCart(
+      _combo!,
+      selectedDate: _selectedDate!.toIso8601String().split('T')[0],
+      numberOfPeople: _numberOfPeople,
+    );
 
+    final checkOutDate = _selectedDate!.add(Duration(days: _combo!.maxDays));
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Đã thêm ${_combo!.name} vào giỏ hàng'),
+        content: Text(
+          'Đã thêm ${_combo!.name} (${_formatDate(_selectedDate!)}-${_formatDate(checkOutDate)}) - $_numberOfPeople người vào giỏ hàng'
+        ),
         action: SnackBarAction(
           label: 'Xem giỏ hàng',
           onPressed: () => context.pushNamed(AppRoutes.cart),
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   @override
@@ -134,25 +150,53 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  // Combo Image
+                  if (_combo!.imageUrl.isNotEmpty)
+                    Image.network(
+                      _combo!.fullImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.secondary,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.card_giftcard,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.secondary,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.card_giftcard,
+                          size: 80,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        Icons.card_giftcard,
-                        size: 80,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -170,7 +214,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       top: 60,
                       left: 16,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.orange,
                           borderRadius: BorderRadius.circular(16),
@@ -188,7 +233,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                     top: 60,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(16),
@@ -214,7 +260,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               ),
             ],
           ),
-          
+
           // Content
           SliverToBoxAdapter(
             child: Padding(
@@ -229,22 +275,26 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       const SizedBox(width: 4),
                       Text(
                         _combo!.rating.toString(),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '(${_combo!.reviewCount} đánh giá)',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Duration and Participants
                   Row(
                     children: [
@@ -269,9 +319,9 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Price
                   Card(
                     color: Theme.of(context).colorScheme.primaryContainer,
@@ -285,26 +335,43 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                             children: [
                               Text(
                                 'Giá combo',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    ),
                               ),
                               Row(
                                 children: [
                                   Text(
                                     '${_combo!.discountedPrice.toStringAsFixed(0)}đ',
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    '${_combo!.originalPrice.toStringAsFixed(0)}đ',
-                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                                    ),
+                                    '${_combo!.originalPrice?.toStringAsFixed(0)}đ',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer
+                                              .withOpacity(0.7),
+                                        ),
                                   ),
                                 ],
                               ),
@@ -315,16 +382,24 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                             children: [
                               Text(
                                 'Tiết kiệm',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                    ),
                               ),
                               Text(
                                 '${_combo!.savings.toStringAsFixed(0)}đ',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                             ],
                           ),
@@ -332,30 +407,30 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Description
                   Text(
                     'Mô tả',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _combo!.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Included Services
                   Text(
                     'Dịch vụ bao gồm',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   Card(
@@ -390,16 +465,16 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Activities
                   if (_combo!.activities.isNotEmpty) ...[
                     Text(
                       'Hoạt động',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -407,9 +482,12 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       runSpacing: 8,
                       children: _combo!.activities.map((activity) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -418,13 +496,17 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                               Icon(
                                 Icons.local_activity,
                                 size: 16,
-                                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSecondaryContainer,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 activity,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSecondaryContainer,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -435,10 +517,20 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                     ),
                     const SizedBox(height: 24),
                   ],
+
+                  // Date Selection Section
+                  _buildDateSelectionSection(),
                   
+                  const SizedBox(height: 24),
+
+                  // People Selection Section  
+                  _buildPeopleSelectionSection(),
+
+                  const SizedBox(height: 24),
+
                   // Reviews Section
                   _buildReviewsSection(),
-                  
+
                   const SizedBox(height: 100), // Space for bottom button
                 ],
               ),
@@ -469,16 +561,16 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                     Text(
                       '${_combo!.discountedPrice.toStringAsFixed(0)}đ',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     Text(
                       'Tiết kiệm ${_combo!.savings.toStringAsFixed(0)}đ',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w500,
-                      ),
+                            color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ],
                 ),
@@ -487,9 +579,9 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               Expanded(
                 flex: 2,
                 child: ElevatedButton.icon(
-                  onPressed: _addToCart,
+                  onPressed: _selectedDate != null ? _addToCart : null,
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: const Text('Thêm vào giỏ'),
+                  label: Text(_selectedDate != null ? 'Thêm vào giỏ' : 'Chọn ngày'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -521,14 +613,17 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                ),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
+                    ),
               ),
             ],
           ),
@@ -545,7 +640,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
     return Consumer<ServicesProvider>(
       builder: (context, servicesProvider, child) {
         final reviews = servicesProvider.getReviewsForItem(widget.comboId);
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -555,8 +650,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                 Text(
                   'Đánh giá (${reviews.length})',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 if (reviews.isNotEmpty)
                   TextButton(
@@ -567,7 +662,6 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                   ),
               ],
             ),
-            
             if (reviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -586,11 +680,15 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               child: Text(
                                 review.userName.substring(0, 1).toUpperCase(),
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -602,12 +700,15 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                                 children: [
                                   Text(
                                     review.userName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   Row(
                                     children: List.generate(5, (index) {
                                       return Icon(
-                                        index < review.rating ? Icons.star : Icons.star_border,
+                                        index < review.rating
+                                            ? Icons.star
+                                            : Icons.star_border,
                                         size: 16,
                                         color: Colors.amber,
                                       );
@@ -628,6 +729,176 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDateSelectionSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Chọn ngày bắt đầu',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _selectedDate = picked;
+                  });
+                }
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedDate != null
+                            ? 'Check-in: ${_formatDate(_selectedDate!)}'
+                            : 'Chọn ngày check-in',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_selectedDate != null && _combo != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_month,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Check-out: ${_formatDate(_selectedDate!.add(Duration(days: _combo!.maxDays)))} (${_combo!.maxDays} ngày)',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeopleSelectionSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Số người tham gia',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.people,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Số người: $_numberOfPeople',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _numberOfPeople > (_combo?.minPeople ?? 1)
+                          ? () {
+                              setState(() {
+                                _numberOfPeople--;
+                              });
+                            }
+                          : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$_numberOfPeople',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _combo != null && _numberOfPeople < (_combo!.maxPeople ?? 20)
+                          ? () {
+                              setState(() {
+                                _numberOfPeople++;
+                              });
+                            }
+                          : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (_combo != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Tối thiểu: ${_combo!.minPeople ?? 1} người, Tối đa: ${_combo!.maxPeople ?? 20} người',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

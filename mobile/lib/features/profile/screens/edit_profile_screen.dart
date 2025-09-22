@@ -47,11 +47,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final currentUser = authProvider.user!;
       
       final updatedUser = currentUser.copyWith(
-        fullName: _fullNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty 
+        name: _fullNameController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty 
             ? null 
             : _phoneController.text.trim(),
-        updatedAt: DateTime.now(),
       );
 
       await authProvider.updateProfile(updatedUser);
@@ -222,13 +221,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               'Ngày tạo tài khoản:',
                               '${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}',
                             ),
-                            if (user.updatedAt != null) ...[
-                              const SizedBox(height: 8),
-                              _buildInfoRow(
-                                'Cập nhật lần cuối:',
-                                '${user.updatedAt!.day}/${user.updatedAt!.month}/${user.updatedAt!.year}',
-                              ),
-                            ],
                           ],
                         ),
                       ),

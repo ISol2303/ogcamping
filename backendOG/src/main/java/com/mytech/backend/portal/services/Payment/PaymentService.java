@@ -7,8 +7,10 @@ import java.util.Map;
 
 public interface PaymentService {
     PaymentResponseDTO createPayment(PaymentRequestDTO req);
+    PaymentResponseDTO createMobilePayment(PaymentRequestDTO req);
     PaymentResponseDTO confirmPaymentVNPay(String txnRef, boolean success);
     String generateVNPayUrl(Long bookingId, String txnRef);
+    String generateVNPayMobileUrl(Long bookingId, String txnRef);
     PaymentResponseDTO findByTransactionId(String txnId);
 }
 

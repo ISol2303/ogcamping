@@ -39,9 +39,15 @@ class ServicesProvider extends ChangeNotifier {
   EquipmentCategory? _selectedEquipmentCategory;
 
   // Getters
-  List<CampingService> get services => _filteredServices.isEmpty ? _services : _filteredServices;
+  List<CampingService> get services {
+    return _filteredServices.isEmpty ? _services : _filteredServices;
+  }
+  
   List<Equipment> get equipment => _filteredEquipment.isEmpty ? _equipment : _filteredEquipment;
-  List<ComboPackage> get combos => _filteredCombos.isEmpty ? _combos : _filteredCombos;
+  
+  List<ComboPackage> get combos {
+    return _filteredCombos.isEmpty ? _combos : _filteredCombos;
+  }
   
   bool get servicesLoading => _servicesLoading;
   bool get equipmentLoading => _equipmentLoading;
@@ -57,8 +63,21 @@ class ServicesProvider extends ChangeNotifier {
   ServiceType? get selectedServiceType => _selectedServiceType;
   EquipmentCategory? get selectedEquipmentCategory => _selectedEquipmentCategory;
 
-  List<ComboPackage> get popularCombos => _combos.where((combo) => combo.isPopular).toList();
-  List<CampingService> get availableServices => _services.where((service) => service.isAvailable).toList();
+  // For home screen - show last 2 combos
+  List<ComboPackage> get popularCombos {
+    final sortedCombos = List<ComboPackage>.from(_combos);
+    sortedCombos.sort((a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
+    return sortedCombos.take(2).toList();
+  }
+  
+  // For home screen - show last 2 services
+  List<CampingService> get availableServices {
+    final sortedServices = List<CampingService>.from(_services.where((service) => service.isAvailable));
+    sortedServices.sort((a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
+    return sortedServices.take(2).toList();
+  }
+  
+  
   List<Equipment> get availableEquipment => _equipment.where((eq) => eq.isAvailable).toList();
 
   // Load data methods
@@ -68,11 +87,15 @@ class ServicesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('ServicesProvider: Loading services...');
       _services = await _servicesRepository.getCampingServices();
+      print('ServicesProvider: Loaded ${_services.length} services');
+      print('ServicesProvider: Services IDs: ${_services.map((s) => s.id).toList()}');
       _applyServicesFilter();
       _servicesLoading = false;
       notifyListeners();
     } catch (e) {
+      print('ServicesProvider: Error loading services: $e');
       _servicesError = e.toString();
       _servicesLoading = false;
       notifyListeners();
@@ -102,11 +125,15 @@ class ServicesProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('ServicesProvider: Loading combos...');
       _combos = await _servicesRepository.getComboPackages();
+      print('ServicesProvider: Loaded ${_combos.length} combos');
+      print('ServicesProvider: Combos IDs: ${_combos.map((c) => c.id).toList()}');
       _applyCombosFilter();
       _combosLoading = false;
       notifyListeners();
     } catch (e) {
+      print('ServicesProvider: Error loading combos: $e');
       _combosError = e.toString();
       _combosLoading = false;
       notifyListeners();
@@ -152,6 +179,32 @@ class ServicesProvider extends ChangeNotifier {
       return _combos.firstWhere((combo) => combo.id == id);
     } catch (e) {
       return null;
+    }
+  }
+
+  // Load service by ID from API
+  Future<CampingService?> getCampingServiceById(String id) async {
+    try {
+      print('ServicesProvider: Loading service by ID: $id');
+      final service = await _servicesRepository.getCampingServiceById(id);
+      print('ServicesProvider: Successfully loaded service: ${service.name}');
+      return service;
+    } catch (e) {
+      print('ServicesProvider: Error loading service by ID: $e');
+      return null;
+    }
+  }
+
+  // Load service availability
+  Future<List<ServiceAvailability>> getServiceAvailability(String serviceId) async {
+    try {
+      print('ServicesProvider: Loading availability for service: $serviceId');
+      final availability = await _servicesRepository.getServiceAvailability(serviceId);
+      print('ServicesProvider: Successfully loaded ${availability.length} availability slots');
+      return availability;
+    } catch (e) {
+      print('ServicesProvider: Error loading availability: $e');
+      throw Exception('Failed to load availability: $e');
     }
   }
 

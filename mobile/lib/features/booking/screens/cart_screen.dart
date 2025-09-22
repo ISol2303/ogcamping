@@ -5,8 +5,6 @@ import '../../../core/providers/booking_provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/models/booking.dart';
 import '../../../core/navigation/app_router.dart';
-import '../../../shared/widgets/loading_widget.dart';
-import '../../../shared/widgets/error_widget.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -16,106 +14,177 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  DateTime? _checkInDate;
-  DateTime? _checkOutDate;
-  int _participants = 1;
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
   final _notesController = TextEditingController();
+  bool _isLoadingCustomerData = false;
 
   @override
   void initState() {
     super.initState();
-    final bookingProvider = context.read<BookingProvider>();
-    _checkInDate = bookingProvider.checkInDate;
-    _checkOutDate = bookingProvider.checkOutDate;
-    _participants = bookingProvider.participants;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomerData();
+    });
+  }
+
+  Future<void> _loadCustomerData() async {
+    final authProvider = context.read<AuthProvider>();
+
+    // Nếu user đã login và có customer data
+    if (authProvider.isAuthenticated && authProvider.customer != null) {
+      setState(() {
+        _isLoadingCustomerData = true;
+      });
+
+      final customer = authProvider.customer!;
+
+      setState(() {
+        // Ưu tiên firstName/lastName từ customer, fallback về user name
+        _firstNameController.text = customer.firstName;
+        _lastNameController.text = customer.lastName;
+
+        // Nếu không có firstName/lastName, tách từ user name
+        if (_firstNameController.text.isEmpty &&
+            _lastNameController.text.isEmpty) {
+          final userName = customer.user?.name ?? '';
+          if (userName.isNotEmpty) {
+            final nameParts = userName.split(' ');
+            if (nameParts.length >= 2) {
+              _firstNameController.text = nameParts.first;
+              _lastNameController.text = nameParts.skip(1).join(' ');
+            } else {
+              _firstNameController.text = userName;
+            }
+          }
+        }
+
+        _emailController.text = customer.email;
+        _phoneController.text = customer.phone;
+        _addressController.text = customer.address;
+        _isLoadingCustomerData = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã điền thông tin từ tài khoản của bạn'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectCheckInDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _checkInDate ?? DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-
-    if (date != null) {
-      setState(() {
-        _checkInDate = date;
-        // Reset checkout date if it's before checkin date
-        if (_checkOutDate != null && _checkOutDate!.isBefore(date)) {
-          _checkOutDate = null;
-        }
-      });
-
-      final bookingProvider = context.read<BookingProvider>();
-      bookingProvider.setCheckInDate(date);
-    }
-  }
-
-  Future<void> _selectCheckOutDate() async {
-    if (_checkInDate == null) {
+  bool _validateCustomerInfo() {
+    if (_firstNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày nhận phòng trước')),
+        const SnackBar(content: Text('Vui lòng nhập họ')),
       );
-      return;
+      return false;
     }
 
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _checkOutDate ?? _checkInDate!.add(const Duration(days: 1)),
-      firstDate: _checkInDate!.add(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-
-    if (date != null) {
-      setState(() {
-        _checkOutDate = date;
-      });
-
-      final bookingProvider = context.read<BookingProvider>();
-      bookingProvider.setCheckOutDate(date);
+    if (_lastNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên')),
+      );
+      return false;
     }
+
+    if (_emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập email')),
+      );
+      return false;
+    }
+
+    // Basic email validation
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(_emailController.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email không hợp lệ')),
+      );
+      return false;
+    }
+
+    if (_phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập số điện thoại')),
+      );
+      return false;
+    }
+
+    if (_addressController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập địa chỉ')),
+      );
+      return false;
+    }
+
+    return true;
   }
 
-  void _updateParticipants(int count) {
-    setState(() {
-      _participants = count;
-    });
+  double _calculateExtraFee(CartItem item) {
+    if (item.type != BookingType.SERVICE) return 0;
 
-    final bookingProvider = context.read<BookingProvider>();
-    bookingProvider.setParticipants(count);
+    final serviceId = item.details['serviceId'];
+    if (serviceId == null) return 0;
+
+    final maxCapacity = item.details['maxCapacity'] ?? 0;
+    final extraFeePerPerson = item.details['extraFeePerPerson'] ?? 0.0;
+
+    if (item.numberOfPeople <= maxCapacity) return 0;
+
+    final extraPeople = item.numberOfPeople - maxCapacity;
+    return (extraPeople * extraFeePerPerson).toDouble();
+  }
+
+  double _calculateItemTotalPrice(CartItem item) {
+    return item.totalPrice + _calculateExtraFee(item);
+  }
+
+  double _calculateGrandTotal(List<CartItem> items) {
+    return items.fold(
+        0, (total, item) => total + _calculateItemTotalPrice(item));
+  }
+
+  double _calculateTotalExtraFee(List<CartItem> items) {
+    return items.fold(0, (total, item) => total + _calculateExtraFee(item));
   }
 
   Future<void> _proceedToBooking() async {
-    if (_checkInDate == null || _checkOutDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn ngày nhận và trả phòng')),
-      );
+    // Validate customer information
+    if (!_validateCustomerInfo()) {
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
+    // Save customer information to provider
     final bookingProvider = context.read<BookingProvider>();
-
-    final success = await bookingProvider.createBooking(
-      authProvider.user!.id,
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
+    bookingProvider.setCustomerInfo(
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      address: _addressController.text.trim(),
+      notes: _notesController.text.trim(),
     );
 
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đặt chỗ thành công!')),
-      );
-      context.goNamed(AppRoutes.home);
-    }
+    // Navigate to confirmation screen
+    context.pushNamed(AppRoutes.bookingConfirmation);
   }
 
   @override
@@ -131,254 +200,297 @@ class _CartScreenState extends State<CartScreen> {
       body: Consumer<BookingProvider>(
         builder: (context, bookingProvider, child) {
           if (!bookingProvider.hasItems) {
-            return const EmptyStateWidget(
-              message: 'Giỏ hàng trống',
-              actionText: 'Khám phá dịch vụ',
-              icon: Icons.shopping_cart_outlined,
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Giỏ hàng trống',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
-          return LoadingOverlay(
-            isLoading: bookingProvider.isBooking,
-            message: 'Đang xử lý đặt chỗ...',
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Cart Items
-                  Text(
-                    'Dịch vụ đã chọn',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  ...bookingProvider.cartItems.map((item) {
-                    return _CartItemCard(
-                      item: item,
-                      onQuantityChanged: (quantity) {
-                        bookingProvider.updateCartItemQuantity(
-                          item.id,
-                          item.type,
-                          quantity,
-                        );
-                      },
-                      onRemove: () {
-                        bookingProvider.removeFromCart(item.id, item.type);
-                      },
-                    );
-                  }).toList(),
-
-                  const SizedBox(height: 24),
-
-                  // Date Selection
-                  Text(
-                    'Thông tin đặt chỗ',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Check-in Date
-                          ListTile(
-                            leading: const Icon(Icons.calendar_today),
-                            title: const Text('Ngày nhận phòng'),
-                            subtitle: Text(
-                              _checkInDate != null
-                                  ? '${_checkInDate!.day}/${_checkInDate!.month}/${_checkInDate!.year}'
-                                  : 'Chọn ngày',
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios),
-                            onTap: _selectCheckInDate,
-                          ),
-
-                          const Divider(),
-
-                          // Check-out Date
-                          ListTile(
-                            leading: const Icon(Icons.event),
-                            title: const Text('Ngày trả phòng'),
-                            subtitle: Text(
-                              _checkOutDate != null
-                                  ? '${_checkOutDate!.day}/${_checkOutDate!.month}/${_checkOutDate!.year}'
-                                  : 'Chọn ngày',
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios),
-                            onTap: _selectCheckOutDate,
-                          ),
-
-                          const Divider(),
-
-                          // Participants
-                          ListTile(
-                            leading: const Icon(Icons.people),
-                            title: const Text('Số người tham gia'),
-                            subtitle: Text('$_participants người'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  onPressed: _participants > 1
-                                      ? () {
-                                          _updateParticipants(
-                                              _participants - 1);
-                                        }
-                                      : null,
-                                  icon: const Icon(Icons.remove),
-                                ),
-                                Text(
-                                  _participants.toString(),
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    _updateParticipants(_participants + 1);
-                                  },
-                                  icon: const Icon(Icons.add),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cart Items
+                Text(
+                  'Dịch vụ đã chọn',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ),
+                ),
+                const SizedBox(height: 12),
 
-                  const SizedBox(height: 16),
+                ...bookingProvider.cartItems.map((item) {
+                  return _CartItemCard(
+                    item: item,
+                    onQuantityChanged: (quantity) {
+                      bookingProvider.updateCartItemQuantity(
+                        item.id,
+                        item.type,
+                        quantity,
+                        selectedDate: item.details['selectedDate'],
+                      );
+                    },
+                    onRemove: () {
+                      bookingProvider.removeFromCart(
+                        item.id,
+                        item.type,
+                        selectedDate: item.details['selectedDate'],
+                      );
+                    },
+                  );
+                }).toList(),
 
-                  // Notes
-                  TextField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Ghi chú (tùy chọn)',
-                      hintText: 'Nhập yêu cầu đặc biệt...',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
+                const SizedBox(height: 24),
 
-                  const SizedBox(height: 24),
-
-                  // Price Summary
-                  Card(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Tạm tính:'),
-                              Text(
-                                  '${bookingProvider.subtotal.toStringAsFixed(0)}đ'),
-                            ],
+                // Customer Information Form
+                Row(
+                  children: [
+                    Text(
+                      'Thông tin khách hàng',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Thuế (10%):'),
-                              Text(
-                                  '${bookingProvider.tax.toStringAsFixed(0)}đ'),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          if (bookingProvider.durationDays > 1) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                    'Số ngày: ${bookingProvider.durationDays}'),
-                                const Text(''),
-                              ],
+                    ),
+                    if (_isLoadingCustomerData) ...[
+                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // First Name & Last Name Row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _firstNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Họ *',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: _lastNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Tên *',
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                            ),
                           ],
-                          const Divider(),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Email
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Phone
+                        TextField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Số điện thoại *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Address
+                        TextField(
+                          controller: _addressController,
+                          maxLines: 2,
+                          decoration: const InputDecoration(
+                            labelText: 'Địa chỉ *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Notes
+                        TextField(
+                          controller: _notesController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Ghi chú (tùy chọn)',
+                            hintText: 'Nhập yêu cầu đặc biệt...',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.note),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                const SizedBox(height: 24),
+
+                // Price Summary
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // Tạm tính (giá gốc không bao gồm phụ thu)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Tạm tính:'),
+                            Text(
+                                '${bookingProvider.totalWithDuration.toStringAsFixed(0)}đ'),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Phụ thu (nếu có)
+                        if (_calculateTotalExtraFee(bookingProvider.cartItems) >
+                            0) ...[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              const Text('Phụ thu:'),
                               Text(
-                                'Tổng cộng:',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                              Text(
-                                '${bookingProvider.totalWithDuration.toStringAsFixed(0)}đ',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                              ),
+                                  '${_calculateTotalExtraFee(bookingProvider.cartItems).toStringAsFixed(0)}đ'),
                             ],
                           ),
+                          const SizedBox(height: 8),
                         ],
-                      ),
+
+                        // Số ngày (nếu > 1)
+                        if (bookingProvider.durationDays > 1) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Số ngày: ${bookingProvider.durationDays}'),
+                              const Text(''),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+
+                        const Divider(),
+
+                        // Tổng cộng (bao gồm phụ thu, không có thuế)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tổng cộng:',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            Text(
+                              '${_calculateGrandTotal(bookingProvider.cartItems).toStringAsFixed(0)}đ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-                  // Error Message
-                  if (bookingProvider.bookingError != null)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              bookingProvider.bookingError!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+                // Error Message
+                if (bookingProvider.bookingError != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            bookingProvider.bookingError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                  // Book Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          bookingProvider.isBooking ? null : _proceedToBooking,
-                      child: const Text('Đặt chỗ ngay'),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 100),
-                ],
-              ),
+                // Book Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed:
+                        bookingProvider.isBooking ? null : _proceedToBooking,
+                    child: const Text('Xác nhận thông tin'),
+                  ),
+                ),
+
+                const SizedBox(height: 100),
+              ],
             ),
           );
         },
@@ -418,6 +530,35 @@ class _CartItemCard extends StatelessWidget {
       case BookingType.COMBO:
         return Icons.card_giftcard;
     }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      final weekday = weekdays[date.weekday % 7];
+
+      return '$weekday, ${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString; // Fallback to original string if parsing fails
+    }
+  }
+
+  double _calculateExtraFee() {
+    if (item.type != BookingType.SERVICE) return 0;
+
+    final maxCapacity = item.details['maxCapacity'] ?? 0;
+    final extraFeePerPerson = item.details['extraFeePerPerson'] ?? 0.0;
+    final allowExtraPeople = item.details['allowExtraPeople'] ?? false;
+
+    if (!allowExtraPeople || item.numberOfPeople <= maxCapacity) return 0;
+
+    final extraPeople = item.numberOfPeople - maxCapacity;
+    return (extraPeople * extraFeePerPerson).toDouble();
+  }
+
+  double _getTotalItemPrice() {
+    return item.totalPrice + _calculateExtraFee();
   }
 
   @override
@@ -464,13 +605,76 @@ class _CartItemCard extends StatelessWidget {
                               .withOpacity(0.6),
                         ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${item.price.toStringAsFixed(0)}đ × ${item.quantity}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
+                  // Show check-in and check-out dates
+                  if (item.checkInDate != null && item.checkOutDate != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Check-in: ${_formatDate(item.checkInDate!.toIso8601String().split('T')[0])}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
                         ),
+                        Text(
+                          'Check-out: ${_formatDate(item.checkOutDate!.toIso8601String().split('T')[0])}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                        Text(
+                          'Thời gian: ${item.checkOutDate!.difference(item.checkInDate!).inDays} ngày',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
+                      ],
+                    )
+                  else if (item.details['selectedDate'] != null)
+                    Text(
+                      'Ngày: ${_formatDate(item.details['selectedDate'])}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  const SizedBox(height: 4),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${item.price.toStringAsFixed(0)}đ × ${item.quantity}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                      if (_calculateExtraFee() > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Phụ thu: ${_calculateExtraFee().toStringAsFixed(0)}đ',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Tổng: ${_getTotalItemPrice().toStringAsFixed(0)}đ',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),

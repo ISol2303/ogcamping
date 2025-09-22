@@ -26,9 +26,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   Future<void> _loadBookings() async {
     final authProvider = context.read<AuthProvider>();
     final bookingProvider = context.read<BookingProvider>();
-    
-    if (authProvider.user != null) {
-      await bookingProvider.loadUserBookings(authProvider.user!.id);
+
+    if (authProvider.user != null && authProvider.customer != null) {
+      print('Loading bookings for customer ID: ${authProvider.customer!.id}');
+      await bookingProvider.loadCustomerBookings(authProvider.customer!.id);
     }
   }
 
@@ -44,7 +45,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       ),
       body: Consumer<BookingProvider>(
         builder: (context, bookingProvider, child) {
-          if (bookingProvider.bookingsLoading && bookingProvider.bookings.isEmpty) {
+          if (bookingProvider.bookingsLoading &&
+              bookingProvider.bookings.isEmpty) {
             return const LoadingWidget(message: 'Đang tải lịch sử...');
           }
 
@@ -56,20 +58,26 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
           }
 
           final allBookings = bookingProvider.bookings;
-          
+
           if (allBookings.isEmpty) {
-            return const EmptyStateWidget(
+            return const _EmptyStateWidget(
               message: 'Chưa có lịch sử đặt chỗ',
               icon: Icons.history,
             );
           }
 
           // Group bookings by status
-          final completedBookings = allBookings.where((b) => b.status == BookingStatus.completed).toList();
-          final cancelledBookings = allBookings.where((b) => b.status == BookingStatus.cancelled).toList();
-          final upcomingBookings = allBookings.where((b) => 
-            b.status == BookingStatus.confirmed || b.status == BookingStatus.pending
-          ).toList();
+          final completedBookings = allBookings
+              .where((b) => b.status == BookingStatus.completed)
+              .toList();
+          final cancelledBookings = allBookings
+              .where((b) => b.status == BookingStatus.cancelled)
+              .toList();
+          final upcomingBookings = allBookings
+              .where((b) =>
+                  b.status == BookingStatus.confirmed ||
+                  b.status == BookingStatus.pending)
+              .toList();
 
           return RefreshIndicator(
             onRefresh: _loadBookings,
@@ -83,7 +91,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                     children: [
                       Expanded(
                         child: _StatCard(
-                          title: 'Sắp tới',
+                          title: 'Đã đặt',
                           count: upcomingBookings.length,
                           color: Colors.blue,
                           icon: Icons.upcoming,
@@ -109,18 +117,18 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // All Bookings List
                   Text(
                     'Tất cả đặt chỗ',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   ...allBookings.map((booking) {
                     return _BookingHistoryCard(booking: booking);
                   }).toList(),
@@ -163,9 +171,9 @@ class _StatCard extends StatelessWidget {
             Text(
               count.toString(),
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
             ),
             Text(
               title,
@@ -183,6 +191,12 @@ class _BookingHistoryCard extends StatelessWidget {
   final Booking booking;
 
   const _BookingHistoryCard({required this.booking});
+
+  String _getDisplayId(String id) {
+    if (id.isEmpty) return 'N/A';
+    if (id.length <= 8) return id;
+    return '${id.substring(0, 8)}...';
+  }
 
   String _getStatusText(BookingStatus status) {
     switch (status) {
@@ -241,7 +255,7 @@ class _BookingHistoryCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Mã: ${booking.id.substring(0, 8)}',
+          '#OGC00000${_getDisplayId(booking.id)}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
@@ -254,7 +268,8 @@ class _BookingHistoryCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: _getStatusColor(booking.status),
                     borderRadius: BorderRadius.circular(8),
@@ -292,24 +307,27 @@ class _BookingHistoryCard extends StatelessWidget {
                     Icon(
                       Icons.people,
                       size: 16,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                     ),
                     const SizedBox(width: 8),
                     Text('${booking.participants} người tham gia'),
                   ],
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Items
                 Text(
                   'Dịch vụ đã đặt:',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 ...booking.items.map((item) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 4),
@@ -332,35 +350,36 @@ class _BookingHistoryCard extends StatelessWidget {
                         ),
                         Text(
                           '${(item.price * item.quantity).toStringAsFixed(0)}đ',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
                         ),
                       ],
                     ),
                   );
                 }).toList(),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Notes
                 if (booking.notes != null && booking.notes!.isNotEmpty) ...[
                   Text(
                     'Ghi chú:',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     booking.notes!,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                    ),
+                          fontStyle: FontStyle.italic,
+                        ),
                   ),
                   const SizedBox(height: 12),
                 ],
-                
+
                 // Dates
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -370,9 +389,13 @@ class _BookingHistoryCard extends StatelessWidget {
                       children: [
                         Text(
                           'Ngày đặt:',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
                         ),
                         Text(
                           '${booking.createdAt.day}/${booking.createdAt.month}/${booking.createdAt.year}',
@@ -386,9 +409,13 @@ class _BookingHistoryCard extends StatelessWidget {
                         children: [
                           Text(
                             'Cập nhật:',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withOpacity(0.6),
+                                    ),
                           ),
                           Text(
                             '${booking.updatedAt!.day}/${booking.updatedAt!.month}/${booking.updatedAt!.year}',
@@ -398,9 +425,9 @@ class _BookingHistoryCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Actions
                 if (booking.status == BookingStatus.completed)
                   SizedBox(
@@ -409,7 +436,9 @@ class _BookingHistoryCard extends StatelessWidget {
                       onPressed: () {
                         // Navigate to review screen
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tính năng đánh giá sẽ có trong phiên bản tiếp theo')),
+                          const SnackBar(
+                              content: Text(
+                                  'Tính năng đánh giá sẽ có trong phiên bản tiếp theo')),
                         );
                       },
                       icon: const Icon(Icons.star_outline),
@@ -420,6 +449,52 @@ class _BookingHistoryCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyStateWidget extends StatelessWidget {
+  final String message;
+  final IconData icon;
+
+  const _EmptyStateWidget({
+    required this.message,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 80,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/'),
+              icon: const Icon(Icons.home),
+              label: const Text('Về trang chủ'),
+            ),
+          ],
+        ),
       ),
     );
   }

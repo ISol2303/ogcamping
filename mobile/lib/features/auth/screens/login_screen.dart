@@ -29,25 +29,43 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.login(
+    final success = await authProvider.loginWithEmail(
       _emailController.text.trim(),
-      _passwordController.text,
+      _passwordController.text.trim(),
     );
 
-    if (success && mounted) {
-      context.goNamed(AppRoutes.home);
+    if (mounted) {
+      if (success) {
+        context.goNamed(AppRoutes.home);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Đăng nhập thất bại'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _googleSignIn() async {
-    // In a real app, you would integrate with Google Sign-In
+  Future<void> _loginWithGoogle() async {
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.googleSignIn('mock_google_token');
+    final success = await authProvider.signInWithGoogle();
 
-    if (success && mounted) {
-      context.goNamed(AppRoutes.home);
+    if (mounted) {
+      if (success) {
+        context.goNamed(AppRoutes.home);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Google Sign-In thất bại'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -220,8 +238,31 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton.icon(
-                              onPressed: authProvider.isLoading ? null : _googleSignIn,
-                              icon: const Icon(Icons.g_mobiledata, size: 24),
+                              onPressed: authProvider.isLoading ? null : _loginWithGoogle,
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                side: BorderSide(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                              ),
+                              icon: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'G',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               label: const Text('Đăng nhập với Google'),
                             ),
                           ),
