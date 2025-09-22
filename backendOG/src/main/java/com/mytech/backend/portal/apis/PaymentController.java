@@ -121,9 +121,9 @@ public class PaymentController {
 
             String status = success ? "success" : "failure";
 
-            // Redirect về HTML page với user interaction để bypass Chrome restrictions
+            // Redirect trực tiếp đến mobile app deep link
             String redirectUrl = String.format(
-                    "/app-redirect.html?bookingId=%d&status=%s&txnRef=%s",
+                    "ogcamping://payment/result?bookingId=%d&status=%s&txnRef=%s",
                     bookingId, status, txnRef
             );
             
@@ -147,7 +147,7 @@ public class PaymentController {
 
             // Redirect về HTML page for failure case
             String fallbackUrl = String.format(
-                    "/app-redirect.html?bookingId=%d&status=failure&error=%s",
+                    "ogcamping://payment/result?bookingId=%d&status=failure&txnRef=%s",
                     fallbackBookingId,
                     UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8)
             );

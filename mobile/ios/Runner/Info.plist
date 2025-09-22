@@ -56,16 +56,5 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>ogcamping.payment</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>ogcamping</string>
-			</array>
-		</dict>
-	</array>
 </dict>
 </plist>

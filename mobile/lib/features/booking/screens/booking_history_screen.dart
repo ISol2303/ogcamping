@@ -40,7 +40,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
         title: const Text('Lịch sử đặt chỗ'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.goNamed('profile'),
         ),
       ),
       body: Consumer<BookingProvider>(

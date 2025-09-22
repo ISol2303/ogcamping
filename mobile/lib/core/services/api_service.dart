@@ -16,8 +16,8 @@ class ApiService {
     if (kIsWeb) {
       return 'http://localhost:8080/apis/v1';
     }
-    // For mobile, use localhost (emulator) or IP address (real device)
-    return 'http://localhost:8080/apis/v1';
+    // For mobile, use IP address for real device connectivity
+    return 'http://192.168.56.1:8080/apis/v1';
   }
 
   static const Duration requestTimeout =
@@ -404,7 +404,7 @@ class ApiService {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    
+
     // Add CORS headers for web
     if (kIsWeb) {
       headers.addAll({
@@ -413,19 +413,22 @@ class ApiService {
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       });
     }
-    
+
     return headers;
   }
 
   // Booking APIs - Real API
   Future<List<BookingResponse>> getCustomerBookings(int customerId) async {
     try {
-      print('Fetching customer bookings from: $baseUrl/bookings/customer/$customerId');
-      
-      final response = await http.get(
-        Uri.parse('$baseUrl/bookings/customer/$customerId'),
-        headers: _headers,
-      ).timeout(requestTimeout);
+      print(
+          'Fetching customer bookings from: $baseUrl/bookings/customer/$customerId');
+
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/bookings/customer/$customerId'),
+            headers: _headers,
+          )
+          .timeout(requestTimeout);
 
       print('Customer bookings API Response Status: ${response.statusCode}');
       print('Customer bookings API Response Body: ${response.body}');
@@ -438,7 +441,7 @@ class ApiService {
         }
 
         final dynamic decodedData = json.decode(response.body);
-        
+
         // Handle case where API returns null
         if (decodedData == null) {
           print('API returned null, returning empty list');
@@ -458,7 +461,8 @@ class ApiService {
               .where((booking) => booking != null) // Filter out null items
               .map((booking) {
                 try {
-                  return BookingResponse.fromJson(booking as Map<String, dynamic>);
+                  return BookingResponse.fromJson(
+                      booking as Map<String, dynamic>);
                 } catch (e) {
                   print('Error parsing booking: $e');
                   print('Problematic booking data: $booking');
@@ -470,12 +474,14 @@ class ApiService {
               .toList();
         }
 
-        throw Exception('Unexpected response format: ${decodedData.runtimeType}');
+        throw Exception(
+            'Unexpected response format: ${decodedData.runtimeType}');
       } else if (response.statusCode == 404) {
         print('Customer not found or no bookings, returning empty list');
         return [];
       } else {
-        throw Exception('Failed to load bookings: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Failed to load bookings: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('Error in getCustomerBookings: $e');
@@ -489,8 +495,11 @@ class ApiService {
     try {
       final url = '$baseUrl/login';
       print('Login API URL: $url');
-      print('Login Request: ${json.encode({"email": email, "password": password})}');
-      
+      print('Login Request: ${json.encode({
+            "email": email,
+            "password": password
+          })}');
+
       final response = await http
           .post(
             Uri.parse(url),

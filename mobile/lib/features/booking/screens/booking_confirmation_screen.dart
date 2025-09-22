@@ -203,8 +203,38 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
             const SnackBar(content: Text('Chuyển hướng đến VNPay...')),
           );
 
-          // Open VNPay URL using PaymentService
-          await _paymentService.openVNPayUrl(paymentResponse.paymentUrl!);
+          // Open VNPay URL using PaymentService with in-app browser
+          await _paymentService.openVNPayUrl(
+            paymentResponse.paymentUrl!,
+            context,
+            onPaymentResult: (params) {
+              // Handle payment result from in-app browser
+              print('Payment result received: $params');
+              
+              // Navigate to /result route with parameters
+              if (mounted) {
+                final bookingId = params['bookingId'] ?? '0';
+                final status = params['status'] ?? 'failure';
+                final txnRef = params['txnRef'];
+                final responseCode = params['responseCode'];
+                
+                // Build query parameters for navigation
+                final queryParams = <String, String>{
+                  'bookingId': bookingId,
+                  'status': status,
+                };
+                
+                if (txnRef != null) queryParams['txnRef'] = txnRef;
+                if (responseCode != null) queryParams['responseCode'] = responseCode;
+                if (params['error'] != null) queryParams['error'] = params['error']!;
+                
+                // Navigate to /result route
+                final uri = Uri(path: '/result', queryParameters: queryParams);
+                print('🔄 Navigating to: ${uri.toString()}');
+                context.go(uri.toString());
+              }
+            },
+          );
 
           // Show a simple message instead of dialog since user will be redirected back
           if (mounted) {
@@ -215,9 +245,9 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
               ),
             );
             
-            // Navigate back to home or booking history to wait for redirect
-            // The deep link will automatically handle navigation to payment success screen
-            context.goNamed(AppRoutes.bookingHistory);
+            // ✅ DO NOT NAVIGATE - Stay on current screen and wait for deep link redirect
+            // The deep link ogcamping://payment/result will automatically handle navigation
+            print('✅ Staying on booking confirmation screen, waiting for deep link redirect...');
           }
         }
       } else {

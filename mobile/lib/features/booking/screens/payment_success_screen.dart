@@ -7,16 +7,12 @@ import '../../../core/providers/auth_provider.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
   final String bookingId;
-  final String status;
   final String? txnRef;
-  final String? error;
 
   const PaymentSuccessScreen({
     super.key,
     required this.bookingId,
-    required this.status,
     this.txnRef,
-    this.error,
   });
 
   @override
@@ -28,7 +24,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  
+
   // Add booking details state
   Map<String, dynamic>? bookingDetails;
   bool isLoadingBooking = false;
@@ -60,20 +56,18 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
     _animationController.forward();
 
     // Refresh booking history and load specific booking details after successful payment
-    if (widget.status == 'success') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final authProvider = context.read<AuthProvider>();
-        final bookingProvider = context.read<BookingProvider>();
-        
-        // Load customer bookings if customer ID is available
-        if (authProvider.customer?.id != null) {
-          bookingProvider.loadCustomerBookings(authProvider.customer!.id);
-        }
-        
-        // Load specific booking details
-        _loadBookingDetails();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final bookingProvider = context.read<BookingProvider>();
+
+      // Load customer bookings if customer ID is available
+      if (authProvider.customer?.id != null) {
+        bookingProvider.loadCustomerBookings(authProvider.customer!.id);
+      }
+
+      // Load specific booking details
+      _loadBookingDetails();
+    });
   }
 
   @override
@@ -84,24 +78,26 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
 
   Future<void> _loadBookingDetails() async {
     if (widget.bookingId == '0') return;
-    
+
     setState(() {
       isLoadingBooking = true;
     });
-    
+
     try {
       final bookingProvider = context.read<BookingProvider>();
-      
+
       // Find the booking in the loaded bookings
       final booking = bookingProvider.bookings.firstWhere(
         (b) => b.id.toString() == widget.bookingId,
         orElse: () => throw Exception('Booking not found'),
       );
-      
+
       setState(() {
         bookingDetails = {
           'id': booking.id,
-          'serviceName': booking.items.isNotEmpty ? booking.items.first.details['name'] ?? 'Service' : 'Service',
+          'serviceName': booking.items.isNotEmpty
+              ? booking.items.first.details['name'] ?? 'Service'
+              : 'Service',
           'totalAmount': booking.totalAmount,
           'checkInDate': booking.checkInDate,
           'checkOutDate': booking.checkOutDate,
@@ -119,7 +115,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
     }
   }
 
-  bool get isSuccess => widget.status == 'success';
+  bool get isSuccess => true; // This screen is only for success
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +135,9 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                     isSuccess ? 'Thanh toán thành công' : 'Thanh toán thất bại',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                          color: isSuccess
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
                         ),
                   ),
                   IconButton(
@@ -165,15 +163,16 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                           return Transform.scale(
                             scale: _scaleAnimation.value,
                             child: Container(
-                              width: 120,
-                              height: 120,
+                              width: 60,
+                              height: 60,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isSuccess ? Colors.green : Colors.red,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: (isSuccess ? Colors.green : Colors.red)
-                                        .withOpacity(0.3),
+                                    color:
+                                        (isSuccess ? Colors.green : Colors.red)
+                                            .withOpacity(0.3),
                                     blurRadius: 20,
                                     spreadRadius: 5,
                                   ),
@@ -181,16 +180,14 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                               ),
                               child: Icon(
                                 isSuccess ? Icons.check : Icons.close,
-                                size: 60,
+                                size: 20,
                                 color: Colors.white,
                               ),
                             ),
                           );
                         },
                       ),
-
-                      const SizedBox(height: 32),
-
+                      const SizedBox(height: 20),
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: Column(
@@ -199,20 +196,24 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                               isSuccess
                                   ? 'Thanh toán thành công!'
                                   : 'Thanh toán thất bại!',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                                    color: isSuccess
+                                        ? Colors.green.shade700
+                                        : Colors.red.shade700,
                                   ),
                               textAlign: TextAlign.center,
                             ),
-
-                            const SizedBox(height: 16),
-
+                            const SizedBox(height: 1),
                             Text(
-                              isSuccess
-                                  ? 'Đơn đặt chỗ của bạn đã được xác nhận.\nChúng tôi sẽ liên hệ với bạn sớm nhất.'
-                                  : widget.error ?? 'Có lỗi xảy ra trong quá trình thanh toán.\nVui lòng thử lại sau.',
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              'Đơn đặt chỗ của bạn đã được xác nhận.\nChúng tôi sẽ liên hệ với bạn sớm nhất.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
                                     color: Colors.grey.shade700,
                                   ),
                               textAlign: TextAlign.center,
@@ -244,54 +245,39 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                               Icon(
                                 Icons.receipt_long,
                                 color: Colors.green.shade600,
-                                size: 24,
+                                size: 12,
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 'Chi tiết thanh toán',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Show loading or booking details
                           if (isLoadingBooking) ...[
                             const Center(
                               child: CircularProgressIndicator(),
                             ),
                           ] else if (bookingDetails != null) ...[
-                            _buildDetailRow('Dịch vụ', bookingDetails!['serviceName']),
+                            _buildDetailRow(
+                                'Loại', bookingDetails!['serviceName']),
                             const SizedBox(height: 8),
                             _buildDetailRow('Mã đơn hàng', widget.bookingId),
-                            const SizedBox(height: 8),
-                            _buildDetailRow('Tổng tiền', '${bookingDetails!['totalAmount'].toStringAsFixed(0)}đ'),
-                            const SizedBox(height: 8),
-                            _buildDetailRow('Số người', '${bookingDetails!['participants']} người'),
-                            const SizedBox(height: 8),
-                            _buildDetailRow(
-                              'Check-in', 
-                              '${bookingDetails!['checkInDate'].day}/${bookingDetails!['checkInDate'].month}/${bookingDetails!['checkInDate'].year}',
-                            ),
-                            const SizedBox(height: 8),
-                            _buildDetailRow(
-                              'Check-out', 
-                              '${bookingDetails!['checkOutDate'].day}/${bookingDetails!['checkOutDate'].month}/${bookingDetails!['checkOutDate'].year}',
-                            ),
-                            if (widget.txnRef != null) ...[
-                              const SizedBox(height: 8),
-                              _buildDetailRow('Mã giao dịch', widget.txnRef!),
-                            ],
+                            // const SizedBox(height: 8),
+                            // _buildDetailRow('Tổng tiền',
+                            //     '${bookingDetails!['totalAmount'].toStringAsFixed(0)}đ'),
                             const SizedBox(height: 8),
                             _buildDetailRow('Trạng thái', 'Đã thanh toán'),
                           ] else ...[
                             _buildDetailRow('Mã đơn hàng', widget.bookingId),
-                            if (widget.txnRef != null) ...[
-                              const SizedBox(height: 8),
-                              _buildDetailRow('Mã giao dịch', widget.txnRef!),
-                            ],
                             const SizedBox(height: 8),
                             _buildDetailRow('Trạng thái', 'Đã thanh toán'),
                           ],
@@ -311,9 +297,11 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => context.goNamed(AppRoutes.bookingHistory),
+                        onPressed: () =>
+                            context.goNamed(AppRoutes.bookingHistory),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isSuccess ? Colors.green : Colors.red,
+                          backgroundColor:
+                              isSuccess ? Colors.green : Colors.red,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -336,9 +324,13 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
                       child: OutlinedButton(
                         onPressed: () => context.goNamed(AppRoutes.home),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: isSuccess ? Colors.green.shade700 : Colors.red.shade700,
+                          foregroundColor: isSuccess
+                              ? Colors.green.shade700
+                              : Colors.red.shade700,
                           side: BorderSide(
-                            color: isSuccess ? Colors.green.shade300 : Colors.red.shade300,
+                            color: isSuccess
+                                ? Colors.green.shade300
+                                : Colors.red.shade300,
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(

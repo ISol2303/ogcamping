@@ -14,6 +14,7 @@ import 'core/repositories/services_repository.dart';
 import 'core/repositories/booking_repository.dart';
 import 'core/repositories/chat_repository.dart';
 import 'core/services/api_service.dart';
+import 'core/services/in_app_browser_service.dart';
 
 // Global instances to prevent recreation on hot reload
 final _apiService = ApiService();
@@ -29,8 +30,35 @@ void main() {
   runApp(const OGCampingApp());
 }
 
-class OGCampingApp extends StatelessWidget {
+class OGCampingApp extends StatefulWidget {
   const OGCampingApp({super.key});
+
+  @override
+  State<OGCampingApp> createState() => _OGCampingAppState();
+}
+
+class _OGCampingAppState extends State<OGCampingApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeDeepLinks();
+  }
+
+  void _initializeDeepLinks() {
+    InAppBrowserService.instance.initializeDeepLinks(
+      onDeepLinkReceived: (params) {
+        print('Deep link received in main app: $params');
+        // Navigate to payment success screen
+        _router.go('/payment-success', extra: params);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    InAppBrowserService.instance.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

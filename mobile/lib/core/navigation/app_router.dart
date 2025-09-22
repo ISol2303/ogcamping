@@ -15,6 +15,7 @@ import '../../features/booking/screens/booking_confirmation_screen.dart';
 import '../../features/booking/screens/booking_screen.dart';
 import '../../features/booking/screens/booking_history_screen.dart';
 import '../../features/booking/screens/payment_success_screen.dart';
+import '../../features/booking/screens/payment_failure_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
@@ -31,7 +32,9 @@ class AppRouter {
       redirect: (context, state) {
         // Debug logging for deep link handling
         print('🔗 GoRouter redirect - Current location: ${state.uri}');
+        print('🔗 Full URI: ${state.uri.toString()}');
         print('🔗 Scheme: ${state.uri.scheme}, Host: ${state.uri.host}, Path: ${state.uri.path}');
+        print('🔗 Query params: ${state.uri.queryParameters}');
         
         final uri = state.uri;
         
@@ -40,7 +43,7 @@ class AppRouter {
             uri.host == 'payment' && 
             uri.path == '/result') {
           
-          print('💳 VNPay Payment Callback Deep Link Detected: $uri');
+          print('🎉 SUCCESS! VNPay Payment Callback Deep Link Detected: $uri');
           
           final queryParams = uri.queryParameters;
           final bookingId = queryParams['bookingId'] ?? '0';
@@ -51,7 +54,27 @@ class AppRouter {
           print('💳 Payment Result - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
 
           // Navigate to Payment Success Screen with parameters
-          return '/payment-success?bookingId=$bookingId&status=$status${txnRef != null ? '&txnRef=$txnRef' : ''}${error != null ? '&error=${Uri.encodeComponent(error)}' : ''}';
+          final redirectPath = '/payment-success?bookingId=$bookingId&status=$status${txnRef != null ? '&txnRef=$txnRef' : ''}${error != null ? '&error=${Uri.encodeComponent(error)}' : ''}';
+          print('🔄 GoRouter redirecting to: $redirectPath');
+          return redirectPath;
+        }
+        
+        // ✅ Fallback: Handle /result path from any scheme (in case deep link doesn't work properly)
+        if (uri.path == '/result' && uri.queryParameters.containsKey('bookingId')) {
+          print('🔄 Fallback: Payment result path detected: $uri');
+          
+          final queryParams = uri.queryParameters;
+          final bookingId = queryParams['bookingId'] ?? '0';
+          final status = queryParams['status'] ?? 'failure';
+          final txnRef = queryParams['txnRef'];
+          final error = queryParams['error'];
+          
+          print('💳 Fallback Payment Result - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
+
+          // Navigate to Payment Success Screen with parameters
+          final redirectPath = '/payment-success?bookingId=$bookingId&status=$status${txnRef != null ? '&txnRef=$txnRef' : ''}${error != null ? '&error=${Uri.encodeComponent(error)}' : ''}';
+          print('🔄 Fallback GoRouter redirecting to: $redirectPath');
+          return redirectPath;
         }
         
         return null;
@@ -184,6 +207,36 @@ class AppRouter {
           parentNavigatorKey: _rootNavigatorKey,
           builder: (context, state) => const BookingHistoryScreen(),
         ),
+        // ✅ Fallback route for /result (in case deep link redirect doesn't work)
+        GoRoute(
+          path: '/result',
+          name: 'payment-result',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final bookingId = state.uri.queryParameters['bookingId'] ?? '0';
+            final status = state.uri.queryParameters['status'] ?? 'failure';
+            final txnRef = state.uri.queryParameters['txnRef'];
+            final error = state.uri.queryParameters['error'];
+            
+            print('🎉 Direct Payment Result Route - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
+
+            // Route to appropriate screen based on backend status
+            if (status == 'success') {
+              return PaymentSuccessScreen(
+                bookingId: bookingId,
+                txnRef: txnRef,
+              );
+            } else {
+              return PaymentFailureScreen(
+                bookingId: bookingId,
+                txnRef: txnRef,
+                error: error,
+                responseCode: state.uri.queryParameters['responseCode'],
+              );
+            }
+          },
+        ),
+
         GoRoute(
           path: '/payment-success',
           name: 'payment-success',
@@ -194,14 +247,22 @@ class AppRouter {
             final txnRef = state.uri.queryParameters['txnRef'];
             final error = state.uri.queryParameters['error'];
             
-            print('🎉 Payment Success Screen - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
+            print('🎉 Payment Result Screen - BookingID: $bookingId, Status: $status, TxnRef: $txnRef');
 
-            return PaymentSuccessScreen(
-              bookingId: bookingId,
-              status: status,
-              txnRef: txnRef,
-              error: error,
-            );
+            // Route to appropriate screen based on backend status
+            if (status == 'success') {
+              return PaymentSuccessScreen(
+                bookingId: bookingId,
+                txnRef: txnRef,
+              );
+            } else {
+              return PaymentFailureScreen(
+                bookingId: bookingId,
+                txnRef: txnRef,
+                error: error,
+                responseCode: state.uri.queryParameters['responseCode'],
+              );
+            }
           },
         ),
       ],

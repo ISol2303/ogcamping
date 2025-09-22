@@ -206,7 +206,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Mobile return URL - sử dụng mobile callback endpoint với IP thay vì localhost
         String mobileReturnUrl = vnpayReturnUrl.replace("/callback", "/callback/mobile")
-                .replace("localhost", "localhost");
+                .replace("localhost", "192.168.56.1");
 
         Map<String, String> vnpParams = new TreeMap<>();
         vnpParams.put("vnp_Version", "2.1.0");

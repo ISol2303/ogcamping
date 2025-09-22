@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../models/payment.dart';
+import 'in_app_browser_service.dart';
 
 class PaymentService {
   static const String baseUrl = 'http://192.168.56.1:8080/apis/v1/payments';
@@ -27,16 +29,30 @@ class PaymentService {
     }
   }
 
-  Future<void> openVNPayUrl(String paymentUrl) async {
+  Future<void> openVNPayUrl(
+    String paymentUrl,
+    BuildContext context, {
+    Function(Map<String, String>)? onPaymentResult,
+  }) async {
     try {
-      final Uri url = Uri.parse(paymentUrl);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        throw Exception('Could not launch $paymentUrl');
-      }
+      await InAppBrowserService.instance.openPaymentUrl(
+        url: paymentUrl,
+        context: context,
+        onPaymentResult: onPaymentResult,
+      );
     } catch (e) {
-      throw Exception('Error opening VNPay URL: $e');
+      print('Error opening VNPay URL with in-app browser: $e');
+      // Fallback to external browser
+      try {
+        final Uri url = Uri.parse(paymentUrl);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Could not launch $paymentUrl');
+        }
+      } catch (fallbackError) {
+        throw Exception('Error opening VNPay URL: $fallbackError');
+      }
     }
   }
 }

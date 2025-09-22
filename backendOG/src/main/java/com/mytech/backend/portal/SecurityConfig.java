@@ -144,7 +144,9 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
         config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
         config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
         config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
+        config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
         config.addAllowedOriginPattern("http://localhost:*"); // Pattern for any port
+        config.addAllowedOriginPattern("http://192.168.*:*"); // Pattern for mobile network
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);
