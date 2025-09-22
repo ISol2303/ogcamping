@@ -35,13 +35,18 @@ import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.mytech.backend.portal.dto.AddDishRequestDTO;
 import com.mytech.backend.portal.dto.OrderBookingRequestDTO;
+import com.mytech.backend.portal.dto.Order.GearOrderResponseDTO;
 import com.mytech.backend.portal.models.Dish;
 import com.mytech.backend.portal.models.OrderBooking;
+import com.mytech.backend.portal.models.OrderBookingItem;
 import com.mytech.backend.portal.models.OrderItem;
 import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.repositories.DishRepository;
 import com.mytech.backend.portal.repositories.OrderBookingRepository;
+import com.mytech.backend.portal.repositories.OrderBookingItemRepository;
 import com.mytech.backend.portal.repositories.OrderItemRepository;
+import com.mytech.backend.portal.repositories.GearRepository;
+import com.mytech.backend.portal.models.Gear;
 import com.mytech.backend.portal.services.EmailService;
 
 @RestController
@@ -51,22 +56,28 @@ public class OrderBookingController {
 	private final OrderBookingRepository orderBookingRepository;
 	private final SimpMessagingTemplate messagingTemplate;
     private final OrderItemRepository orderItemRepository;
+    private final OrderBookingItemRepository orderBookingItemRepository;
     private final DishRepository dishRepository;
+    private final GearRepository gearRepository;
     private final EmailService emailService;
     private final SecureRandom random = new SecureRandom();
 
 
     public OrderBookingController(OrderBookingRepository orderBookingRepository,
             OrderItemRepository orderItemRepository,
+            OrderBookingItemRepository orderBookingItemRepository,
             SimpMessagingTemplate messagingTemplate,
             DishRepository dishRepository,
+            GearRepository gearRepository,
             EmailService emailService) {
     	this.orderBookingRepository = orderBookingRepository;
     	this.orderItemRepository = orderItemRepository;
+    	this.orderBookingItemRepository = orderBookingItemRepository;
     	this.messagingTemplate = messagingTemplate;
     	this.dishRepository = dishRepository;
+    	this.gearRepository = gearRepository;
     	this.emailService = emailService;
-}
+    }
 
     // =====================
     // 🔹 Helper generate mã
@@ -83,6 +94,182 @@ public class OrderBookingController {
             code = generateOrderCode();
         } while (orderBookingRepository.existsByOrderCode(code));
         return code;
+    }
+
+    // =====================
+    // 🔹 API tạo đơn hàng gear
+    // =====================
+    @PostMapping("/gear")
+    public ResponseEntity<OrderBooking> createGearOrder(@RequestBody Map<String, Object> request) {
+        try {
+            // Tạo OrderBooking
+            OrderBooking order = new OrderBooking();
+            order.setOrderCode(generateUniqueOrderCode());
+            order.setStatus("PENDING");
+            order.setTotalPrice(((Number) request.get("totalPrice")).doubleValue());
+            order.setCustomerName((String) request.get("customerName"));
+            order.setEmail((String) request.get("email"));
+            order.setPhone((String) request.get("phone"));
+            order.setOrderDate(LocalDateTime.now());
+            
+            // Set user_id từ request
+            Long userId = ((Number) request.get("userId")).longValue();
+            User user = new User();
+            user.setId(userId);
+            order.setUser(user);
+            
+            // Lưu order
+            OrderBooking savedOrder = orderBookingRepository.save(order);
+            
+            // Tạo OrderBookingItem cho từng sản phẩm
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> items = (List<Map<String, Object>>) request.get("items");
+            if (items != null) {
+                for (Map<String, Object> item : items) {
+                    OrderBookingItem orderItem = new OrderBookingItem();
+                    orderItem.setOrderBooking(savedOrder);
+                    orderItem.setItemType((String) item.get("itemType"));
+                    orderItem.setItemId(((Number) item.get("itemId")).longValue());
+                    orderItem.setQuantity(((Number) item.get("quantity")).intValue());
+                    
+                    // Lấy giá từ request, nếu không có thì lấy từ database
+                    Double unitPrice = ((Number) item.get("unitPrice")).doubleValue();
+                    Double totalPrice = ((Number) item.get("totalPrice")).doubleValue();
+                    
+                    // Nếu là GEAR, kiểm tra và trừ số lượng
+                    if ("GEAR".equals(item.get("itemType"))) {
+                        Long gearId = ((Number) item.get("itemId")).longValue();
+                        Integer quantity = ((Number) item.get("quantity")).intValue();
+                        
+                        // Lấy gear từ database
+                        Gear gear = gearRepository.findById(gearId).orElse(null);
+                        if (gear != null) {
+                            // Kiểm tra số lượng tồn kho
+                            if (gear.getAvailable() < quantity) {
+                                throw new RuntimeException("Không đủ số lượng cho thiết bị: " + gear.getName() + 
+                                    ". Còn lại: " + gear.getAvailable() + ", yêu cầu: " + quantity);
+                            }
+                            
+                            // Trừ số lượng trong DB
+                            gear.setAvailable(gear.getAvailable() - quantity);
+                            gearRepository.save(gear);
+                            
+                            // Cập nhật trạng thái nếu hết hàng
+                            if (gear.getAvailable() <= 0) {
+                                gear.setStatus(Gear.GearStatus.OUT_OF_STOCK);
+                                gearRepository.save(gear);
+                            }
+                            
+                            // Lấy giá từ database nếu request không có
+                            if (unitPrice == 0.0) {
+                                unitPrice = gear.getPricePerDay();
+                                totalPrice = unitPrice * quantity;
+                            }
+                        }
+                    }
+                    
+                    orderItem.setUnitPrice(unitPrice);
+                    orderItem.setTotalPrice(totalPrice);
+                    orderBookingItemRepository.save(orderItem);
+                }
+            }
+            
+            return ResponseEntity.ok(savedOrder);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // =====================
+    // 🔹 API test kiểm tra số lượng thiết bị
+    // =====================
+    @GetMapping("/test-gear/{gearId}")
+    public ResponseEntity<Map<String, Object>> testGearQuantity(@PathVariable Long gearId) {
+        try {
+            Gear gear = gearRepository.findById(gearId).orElse(null);
+            if (gear == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", gear.getId());
+            response.put("name", gear.getName());
+            response.put("available", gear.getAvailable());
+            response.put("status", gear.getStatus());
+            response.put("quantityInStock", gear.getQuantityInStock());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // =====================
+    // 🔹 API lấy đơn hàng gear của user
+    // =====================
+    @GetMapping("/gear/{userId}")
+    public ResponseEntity<List<GearOrderResponseDTO>> getGearOrdersByUser(@PathVariable Long userId) {
+        try {
+            // Sử dụng query tối ưu để tránh circular reference
+            List<OrderBooking> orders = orderBookingRepository.findOrdersByUserId(userId);
+            
+            List<GearOrderResponseDTO> responseDTOs = orders.stream()
+                .map(this::convertToGearOrderResponseDTO)
+                .toList();
+                
+            return ResponseEntity.ok(responseDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    private GearOrderResponseDTO convertToGearOrderResponseDTO(OrderBooking order) {
+        // Lấy items cho order này
+        List<OrderBookingItem> items = orderBookingItemRepository.findByOrderBooking(order);
+        
+        List<GearOrderResponseDTO.GearOrderItemDTO> itemDTOs = items.stream()
+            .map(item -> GearOrderResponseDTO.GearOrderItemDTO.builder()
+                .id(item.getId())
+                .itemType(item.getItemType())
+                .itemId(item.getItemId())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getUnitPrice())
+                .totalPrice(item.getTotalPrice())
+                .build())
+            .toList();
+        
+        return GearOrderResponseDTO.builder()
+            .id(order.getId())
+            .orderCode(order.getOrderCode())
+            .status(order.getStatus())
+            .totalPrice(order.getTotalPrice())
+            .customerName(order.getCustomerName())
+            .email(order.getEmail())
+            .phone(order.getPhone())
+            .createdOn(order.getCreatedOn())
+            .orderDate(order.getOrderDate())
+            .items(itemDTOs)
+            .build();
+    }
+
+    @GetMapping("/gear/{userId}/details/{orderId}")
+    public ResponseEntity<Map<String, Object>> getGearOrderDetails(@PathVariable Long userId, @PathVariable Long orderId) {
+        Optional<OrderBooking> orderOpt = orderBookingRepository.findById(orderId);
+        if (orderOpt.isEmpty() || !orderOpt.get().getUser().getId().equals(userId)) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        OrderBooking order = orderOpt.get();
+        List<OrderBookingItem> items = orderBookingItemRepository.findByOrderBooking(order);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("order", order);
+        response.put("items", items);
+        
+        return ResponseEntity.ok(response);
     }
 
     // =====================

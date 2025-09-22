@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useCart } from "@/context/CartContext"
+import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -31,16 +33,34 @@ import { useAuth } from "@/context/AuthContext"
 
 
 export default function CartPage() {
-
+    const { cartItems, updateQuantity, removeFromCart } = useCart()
+    const { user: authUser, isLoggedIn: authIsLoggedIn } = useAuth()
     const [isLoggedIn, setIsLoggedIn] = useState(false)
+    //const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
     // const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
     const { user, logout } = useAuth()
-
     const router = useRouter()
 
-    const [cartItems, setCartItems] = useState<any[]>([]);
     const [promoCode, setPromoCode] = useState("");
     const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+
+    // Load initial data
+//    useEffect(() => {
+//        const token = localStorage.getItem('authToken')
+//        const userData = localStorage.getItem('user')
+  //      console.log('Initial load - token:', !!token, 'userData:', !!userData)
+        
+ //      if (token && userData) {
+  //          setIsLoggedIn(true)
+  //          setUser(JSON.parse(userData))
+  //      } else {
+  //          setIsLoggedIn(false)
+  //          setUser(null)
+  //      }
+  //      setIsLoading(false)
+  //  }, [])
+  
     // useEffect(() => {
     //     const token = localStorage.getItem('authToken')
     //     const userData = localStorage.getItem('user')
@@ -50,55 +70,30 @@ export default function CartPage() {
     //     }
     // }, [])
 
+    // Sync with AuthContext (ưu tiên AuthContext)
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const storedCart = localStorage.getItem("cart");
-            if (storedCart) setCartItems(JSON.parse(storedCart));
+        console.log('AuthContext changed - authIsLoggedIn:', authIsLoggedIn, 'authUser:', authUser)
+        if (authIsLoggedIn && authUser) {
+            setIsLoggedIn(true)
+            setUser({
+                id: parseInt(authUser.id), // AuthContext id là string, cần parse thành number
+                email: authUser.email,
+                name: authUser.name || '',
+                role: authUser.role
+            })
         }
-    }, []);
+    }, [authIsLoggedIn, authUser])
+
+    // Cart items are now managed by CartContext
 
 
-    const updateQuantity = (id: string, newQuantity: number) => {
-        if (newQuantity < 1) return;
-
-        setCartItems((items) => {
-            const updatedItems = items.map((item) => {
-                if (item.id !== id) return item;
-
-                let totalPrice = item.totalPrice;
-
-                if (item.type === "SERVICE") {
-                    const baseQty = Math.min(newQuantity, item.item.maxCapacity);
-                    const extraQty = Math.max(newQuantity - item.item.maxCapacity, 0);
-                    totalPrice = item.item.price + extraQty * (item.item.extraFeePerPerson || 0);
-                } else {
-                    totalPrice = item.item.price * newQuantity;
-                }
-
-                return { ...item, quantity: newQuantity, totalPrice };
-            });
-
-            // Cập nhật localStorage ngay sau khi tính xong
-            localStorage.setItem("cart", JSON.stringify(updatedItems));
-
-            return updatedItems;
-        });
-    };
+    // updateQuantity is now provided by CartContext
     const handleGoToCart = () => {
         router.push("/cart");
     };
 
 
-    const removeItem = (id: string) => {
-        // Lọc ra item không trùng với id cần xoá
-        const updatedCart = cartItems.filter((item) => item.id !== id);
-
-        // Cập nhật state
-        setCartItems(updatedCart);
-
-        // Cập nhật localStorage
-        localStorage.setItem("cart", JSON.stringify(updatedCart));
-    };
+    // removeFromCart is now provided by CartContext
 
 
     const applyPromoCode = () => {
@@ -110,8 +105,13 @@ export default function CartPage() {
 
     // Handle logout
     const handleLogout = () => {
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('user')
+        // Sử dụng AuthContext logout
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('authToken')
+            localStorage.removeItem('user')
+            sessionStorage.removeItem('authToken')
+            sessionStorage.removeItem('user')
+        }
         setIsLoggedIn(false)
     }
 
@@ -127,16 +127,55 @@ export default function CartPage() {
     }
     const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const discount = appliedPromo ? subtotal * 0.2 : 0;
-    const shipping = subtotal > 2000000 ? 0 : 100000;
+    const shipping = 0; // Bỏ phí ship
     const total = subtotal - discount + shipping;
+    
+    // Debug logs
+    console.log('=== CART PAGE DEBUG ===');
+    console.log('isLoggedIn:', isLoggedIn);
+    console.log('user:', user);
+    console.log('authIsLoggedIn:', authIsLoggedIn);
+    console.log('authUser:', authUser);
+    console.log('cartItems:', cartItems);
+    console.log('subtotal:', subtotal);
+    console.log('total:', total);
+    console.log('localStorage authToken:', localStorage.getItem('authToken'));
+    console.log('localStorage user:', localStorage.getItem('user'));
+    console.log('========================');
+    
+    // Nếu không có token nhưng có user data cũ, xóa user data
+    if (!localStorage.getItem('authToken') && localStorage.getItem('user')) {
+        console.log('Clearing old user data - no token found');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('userId');
+    }
+    
+    // Function để xóa dữ liệu cũ và đăng nhập lại
+    const handleClearAndLogin = () => {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/login';
+    }
     const formatPrice = (price: number) =>
         new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+    
+    // Show loading while checking auth
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Đang tải...</p>
+                </div>
+            </div>
+        )
+    }
+    
     if (cartItems.length === 0) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
-                {/* Header */}
-
-
                 {/* Empty Cart */}
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
@@ -180,9 +219,7 @@ export default function CartPage() {
             return;
         }
 
-        // Không tạo booking ở đây nữa
-        // Chỉ lưu cart và redirect sang checkout
-        localStorage.setItem("cart", JSON.stringify(cartItems));
+        // Redirect to checkout - cart is already managed by CartContext
         window.location.href = "/checkout";
     };
 
@@ -280,7 +317,7 @@ export default function CartPage() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => removeItem(item.id)}
+                                                    onClick={() => removeFromCart(item.id)}
                                                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -327,8 +364,11 @@ export default function CartPage() {
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </Button>
-                                                    {item.item.capacity && item.item.capacity !== "null-null người" && (
+                                                    {item.type === "SERVICE" && item.item.capacity && item.item.capacity !== "null-null người" && (
                                                         <span className="w-12 text-center font-medium">Người</span>
+                                                    )}
+                                                    {item.type === "EQUIPMENT" && (
+                                                        <span className="w-12 text-center font-medium">Thiết bị</span>
                                                     )}
                                                 </div>
 
@@ -336,10 +376,19 @@ export default function CartPage() {
                                                     {formatPrice(
                                                         item.type === "SERVICE"
                                                             ? item.item.price + Math.max(0, item.quantity - item.item.maxCapacity) * (item.item.extraFeePerPerson || 0)
-                                                            : item.totalPrice * item.quantity
+                                                            : item.totalPrice
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Equipment specific info */}
+                                            {item.type === "EQUIPMENT" && item.rentalDays && (
+                                                <div className="mt-2 text-sm text-gray-600">
+                                                    <span>Thuê {item.rentalDays} ngày</span>
+                                                    <span className="mx-2">•</span>
+                                                    <span>{item.item.price?.toLocaleString('vi-VN')}đ/ngày</span>
+                                                </div>
+                                            )}
 
                                         </div>
                                     </div>
@@ -450,6 +499,17 @@ export default function CartPage() {
                                     >
                                         <CreditCard /> Thanh toán ngay
                                     </Button>
+                                    
+                                    {/* Debug button - chỉ hiển thị khi có vấn đề */}
+                                    {!isLoggedIn && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full text-red-600 border-red-600 hover:bg-red-50"
+                                            onClick={handleClearAndLogin}
+                                        >
+                                            🔧 Xóa dữ liệu cũ & Đăng nhập lại
+                                        </Button>
+                                    )}
 
                                     <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                                         <Shield className="w-4 h-4 text-green-600" />

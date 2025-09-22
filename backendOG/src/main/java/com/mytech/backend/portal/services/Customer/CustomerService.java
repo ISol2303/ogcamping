@@ -11,4 +11,5 @@ public interface CustomerService {
     CustomerResponseDTO createCustomer(CustomerRequestDTO req);
     CustomerResponseDTO updateCustomer(Long id, CustomerRequestDTO req);
     List<CustomerResponseDTO> getAllCustomers();
+    CustomerResponseDTO getCustomerByUserId(Long userId);
 }

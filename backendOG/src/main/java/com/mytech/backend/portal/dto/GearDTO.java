@@ -3,7 +3,6 @@ package com.mytech.backend.portal.dto;
 import java.time.LocalDateTime;
 
 import com.mytech.backend.portal.models.Area;
-import com.mytech.backend.portal.models.Category;
 import com.mytech.backend.portal.models.Gear.GearStatus;
 
 import lombok.AllArgsConstructor;
@@ -16,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class GearDTO {
     private Long id;
     private String name;
-    private Category.CategoryName category;
+    private String category;
     private Area.AreaName area;
     private String description;
     private Integer quantityInStock;
@@ -38,10 +37,10 @@ public class GearDTO {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public Category.CategoryName getCategory() {
+	public String getCategory() {
 		return category;
 	}
-	public void setCategory(Category.CategoryName category) {
+	public void setCategory(String category) {
 		this.category = category;
 	}
 	public Area.AreaName getArea() {

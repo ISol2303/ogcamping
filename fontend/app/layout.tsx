@@ -5,6 +5,9 @@ import "./globals.css"
 import ChatBot from "@/components/chat-bot"
 import { AuthProvider } from "@/context/AuthContext"
 import { ChatProvider } from "@/context/ChatContext"
+import { CartProvider } from "@/context/CartContext"
+import AdminNavbar from "@/components/AdminNavbar"
+
 import ClientNavbarWrapper from "@/components/ClientNavbarWrapper"
 import { Toaster } from "@/components/ui/toaster"
 
@@ -26,11 +29,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
      <html lang="vi" className="mdl-js">
       <body className={`${inter.variable} ${inter.className}`} suppressHydrationWarning>
         <AuthProvider>
-          <ChatProvider>
-            <ClientNavbarWrapper />
-            {children}
-            <Toaster />
-          </ChatProvider>
+          <CartProvider>
+            <ChatProvider>
+              <ClientNavbarWrapper />
+              {children}
+            </ChatProvider>
+          </CartProvider>
+//          <ChatProvider>
+//            <ClientNavbarWrapper />
+ //           {children}
+ //           <Toaster />
+ //         </ChatProvider>
         </AuthProvider>
       </body>
     </html>

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
+import { useCart } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,11 +13,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ShoppingCart, Sparkles } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   const { user, isLoggedIn, logout } = useAuth()
+  const { cartCount } = useCart()
 
   // helper để set class active
   const linkClass = (href: string) =>
@@ -56,6 +59,9 @@ export default function Navbar() {
 
         {/* Menu */}
         <nav className="hidden md:flex items-center gap-6">
+          <Link href="/store" className={linkClass("/store")}>
+            Cửa hàng
+          </Link>
           <Link href="/services" className={linkClass("/services")}>
             Dịch vụ
           </Link>
@@ -81,6 +87,17 @@ export default function Navbar() {
 
         {/* User actions */}
         <div className="flex items-center gap-2">
+          {/* Cart Icon */}
+//          <Button variant="ghost" size="sm" asChild className="relative">
+//            <Link href="/cart">
+//              <ShoppingCart className="h-5 w-5" />
+ //             {cartCount > 0 && (
+ //               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
+ //                 {cartCount}
+ //               </Badge>
+ //             )}
+  //          </Link>
+ //         </Button>
        
           {isLoggedIn && user ? (
             <>
@@ -108,6 +125,9 @@ export default function Navbar() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleDashboardNavigation}>
                     Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/orders/gear">Lịch sử đơn hàng</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout}>
                     Đăng xuất

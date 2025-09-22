@@ -1,7 +1,6 @@
 package com.mytech.backend.portal.repositories;
 
 import com.mytech.backend.portal.models.Area.AreaName;
-import com.mytech.backend.portal.models.Category.CategoryName;
 import com.mytech.backend.portal.models.Gear;
 import com.mytech.backend.portal.models.Gear.GearStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,7 +21,7 @@ public interface GearRepository extends JpaRepository<Gear, Long> {
 		    """)
 		    List<Gear> searchGears(
 		        @Param("name") String name,
-		        @Param("category") CategoryName category,
+		        @Param("category") String category,
 		        @Param("area") AreaName area,
 		        @Param("status") GearStatus status
 		    );
