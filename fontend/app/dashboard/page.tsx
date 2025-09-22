@@ -96,11 +96,11 @@ export default function DashboardPage() {
 
       try {
         // Lấy token & userData
-        const token = sessionStorage.getItem("authToken");
-        const userData = sessionStorage.getItem("user");
+        const token = localStorage.getItem("authToken");
+        const userData = localStorage.getItem("user");
 
         if (!token || !userData) {
-          console.warn("⚠️ Không có token hoặc userData trong sessionStorage");
+          console.warn("⚠️ Không có token hoặc userData trong localStorage");
           router.push("/login");
           return;
         }
@@ -336,6 +336,21 @@ export default function DashboardPage() {
     setBill([]); // reset bill nếu muốn bắt đầu mới
   };
 
+
+
+
+
+
+
+  //handleLogout
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('user');
+    router.push('/login');
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -385,6 +400,30 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="border-b bg-white sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Tent className="h-8 w-8 text-green-600" />
+            <span className="text-2xl font-bold text-green-800">OG Camping</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm">
+              <Bell className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+            <Avatar>
+              <AvatarImage src={user.avatar || '/user-avatar.png'} />
+              <AvatarFallback>{user.name?.[0] || 'JD'}</AvatarFallback>
+            </Avatar>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
 
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
