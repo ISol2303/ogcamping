@@ -48,27 +48,27 @@ export default function BlogDetailAdminPage() {
 
   
 
-  const handleAIGen = async () => {
-    if (!confirm("Bạn có muốn AI gen lại nội dung cho bài này? (bài vẫn giữ trạng thái PENDING)")) return;
-    setActionLoading(true);
-    try {
-      const res = await fetch(`http://localhost:8080/apis/blogs/admin/${blogId}/aigen`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        alert("AI Gen lỗi: " + txt);
-      } else {
-        alert("AI Gen xong, admin review lại.");
-        await fetchBlog();
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi khi gọi AI Gen");
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  // const handleAIGen = async () => {
+  //   if (!confirm("Bạn có muốn AI gen lại nội dung cho bài này? (bài vẫn giữ trạng thái PENDING)")) return;
+  //   setActionLoading(true);
+  //   try {
+  //     const res = await fetch(`http://localhost:8080/apis/blogs/admin/${blogId}/aigen`, {
+  //       method: "POST",
+  //     });
+  //     if (!res.ok) {
+  //       const txt = await res.text();
+  //       alert("AI Gen lỗi: " + txt);
+  //     } else {
+  //       alert("AI Gen xong, admin review lại.");
+  //       await fetchBlog();
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Lỗi khi gọi AI Gen");
+  //   } finally {
+  //     setActionLoading(false);
+  //   }
+  // };
 
   const handlePublish = async () => {
     if (!confirm("Xác nhận publish bài viết này?")) return;
@@ -168,9 +168,9 @@ export default function BlogDetailAdminPage() {
       )}
 
       <div className="flex gap-3">
-        <Button onClick={handleAIGen} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={actionLoading}>
+        {/* <Button onClick={handleAIGen} className="bg-blue-600 hover:bg-blue-700 text-white" disabled={actionLoading}>
           {actionLoading ? "Đang..." : "AI Gen"}
-        </Button>
+        </Button> */}
 
         <Button onClick={handlePublish} className="bg-green-600 hover:bg-green-700 text-white" disabled={actionLoading}>
           Publish

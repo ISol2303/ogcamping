@@ -121,32 +121,32 @@ export default function AdminBlogsPage() {
   };
 
   // Action: AI Gen
-  const handleAIGen = async (id: number) => {
-    setActionLoading(id);
-    try {
-      const res = await fetch(
-        `http://localhost:8080/apis/blogs/admin/${id}/aigen`,
-        { method: "POST" }
-      );
-      if (!res.ok) {
-        const txt = await res.text();
-        alert("AI Gen thất bại: " + txt);
-        return;
-      }
-      const data = await res.json();
-      if (data.status === "quota_exceeded") {
-        alert("⚠️ AI Gen thất bại: Quota OpenAI đã hết. " + data.message);
-      } else {
-        alert(data.message);
-      }
-      await fetchBlogs();
-    } catch (err) {
-      console.error("AI gen error:", err);
-      alert("Lỗi khi gọi AI Gen");
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  // const handleAIGen = async (id: number) => {
+  //   setActionLoading(id);
+  //   try {
+  //     const res = await fetch(
+  //       `http://localhost:8080/apis/blogs/admin/${id}/aigen`,
+  //       { method: "POST" }
+  //     );
+  //     if (!res.ok) {
+  //       const txt = await res.text();
+  //       alert("AI Gen thất bại: " + txt);
+  //       return;
+  //     }
+  //     const data = await res.json();
+  //     if (data.status === "quota_exceeded") {
+  //       alert("⚠️ AI Gen thất bại: Quota OpenAI đã hết. " + data.message);
+  //     } else {
+  //       alert(data.message);
+  //     }
+  //     await fetchBlogs();
+  //   } catch (err) {
+  //     console.error("AI gen error:", err);
+  //     alert("Lỗi khi gọi AI Gen");
+  //   } finally {
+  //     setActionLoading(null);
+  //   }
+  // };
 
   // ✅ Filter blogs theo search + status
   const filteredBlogs = blogs.filter((blog) => {
@@ -314,13 +314,13 @@ export default function AdminBlogsPage() {
 
                   {b.status === "PENDING" && (
                     <>
-                      <Button
+                      {/* <Button
                         onClick={() => handleAIGen(b.id)}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                         disabled={actionLoading === b.id}
                       >
                         {actionLoading === b.id ? "Đang xử lý..." : "AI Gen"}
-                      </Button>
+                      </Button> */}
 
                       <Button
                         onClick={() => handlePublish(b.id)}
