@@ -9,7 +9,7 @@ import com.mytech.backend.portal.dto.Shift.AssignBookingRequest;
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
 import com.mytech.backend.portal.models.Combo.Combo;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.BookingItemRepository;
 import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.ComboRepository;

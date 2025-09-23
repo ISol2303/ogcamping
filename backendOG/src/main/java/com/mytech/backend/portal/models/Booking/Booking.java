@@ -5,7 +5,8 @@ import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Equipment.Equipment;
 import com.mytech.backend.portal.models.Payment.Payment;
 import com.mytech.backend.portal.models.Service.Service;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

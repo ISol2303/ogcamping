@@ -11,13 +11,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.mytech.backend.portal.dto.SignInRequest;
 import com.mytech.backend.portal.dto.SignInResponse;
 import com.mytech.backend.portal.dto.SignUpRequest;
 import com.mytech.backend.portal.jwt.JwtUtils;
-import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.models.Customer.Customer;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.services.UserService;
 

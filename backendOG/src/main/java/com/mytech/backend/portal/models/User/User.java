@@ -1,4 +1,4 @@
-package com.mytech.backend.portal.models;
+package com.mytech.backend.portal.models.User;
 
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Wishlist.WishlistItem;
@@ -59,6 +59,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Provider provider = Provider.LOCAL;
 
     @Column(name = "agree_marketing", nullable = false)
     private Boolean agreeMarketing;
@@ -85,6 +90,10 @@ public class User {
 
     public enum Status {
         ACTIVE, INACTIVE
+    }
+    
+    public enum Provider {
+        LOCAL, GOOGLE, FACEBOOK
     }
     // reset password
     private String resetCode;

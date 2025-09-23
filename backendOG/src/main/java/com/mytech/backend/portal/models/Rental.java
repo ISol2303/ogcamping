@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import com.mytech.backend.portal.models.User.User;
+
 @Entity
 @Table(name = "rentals")
 @Data

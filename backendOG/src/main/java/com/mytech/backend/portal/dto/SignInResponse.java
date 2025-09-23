@@ -2,7 +2,7 @@ package com.mytech.backend.portal.dto;
 
 import java.io.Serializable;
 
-import com.mytech.backend.portal.models.User.Role;
+import com.mytech.backend.portal.models.User.User.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;

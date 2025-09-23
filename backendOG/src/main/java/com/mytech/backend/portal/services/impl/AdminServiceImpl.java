@@ -117,11 +117,11 @@ public class AdminServiceImpl implements AdminService {
 
             // Customers Stat
             long totalCustomers = userRepository.findAll().stream()
-                    .filter(u -> u.getRole() != null && u.getRole() == com.mytech.backend.portal.models.User.Role.CUSTOMER)
+                    .filter(u -> u.getRole() != null && u.getRole() == com.mytech.backend.portal.models.User.User.Role.CUSTOMER)
                     .filter(u -> u.getCreatedAt() != null && u.getCreatedAt().isAfter(currentStart) && u.getCreatedAt().isBefore(currentEnd))
                     .count();
             long prevTotalCustomers = userRepository.findAll().stream()
-                    .filter(u -> u.getRole() != null && u.getRole() == com.mytech.backend.portal.models.User.Role.CUSTOMER)
+                    .filter(u -> u.getRole() != null && u.getRole() == com.mytech.backend.portal.models.User.User.Role.CUSTOMER)
                     .filter(u -> u.getCreatedAt() != null && u.getCreatedAt().isAfter(prevStart) && u.getCreatedAt().isBefore(currentStart))
                     .count();
             String customersChange = calculateChange(totalCustomers, prevTotalCustomers);

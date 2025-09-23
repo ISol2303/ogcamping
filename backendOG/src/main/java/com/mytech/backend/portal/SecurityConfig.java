@@ -103,7 +103,7 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
             "/apis/v1/customers/by-user/**",  // Cho phép lấy customer theo user ID
             "/apis/orders/gear/**",  // Cho phép truy cập lịch sử đơn hàng gear
             "/apis/gear-orders/**",  // Cho phép truy cập API gear orders mới
-            "/apis/orders/test-gear/**"  // Cho phép test API kiểm tra số lượng thiết bị
+            "/apis/orders/test-gear/**",  // Cho phép test API kiểm tra số lượng thiết bị
 	                    "/apis/v1/combos/**",
 	                    "/apis/dishes/all",
 	                    "/apis/v1/users/forgot-password",

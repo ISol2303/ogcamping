@@ -1,6 +1,6 @@
 package com.mytech.backend.portal.repositories;
 
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.models.Wishlist.WishlistItem;
 import com.mytech.backend.portal.models.Wishlist.WishlistType;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -15,8 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.mytech.backend.portal.dto.Review.ReviewResponseDTO;
 import com.mytech.backend.portal.dto.Review.ReviewStatusUpdateDTO;
-import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.models.Review.ReviewStatus;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.services.UserService;
 import com.mytech.backend.portal.services.Review.ReviewService;
 

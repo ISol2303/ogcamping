@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
         setSuccess(msg);
         setStep("reset");
       } else {
-        // ✅ reset password
+        // reset password
         if (formData.password !== formData.confirmPassword) {
           throw new Error("Mật khẩu xác nhận không khớp.");
         }

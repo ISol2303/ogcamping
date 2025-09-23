@@ -3,6 +3,8 @@ package com.mytech.backend.portal.models;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.mytech.backend.portal.models.User.User;
+
 @Entity
 @Table(name = "order_bookings")
 public class OrderBooking {

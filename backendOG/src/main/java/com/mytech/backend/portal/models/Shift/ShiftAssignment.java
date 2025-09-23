@@ -1,6 +1,7 @@
 package com.mytech.backend.portal.models.Shift;
 
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
+
 import jakarta.persistence.*;
 import lombok.*;
 

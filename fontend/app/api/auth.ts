@@ -208,10 +208,17 @@ export const getUserProfile = async (token: string): Promise<UserProfile> => {
 
 // Quên mật khẩu (khách) → gửi mã về email
 export const forgotPasswordApiGuest = async (email: string): Promise<string> => {
-  const res = await axios.post(`${API_URL}/apis/v1/users/forgot-password`, null, {
-    params: { email },
-  });
-  return res.data;
+  try {
+    const res = await axios.post(`${API_URL}/apis/v1/users/forgot-password`, null, {
+      params: { email },
+    });
+    return res.data; // success
+  } catch (err: any) {
+    if (err.response && err.response.data) {
+      throw new Error(err.response.data); // lấy message từ BE
+    }
+    throw new Error("Có lỗi xảy ra, vui lòng thử lại."); // fallback
+  }
 };
 
 // Quên mật khẩu (người dùng đã đăng nhập) → gửi mã về email

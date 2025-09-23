@@ -3,7 +3,7 @@ package com.mytech.backend.portal.apis;
 import com.mytech.backend.portal.dto.*;
 import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
 import com.mytech.backend.portal.dto.Service.ServiceResponseDTO;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.services.*;
 import com.mytech.backend.portal.services.Booking.BookingService;
 import com.mytech.backend.portal.services.Service.ServiceService;

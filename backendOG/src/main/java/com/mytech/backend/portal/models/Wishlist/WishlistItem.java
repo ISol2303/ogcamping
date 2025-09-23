@@ -1,9 +1,10 @@
 package com.mytech.backend.portal.models.Wishlist;
 
-import com.mytech.backend.portal.models.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+
+import com.mytech.backend.portal.models.User.User;
 
 import lombok.*;
 

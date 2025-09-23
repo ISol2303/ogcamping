@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.mytech.backend.portal.dto.ResetPasswordRequestDTO;
 import com.mytech.backend.portal.dto.UserDTO;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.services.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping({"/apis/v1/users", "/apis/test/users"})
 @RequiredArgsConstructor
 public class UserController {
+
     @Autowired
     private UserService userService;
 
@@ -84,13 +86,26 @@ public class UserController {
         return ResponseEntity.ok(userDTO);
     }
     
-    // Gửi email reset password
- // Case: user chưa đăng nhập -> cần nhập email
+    // Case: user chưa đăng nhập -> cần nhập email
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPasswordGuest(@RequestParam(name = "email") String email) {
         if (email == null || email.isEmpty()) {
             return ResponseEntity.badRequest().body("Email không được để trống");
         }
+
+        User user = userService.findByEmail(email);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng");
+        }
+
+        if (user.getProvider() != User.Provider.LOCAL) {
+            String providerName = user.getProvider().name().charAt(0) 
+                    + user.getProvider().name().substring(1).toLowerCase();
+
+            return ResponseEntity.badRequest().body("Tài khoản này được đăng ký bằng " + providerName +
+                    ". Vui lòng đăng nhập qua " + providerName + ".");
+        }
+
         userService.sendResetCode(email);
         return ResponseEntity.ok("OTP đã được gửi tới " + email);
     }
@@ -101,7 +116,18 @@ public class UserController {
         if (authentication == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Bạn chưa đăng nhập");
         }
+
         String targetEmail = authentication.getName();
+        User user = userService.findByEmail(targetEmail);
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng");
+        }
+
+        if (user.getProvider() != User.Provider.LOCAL) {
+            return ResponseEntity.badRequest().body("Tài khoản này được đăng ký bằng " + user.getProvider() +
+                    ". Vui lòng đăng nhập qua " + user.getProvider() + ".");
+        }
+
         userService.sendResetCode(targetEmail);
         return ResponseEntity.ok("OTP đã được gửi tới " + targetEmail);
     }

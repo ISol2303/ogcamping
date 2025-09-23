@@ -3,7 +3,7 @@ package com.mytech.backend.portal.services.impl;
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.Customer.Customer;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.*;
 import com.mytech.backend.portal.services.EmailService;
 import com.mytech.backend.portal.services.UserService;

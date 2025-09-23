@@ -1,7 +1,8 @@
 package com.mytech.backend.portal.models.Customer;
 
 import com.mytech.backend.portal.models.Booking.Booking;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,8 +1,9 @@
 package com.mytech.backend.portal.security.oauth2;
 
 import com.mytech.backend.portal.jwt.JwtUtils;
-import com.mytech.backend.portal.models.User;
 import com.mytech.backend.portal.models.Customer.Customer;
+import com.mytech.backend.portal.models.User.User;
+
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,11 +45,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String picture = null;
 
         if ("google".equalsIgnoreCase(registrationId)) {
-            // ✅ Google: lấy avatar trực tiếp
+            // Google: lấy avatar trực tiếp
             picture = oAuth2User.getAttribute("picture");
 
         } else if ("facebook".equalsIgnoreCase(registrationId)) {
-            // ✅ Facebook: fallback email nếu null
+            // Facebook: fallback email nếu null
             if (email == null) {
                 String fbId = oAuth2User.getAttribute("id");
                 email = fbId + "@facebook.com"; // dùng ID để tạo email giả
@@ -75,6 +76,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .avatar(finalPicture)
                     .role(User.Role.CUSTOMER)
                     .status(User.Status.ACTIVE)
+                    .provider("google".equalsIgnoreCase(registrationId) 
+                            ? User.Provider.GOOGLE 
+                            : User.Provider.FACEBOOK)
                     .build();
             newUser = userRepository.save(newUser);
 
@@ -89,7 +93,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             return newUser;
         });
+     // --- Kiểm tra provider lock ---
+        User.Provider loginProvider = "google".equalsIgnoreCase(registrationId)
+                ? User.Provider.GOOGLE
+                : User.Provider.FACEBOOK;
 
+        if (user.getProvider() != loginProvider) {
+            // Nếu provider khác -> từ chối login
+            throw new RuntimeException("Bạn đã đăng ký bằng " + user.getProvider() +
+                    ". Vui lòng đăng nhập bằng " + user.getProvider() + ".");
+        }
 
         // --- 3. Update avatar nếu login lại bằng FB/Google ---
         if (finalPicture != null) {

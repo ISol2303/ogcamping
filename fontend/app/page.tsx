@@ -40,7 +40,7 @@ export default function HomePage() {
   
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
-  // Kiểm tra login và fetch service
+  
   useEffect(() => {
     // fetch services từ API
     const fetchServices = async () => {
@@ -163,8 +163,8 @@ export default function HomePage() {
             const itemHasReview = typeof s.hasReview !== "undefined" ? s.hasReview : false
             return itemHasReview === false
           })
-
-          if (svcItem) {
+          const dismissed = localStorage.getItem("dismissReviewPopup");
+          if (svcItem && !dismissed) {
             setServiceToReview(svcItem.serviceId)
             setShowReviewPopup(true)
           } else {
@@ -194,6 +194,13 @@ export default function HomePage() {
       router.push(`/services/${serviceToReview}#reviews`); // chuyển đến phần reviews của dịch vụ
     }
   }
+  
+
+  // xử lý khi bấm "Để sau"
+  const handleDismissReview = () => {
+    localStorage.setItem("dismissReviewPopup", "true");
+    setShowReviewPopup(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
@@ -207,7 +214,7 @@ export default function HomePage() {
             Bạn vừa hoàn thành một chuyến cắm trại gần đây. Hãy để lại đánh giá để giúp chúng tôi cải thiện dịch vụ nhé!
           </p>
           <DialogFooter className="mt-4 flex gap-2">
-            <Button variant="outline" onClick={() => setShowReviewPopup(false)}>
+            <Button variant="outline" onClick={handleDismissReview}>
               Để sau
             </Button>
             <Button onClick={handleGoReview}>Viết đánh giá</Button>

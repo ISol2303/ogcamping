@@ -3,6 +3,7 @@ package com.mytech.backend.portal.models;
 import java.time.LocalDateTime;
 
 import com.mytech.backend.portal.models.Service.Service;
+import com.mytech.backend.portal.models.User.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

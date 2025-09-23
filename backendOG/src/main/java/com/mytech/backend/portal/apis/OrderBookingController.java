@@ -40,7 +40,7 @@ import com.mytech.backend.portal.models.Dish;
 import com.mytech.backend.portal.models.OrderBooking;
 import com.mytech.backend.portal.models.OrderBookingItem;
 import com.mytech.backend.portal.models.OrderItem;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.DishRepository;
 import com.mytech.backend.portal.repositories.OrderBookingRepository;
 import com.mytech.backend.portal.repositories.OrderBookingItemRepository;

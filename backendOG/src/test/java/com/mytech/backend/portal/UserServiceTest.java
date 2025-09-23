@@ -1,9 +1,9 @@
 package com.mytech.backend.portal;
 
 import com.github.javafaker.Faker;
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.models.User.Role;
-import com.mytech.backend.portal.models.User.Status;
+import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.models.User.User.Role;
+import com.mytech.backend.portal.models.User.User.Status;
 import com.mytech.backend.portal.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

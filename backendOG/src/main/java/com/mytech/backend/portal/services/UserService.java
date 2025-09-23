@@ -2,10 +2,11 @@ package com.mytech.backend.portal.services;
 
 import com.mytech.backend.portal.dto.StatDTO;
 import com.mytech.backend.portal.dto.UserDTO;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 public interface UserService {

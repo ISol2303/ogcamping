@@ -3,8 +3,9 @@ package com.mytech.backend.portal.apis;
 
 import java.time.LocalDate;
 
-import com.mytech.backend.portal.models.User;
-import com.mytech.backend.portal.models.User.Status;
+import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.models.User.User.Status;
+
 import lombok.Data;
 
 import java.time.LocalDate;

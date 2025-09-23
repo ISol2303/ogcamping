@@ -1,10 +1,11 @@
 package com.mytech.backend.portal.security;
 
-import com.mytech.backend.portal.models.User;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.mytech.backend.portal.models.User.User;
 
 import java.util.ArrayList;
 import java.util.Collection;

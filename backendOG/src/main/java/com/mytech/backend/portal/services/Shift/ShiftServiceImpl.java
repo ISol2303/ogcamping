@@ -6,7 +6,7 @@ import com.mytech.backend.portal.models.Shift.AssignmentRole;
 import com.mytech.backend.portal.models.Shift.Shift;
 import com.mytech.backend.portal.models.Shift.ShiftAssignment;
 import com.mytech.backend.portal.models.Shift.ShiftStatus;
-import com.mytech.backend.portal.models.User;
+import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.ShiftRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
