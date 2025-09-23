@@ -9,6 +9,8 @@ type User = {
   role: string;
   name?: string;
   avatar?: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 type JwtPayload = {
@@ -18,6 +20,8 @@ type JwtPayload = {
   name?: string;
   avatar?: string;
   exp: number;
+  firstName?: string;
+  lastName?: string;
 };
 
 // Context type
@@ -34,7 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  
+
   console.log('AuthProvider render - user:', user, 'isLoggedIn:', !!user);
 
   // Load từ storage khi app start
@@ -52,11 +56,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Token expires at:', new Date(decoded.exp * 1000));
         console.log('Current time:', new Date());
         console.log('Token valid:', decoded.exp * 1000 > Date.now());
-        
+
         if (decoded.exp * 1000 > Date.now()) {
-//          const userData = {
-//            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
-//            email: decoded.sub, // JWT sub thường là email
+          //          const userData = {
+          //            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
+          //            email: decoded.sub, // JWT sub thường là email
           // setUser({
           //   id: decoded.id,
           //   email: decoded.sub,
@@ -70,6 +74,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             role: decoded.role,
             name: decoded.name,
             avatar: decoded.avatar,
+            firstName: decoded.firstName,
+            lastName: decoded.lastName
           });
           setToken(storedToken);
         } else {
@@ -101,10 +107,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       sessionStorage.removeItem("authToken");
       sessionStorage.removeItem("user");
       sessionStorage.removeItem("userId");
-      
+
       const decoded: JwtPayload = jwtDecode(token);
       console.log('JWT decoded in AuthContext:', decoded);
-      
+
       const userData: User = {
         id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
         email: decoded.sub,
@@ -112,16 +118,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         name: decoded.name,
         avatar: decoded.avatar,
       };
-      
+
       console.log('User data created:', userData);
 
       if (remember) {
         localStorage.setItem("authToken", token);
-       // localStorage.setItem("user", JSON.stringify(userData));
-        // localStorage.setItem("user", userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("authToken", token);
+        sessionStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("userId", JSON.stringify(userData.id));
       } else {
         sessionStorage.setItem("authToken", token);
         sessionStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("authToken", token);
+        localStorage.setItem("user", JSON.stringify(userData));
       }
 
       setUser(userData);
@@ -148,7 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     login,
     logout,
   };
-  
+
   console.log('AuthContext providing value:', contextValue);
 
   return (
