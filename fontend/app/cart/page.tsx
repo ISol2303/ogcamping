@@ -29,7 +29,6 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/context/AuthContext"
 
 
 export default function CartPage() {
@@ -71,18 +70,16 @@ export default function CartPage() {
     // }, [])
 
     // Sync with AuthContext (ưu tiên AuthContext)
-    useEffect(() => {
-        console.log('AuthContext changed - authIsLoggedIn:', authIsLoggedIn, 'authUser:', authUser)
-        if (authIsLoggedIn && authUser) {
-            setIsLoggedIn(true)
-            setUser({
-                id: parseInt(authUser.id), // AuthContext id là string, cần parse thành number
-                email: authUser.email,
-                name: authUser.name || '',
-                role: authUser.role
-            })
-        }
-    }, [authIsLoggedIn, authUser])
+        useEffect(() => {
+            console.log('AuthContext changed - authIsLoggedIn:', authIsLoggedIn, 'authUser:', authUser)
+            if (authIsLoggedIn && authUser) {
+                setIsLoggedIn(true)
+                // AuthContext already provides `user`, so we avoid calling an undefined local setUser here.
+                // If you need a numeric id or transformed user object locally, parse/transform it when used.
+            } else {
+                setIsLoggedIn(false)
+            }
+        }, [authIsLoggedIn, authUser])
 
     // Cart items are now managed by CartContext
 

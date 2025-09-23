@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
+import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useCart } from "@/context/CartContext"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ShoppingCart, Sparkles } from "lucide-react"
+import { ShoppingCart, Sparkles, ChevronDown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
@@ -21,13 +22,41 @@ export default function Navbar() {
   const { user, isLoggedIn, logout } = useAuth()
   const { cartCount } = useCart()
 
-  // helper để set class active
+  // dropdown open states with delayed close to avoid accidental closing
+  const [shopOpen, setShopOpen] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
+  const shopTimer = useRef<number | null>(null)
+  const infoTimer = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (shopTimer.current) window.clearTimeout(shopTimer.current)
+      if (infoTimer.current) window.clearTimeout(infoTimer.current)
+    }
+  }, [])
+
+  const openShop = () => {
+    if (shopTimer.current) window.clearTimeout(shopTimer.current)
+    setShopOpen(true)
+  }
+  const closeShopDelayed = () => {
+    // small delay so user can move into dropdown without it closing
+    shopTimer.current = window.setTimeout(() => setShopOpen(false), 300)
+  }
+
+  const openInfo = () => {
+    if (infoTimer.current) window.clearTimeout(infoTimer.current)
+    setInfoOpen(true)
+  }
+  const closeInfoDelayed = () => {
+    infoTimer.current = window.setTimeout(() => setInfoOpen(false), 300)
+  }
+
   const linkClass = (href: string) =>
     pathname === href
       ? "text-green-600 font-medium"
       : "text-gray-600 hover:text-green-600 transition-colors"
 
-  // xử lý chuyển hướng Dashboard theo role
   const handleDashboardNavigation = () => {
     const role = user?.role?.toUpperCase()
     if (role === "ADMIN") {
@@ -39,101 +68,119 @@ export default function Navbar() {
     }
   }
   const handleGoToCart = () => {
-    router.push("/cart");
-  };
+    router.push("/cart")
+  }
+
   return (
     <header className="border-b bg-white sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="relative">
-            <img
-              src="/ai-avatar.jpg"
-              className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
-              alt="OG Camping Logo"
-            />
-            <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
-          </div>
-          <span className="text-3xl font-bold text-green-600">OG Camping</span>
-        </Link>
+      <div className="container mx-auto px-4 py-4 flex items-center">
+        {/* Left: Logo */}
+        <div className="flex items-center flex-shrink-0">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative">
+              <img
+                src="/ai-avatar.jpg"
+                className="h-12 w-12 rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
+                alt="OG Camping Logo"
+              />
+              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-500 animate-pulse" />
+            </div>
+            <span className="text-3xl font-bold text-green-600">OG Camping</span>
+          </Link>
+        </div>
 
-        {/* Menu */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/store" className={linkClass("/store")}>
-            Cửa hàng
-          </Link>
-          <Link href="/services" className={linkClass("/services")}>
-            Dịch vụ
-          </Link>
-          <Link href="/equipment" className={linkClass("/equipment")}>
-            Thuê thiết bị
-          </Link>
-          <Link href="/combos" className={linkClass("/combos")}>
-            Combo
-          </Link>
-          <Link href="/ai-consultant" className={linkClass("/ai-consultant")}>
-            Tư vấn AI
-          </Link>
-          <Link href="/about" className={linkClass("/about")}>
-            Về chúng tôi
-          </Link>
-          <Link href="/contact" className={linkClass("/contact")}>
-            Liên hệ
-          </Link>
-          <Link href="/blogs" className={linkClass("/blogs")}>
-            Blog
-          </Link>
+        {/* Center: Nav (kept centered) */}
+        <nav className="hidden md:flex items-center gap-6 mx-auto">
+          {/* Shop dropdown (ghép Cửa hàng + Thuê thiết bị + Combo) */}
+          <div
+            className="relative"
+            onMouseEnter={openShop}
+            onMouseLeave={closeShopDelayed}
+            onFocus={openShop}
+            onBlur={closeShopDelayed}
+          >
+            <button className={`inline-flex items-center gap-2 ${linkClass('/store')} focus:outline-none`}>
+              Cửa hàng
+              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${shopOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Large dropdown: keep open longer and make wider */}
+            <div
+              className={`absolute left-0 mt-3 bg-white border rounded-lg shadow-lg transform transition-all duration-100 pointer-events-auto ${shopOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} z-40`}
+              role="menu"
+              style={{ minWidth: 260 }}
+            >
+              <div className="grid grid-cols-1 gap-1 p-3">
+                <Link href="/store" className="block px-4 py-2 text-sm rounded hover:bg-gray-50 hover:text-green-600">Cửa hàng</Link>
+                <Link href="/equipment" className="block px-4 py-2 text-sm rounded hover:bg-gray-50 hover:text-green-600">Thuê thiết bị</Link>
+                <Link href="/combos" className="block px-4 py-2 text-sm rounded hover:bg-gray-50 hover:text-green-600">Combo</Link>
+              </div>
+            </div>
+          </div>
+
+          <Link href="/services" className={`${linkClass('/services')} transition transform hover:-translate-y-0.5`}>Dịch vụ</Link>
+          <Link href="/ai-consultant" className={`${linkClass('/ai-consultant')} transition transform hover:-translate-y-0.5`}>Tư vấn AI</Link>
+
+          {/* Info dropdown (Về chúng tôi + Liên hệ) */}
+          <div
+            className="relative"
+            onMouseEnter={openInfo}
+            onMouseLeave={closeInfoDelayed}
+            onFocus={openInfo}
+            onBlur={closeInfoDelayed}
+          >
+            <button className={`inline-flex items-center gap-2 ${linkClass('/about')} focus:outline-none`}>
+              Về chúng tôi
+              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${infoOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <div
+              className={`absolute left-0 mt-3 bg-white border rounded-lg shadow-lg transform transition-all duration-100 pointer-events-auto ${infoOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} z-40`}
+              role="menu"
+              style={{ minWidth: 300 }}
+            >
+              <div className="p-4">
+                <Link href="/about" className="block px-4 py-2 text-sm rounded hover:bg-gray-50 hover:text-green-600">Giới thiệu</Link>
+                <Link href="/contact" className="block px-4 py-2 text-sm rounded hover:bg-gray-50 hover:text-green-600">Liên hệ</Link>
+                <div className="mt-2 text-xs text-gray-500">Nếu cần hỗ trợ nhanh, hãy gọi hotline hoặc sử dụng chat.</div>
+              </div>
+            </div>
+          </div>
+
+          <Link href="/blogs" className={`${linkClass('/blogs')} transition transform hover:-translate-y-0.5`}>Blog</Link>
         </nav>
 
-        {/* User actions */}
-        <div className="flex items-center gap-2">
-          {/* Cart Icon */}
-         {/* <Button variant="ghost" size="sm" asChild className="relative">
-            <Link href="/cart">              <ShoppingCart className="h-5 w-5" />
-             {cartCount > 0 && (
-               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">
-                 {cartCount}
-               </Badge>
-             )}
-          </Link>
-          </Button> */}
-       
+        {/* Right: User actions aligned right */}
+        <div className="flex items-center gap-2 ml-auto">
+          <button onClick={handleGoToCart} className="relative p-2 rounded hover:bg-gray-100 transition">
+            <ShoppingCart className="h-5 w-5 text-gray-800" />
+            {cartCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">{cartCount}</Badge>
+            )}
+          </button>
+
           {isLoggedIn && user ? (
-            <>
-              {/* Avatar + tên */}
+            <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user.avatar || ""} alt={user.name || "User"} />
-                <AvatarFallback>
-                  {(user.name?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}
-                </AvatarFallback>
+                <AvatarFallback>{(user.name?.charAt(0) || user.email?.charAt(0) || "?").toUpperCase()}</AvatarFallback>
               </Avatar>
 
-              <span className="text-gray-800 font-medium">
-                {user.name || user.email}
-              </span>
-              <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
-                <ShoppingCart className="h-5 w-5 text-gray-800" />
-              </button>
-              {/* Dropdown */}
+              <span className="hidden sm:inline text-gray-800 font-medium">{user.name || user.email}</span>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    ☰
-                  </Button>
+                  <Button variant="ghost" size="sm">☰</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleDashboardNavigation}>
-                    Dashboard
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDashboardNavigation}>Dashboard</DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/orders/gear">Lịch sử đơn hàng</Link>
+                    <Link href="/orders/service">Lịch sử đơn hàng</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout}>
-                    Đăng xuất
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout}>Đăng xuất</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
+            </div>
           ) : (
             <>
               <Button variant="outline" asChild>

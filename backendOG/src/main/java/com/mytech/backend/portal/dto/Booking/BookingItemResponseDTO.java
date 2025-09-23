@@ -26,5 +26,4 @@ public class BookingItemResponseDTO {
     private Integer quantity;
     private Double price;
     private Double total;
-    private boolean hasReview;
 }

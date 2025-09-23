@@ -33,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ChatProvider>
               <ClientNavbarWrapper />
               {children}
+              <Toaster />
             </ChatProvider>
           </CartProvider>
           {/* <ChatProvider>

@@ -7,6 +7,8 @@ import com.mytech.backend.portal.models.Booking.ItemType;
 import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Combo.ComboItem;
 import com.mytech.backend.portal.models.Customer.Customer;
+import com.mytech.backend.portal.models.Review.Review;
+import com.mytech.backend.portal.models.Review.ReviewStatus;
 import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.Service.ServiceAvailability;
 import com.mytech.backend.portal.models.Service.ServiceTag;
@@ -14,6 +16,7 @@ import com.mytech.backend.portal.models.User.User;
 import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.ComboRepository;
 import com.mytech.backend.portal.repositories.CustomerRepository;
+import com.mytech.backend.portal.repositories.ReviewRepository;
 import com.mytech.backend.portal.repositories.ServiceAvailabilityRepository;
 import com.mytech.backend.portal.repositories.ServiceRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
@@ -25,51 +28,65 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
 public class DataLoader {
 
-    // Repositories injected via constructor (RequiredArgsConstructor)
+    // -----------------------
+    // Các repository được inject
+    // -----------------------
     private final UserRepository userRepository;
     private final CustomerRepository customerRepo;
     private final ServiceRepository serviceRepo;
     private final ServiceAvailabilityRepository serviceAvailabilityRepository;
     private final BookingRepository bookingRepo;
     private final ComboRepository comboRepo;
+    private final ReviewRepository reviewRepository;
 
-    // You can also inject BCryptPasswordEncoder if you register it as a bean.
+    // Mã hóa mật khẩu (nên inject như Bean nếu muốn)
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    // -----------------------
+    // Điểm vào: bean seed
+    // -----------------------
     @Bean
     CommandLineRunner seed() {
         return args -> {
-            // Nếu đã có dữ liệu nào đó thì không seed lại
+            // Phòng ngừa: nếu đã có dữ liệu thì bỏ qua việc seed
             if (serviceRepo.count() > 0 || customerRepo.count() > 0 || comboRepo.count() > 0) {
-                System.out.println("DataLoader: existing data found — skip seeding.");
+                System.out.println("DataLoader: đã tìm thấy dữ liệu — bỏ qua seed.");
                 return;
             }
 
-            // 1) Users + Customers
-            var cAdmin = seedUsers();
+            // 1) Tạo users + customers
+            Customer[] createdCustomers = seedUsers();
 
-            // 2) Services + Availabilities
-            var services = seedServices();
+            // 2) Tạo services + availability
+            List<Service> services = seedServices();
             seedServiceAvailability(services);
 
-            // 3) Bookings
-            seedBookings(cAdmin);
+            // 3) Tạo bookings (trả về danh sách booking để liên kết review)
+            List<Booking> createdBookings = seedBookings(createdCustomers);
 
-            // 4) Combos
+            // 3b) Tạo thêm 3 customer + mỗi customer 3 booking (PENDING, CONFIRMED, COMPLETED)
+            //      Các booking COMPLETED có checkout cách hiện tại 1-6 ngày (ở đây dùng 1,3,5)
+            seedCustomersWithBookings(services);
+
+            // 4) Tạo reviews liên kết với bookings (nếu có)
+            seedReviews(createdBookings);
+
+            // 5) Tạo combos
             seedCombos(services);
 
-            System.out.println("DataLoader: Customers, Services, Bookings, Combos đã được seed thành công!");
+            System.out.println("DataLoader: Customers, Services, Bookings, Reviews, Combos đã được seed thành công!");
         };
     }
 
     // ---------------------------
-    // Helpers: seed users/customers
+    // Helper: tạo user + customer
     // ---------------------------
     private Customer createUserWithCustomer(
             String name,
@@ -114,7 +131,7 @@ public class DataLoader {
                 User.Role.ADMIN, User.Status.ACTIVE, "ADMIN", "MANAGER", "Ha Noi"
         );
 
-        // Staff examples
+        // Ví dụ staff
         Customer c2 = createUserWithCustomer(
                 "Tran Binh", "staff@gmail.com", "123456", "0909988776",
                 User.Role.STAFF, User.Status.ACTIVE, "Tran", "Binh", "Da Nang"
@@ -130,23 +147,22 @@ public class DataLoader {
                 User.Role.STAFF, User.Status.ACTIVE, "LE", "CUONG", "Da Nang"
         );
 
-        // Customers
+        // Khách hàng
         Customer c3 = createUserWithCustomer(
-                "Customer", "customer@example.com", "123456", "0912345678",
+                "Le Cuong", "cuong@example.com", "123456", "0912345678",
                 User.Role.CUSTOMER, User.Status.ACTIVE, "Le", "Cuong", "Ho Chi Minh"
         );
 
         Customer c4 = createUserWithCustomer(
-                "Customer 01", "customer1@example.com", "123456", "0933445566",
+                "Pham Dung", "dung@example.com", "123456", "0933445566",
                 User.Role.CUSTOMER, User.Status.ACTIVE, "Pham", "Dung", "Hai Phong"
         );
 
-        // return an array of created customers (useful caller can pick which to use)
         return new Customer[]{c1, c2, c3, c4, c5, c6};
     }
 
     // ---------------------------
-    // Helpers: seed services
+    // Helpers: tạo services
     // ---------------------------
     private List<Service> seedServices() {
         Service s1 = serviceRepo.save(Service.builder()
@@ -257,7 +273,7 @@ public class DataLoader {
     private void seedServiceAvailability(List<Service> services) {
         LocalDate today = LocalDate.now();
         for (Service s : services) {
-            // tạo 3 ngày sắp tới, mỗi ngày 5 slot
+            // tạo availability cho 3 ngày tới, mỗi ngày 5 slot
             for (int i = 0; i < 3; i++) {
                 serviceAvailabilityRepository.save(ServiceAvailability.builder()
                         .service(s)
@@ -270,14 +286,17 @@ public class DataLoader {
     }
 
     // ---------------------------
-    // Helpers: seed bookings
+    // Helpers: tạo bookings
+    // Trả về danh sách booking đã tạo để dùng liên kết review
     // ---------------------------
-    private void seedBookings(Customer[] createdCustomers) {
-        // Use created customers by index for demo data
-        Customer c1 = createdCustomers[0]; // admin
-        Customer c2 = createdCustomers[1]; // staff example
+    private List<Booking> seedBookings(Customer[] createdCustomers) {
+        List<Booking> created = new ArrayList<>();
 
-        // booking pending (future)
+        // Sử dụng khách đã tạo theo chỉ số
+        Customer c1 = createdCustomers[0]; // admin
+        Customer c2 = createdCustomers[1]; // ví dụ staff
+
+        // booking dự kiến (tương lai)
         Booking booking1 = Booking.builder()
                 .customer(c1)
                 .checkInDate(LocalDateTime.now().plusDays(5))
@@ -287,7 +306,7 @@ public class DataLoader {
                 .status(BookingStatus.PENDING)
                 .build();
 
-        // completed (past)
+        // booking đã hoàn thành (quá khứ)
         Booking booking2 = Booking.builder()
                 .customer(c2)
                 .checkInDate(LocalDateTime.now().minusDays(2))
@@ -297,7 +316,7 @@ public class DataLoader {
                 .status(BookingStatus.COMPLETED)
                 .build();
 
-        // attach booking items (take first service for demo)
+        // gán booking items (lấy service đầu tiên làm ví dụ)
         Service serviceExample = serviceRepo.findAll().stream().findFirst().orElse(null);
         if (serviceExample != null) {
             BookingItem item1 = BookingItem.builder()
@@ -322,13 +341,180 @@ public class DataLoader {
 
         bookingRepo.save(booking1);
         bookingRepo.save(booking2);
+
+        created.add(booking1);
+        created.add(booking2);
+        return created;
     }
 
     // ---------------------------
-    // Helpers: seed combos
+    // Helpers: tạo thêm 3 customer + mỗi customer 3 booking (PENDING, CONFIRMED, COMPLETED)
+    // Các booking COMPLETED có checkout cách hiện tại 1,3,5 ngày (thuộc khoảng 1..6)
+    // ---------------------------
+    private void seedCustomersWithBookings(List<Service> services) {
+        if (services == null || services.isEmpty()) return;
+
+        // Tạo 3 customer mới
+        Customer a = createUserWithCustomer(
+                "Nguyen Van A", "a@example.com", "123456", "0901111111",
+                User.Role.CUSTOMER, User.Status.ACTIVE, "Nguyen", "Van A", "Ha Noi"
+        );
+
+        Customer b = createUserWithCustomer(
+                "Nguyen Van B", "b@example.com", "123456", "0902222222",
+                User.Role.CUSTOMER, User.Status.ACTIVE, "Nguyen", "Van B", "Da Nang"
+        );
+
+        Customer c = createUserWithCustomer(
+                "Nguyen Van C", "c@example.com", "123456", "0903333333",
+                User.Role.CUSTOMER, User.Status.ACTIVE, "Nguyen", "Van C", "Ho Chi Minh"
+        );
+
+        List<Customer> newCustomers = List.of(a, b, c);
+
+        // offsets cho checkout của booking COMPLETED: 1, 3, 5 ngày trước
+        int[] completedOffsets = new int[]{1, 3, 5};
+
+        // Tạo bookings cho từng customer
+        for (int i = 0; i < newCustomers.size(); i++) {
+            Customer cust = newCustomers.get(i);
+
+            // chọn 3 service khác nhau (phòng ngừa thiếu)
+            Service svc1 = services.get( (i*0) % services.size() );
+            Service svc2 = services.get( (i*1 + 1) % services.size() );
+            Service svc3 = services.get( (i*2 + 2) % services.size() );
+
+            // 1) PENDING (tương lai)
+            Booking pending = Booking.builder()
+                    .customer(cust)
+                    .checkInDate(LocalDateTime.now().plusDays(7))
+                    .checkOutDate(LocalDateTime.now().plusDays(8))
+                    .numberOfPeople(2)
+                    .note("Booking PENDING demo")
+                    .status(BookingStatus.PENDING)
+                    .build();
+
+            BookingItem pItem = BookingItem.builder()
+                    .booking(pending)
+                    .service(svc1)
+                    .type(ItemType.SERVICE)
+                    .quantity(1)
+                    .price(svc1.getPrice())
+                    .build();
+            pending.setItems(List.of(pItem));
+            bookingRepo.save(pending);
+
+            // 2) CONFIRMED (sắp tới, đã xác nhận)
+            Booking confirmed = Booking.builder()
+                    .customer(cust)
+                    .checkInDate(LocalDateTime.now().plusDays(3))
+                    .checkOutDate(LocalDateTime.now().plusDays(4))
+                    .numberOfPeople(3)
+                    .note("Booking CONFIRMED demo")
+                    .status(BookingStatus.CONFIRMED)
+                    .build();
+
+            BookingItem cItem = BookingItem.builder()
+                    .booking(confirmed)
+                    .service(svc2)
+                    .type(ItemType.SERVICE)
+                    .quantity(1)
+                    .price(svc2.getPrice())
+                    .build();
+            confirmed.setItems(List.of(cItem));
+            bookingRepo.save(confirmed);
+
+            // 3) COMPLETED (quá khứ) — checkout cách hiện tại 1..6 ngày (ở đây dùng completedOffsets)
+            int offsetDays = completedOffsets[i % completedOffsets.length]; // 1,3,5
+            Booking completed = Booking.builder()
+                    .customer(cust)
+                    .checkInDate(LocalDateTime.now().minusDays(offsetDays + 1))
+                    .checkOutDate(LocalDateTime.now().minusDays(offsetDays))
+                    .numberOfPeople(2)
+                    .note("Booking COMPLETED demo")
+                    .status(BookingStatus.COMPLETED)
+                    .build();
+
+            BookingItem compItem = BookingItem.builder()
+                    .booking(completed)
+                    .service(svc3)
+                    .type(ItemType.SERVICE)
+                    .quantity(1)
+                    .price(svc3.getPrice())
+                    .build();
+            completed.setItems(List.of(compItem));
+            // ensure hasReview default = false
+            completed.setHasReview(false);
+
+            bookingRepo.save(completed);
+        }
+    }
+
+    // ---------------------------
+    // Helpers: tạo reviews liên kết với bookings
+    // Mỗi review sẽ:
+    //   - liên kết với booking
+    //   - đánh dấu booking.hasReview = true
+    //   - cập nhật tổng review và điểm trung bình cho service tương ứng
+    // ---------------------------
+    private void seedReviews(List<Booking> bookings) {
+        if (bookings == null || bookings.isEmpty()) return;
+
+        // Tìm 1 booking đã hoàn thành (ở seedBookings chúng ta có 1 booking completed)
+        Booking completedBooking = bookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.COMPLETED)
+                .findFirst()
+                .orElse(null);
+
+        if (completedBooking == null) return;
+
+        // Lấy service từ booking item (phòng ngừa null)
+        Service service = null;
+        if (completedBooking.getItems() != null && !completedBooking.getItems().isEmpty()) {
+            service = completedBooking.getItems().get(0).getService();
+        }
+
+        if (service == null) return;
+
+        // Khách hàng từ booking
+        Customer customer = completedBooking.getCustomer();
+
+        // Tạo review mẫu
+        Review review = Review.builder()
+                .customer(customer)
+                .service(service)
+                .booking(completedBooking)
+                .rating(4) // điểm đánh giá
+                .content("Trải nghiệm tốt, nhân viên thân thiện, đồ ăn ổn.")
+                .images(List.of("/uploads/reviews/images/sample_review_img1.jpg"))
+                .videos(List.of("/uploads/reviews/videos/sample_review_vid1.mp4"))
+                .reply("Cảm ơn bạn đã đánh giá!") // tuỳ chọn
+                .status(ReviewStatus.APPROVED) // APPROVED để FE hiển thị
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        // lưu review
+        reviewRepository.save(review);
+
+        // đánh dấu booking đã được review
+        completedBooking.setHasReview(true);
+        bookingRepo.save(completedBooking);
+
+        // cập nhật tổng reviews & điểm trung bình cho service
+        int prevCount = service.getTotalReviews() != null ? service.getTotalReviews() : 0;
+        double prevAvg = service.getAverageRating() != null ? service.getAverageRating() : 0.0;
+        int newCount = prevCount + 1;
+        double newAvg = ((prevAvg * prevCount) + review.getRating()) / newCount;
+        service.setTotalReviews(newCount);
+        service.setAverageRating(newAvg);
+        serviceRepo.save(service);
+    }
+
+    // ---------------------------
+    // Helpers: tạo combos
     // ---------------------------
     private void seedCombos(List<Service> services) {
-        // family combo
+        // combo gia đình
         Combo familyCombo = Combo.builder()
                 .name("Family Camping Pack")
                 .description("Combo gia đình: Camping ven sông + Buffet BBQ + Trekking nhẹ quanh rừng Củ Chi")
@@ -407,7 +593,7 @@ public class DataLoader {
                 .location("Củ Chi, TP.HCM")
                 .build();
 
-        // assign items (defensive: check services size)
+        // gán items vào combo (phòng ngừa: kiểm tra kích thước services)
         if (!services.isEmpty()) {
             Service s1 = services.get(0);
             Service s2 = services.size() > 1 ? services.get(1) : s1;
@@ -455,7 +641,7 @@ public class DataLoader {
             ));
         }
 
-        // Save combos
+        // Lưu combos
         comboRepo.save(familyCombo);
         comboRepo.save(adventureCombo);
         comboRepo.save(natureCombo);

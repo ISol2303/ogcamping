@@ -1103,7 +1103,7 @@ export default function StaffDashboard({ orderId }: Props) {
             <TabsTrigger value="customers" className="whitespace-nowrap px-3 py-1">Khách hàng</TabsTrigger>
             <TabsTrigger value="reports" className="whitespace-nowrap px-3 py-1">Báo cáo</TabsTrigger>
             <TabsTrigger value="reviews" className="whitespace-nowrap px-3 py-1">Đánh giá</TabsTrigger>
-            <TabsTrigger value="reviews" asChild>
+            <TabsTrigger value="shifts" asChild>
               <Link href="/staff/shifts" className="whitespace-nowrap px-3 py-1">
                 Lịch trực
               </Link>
