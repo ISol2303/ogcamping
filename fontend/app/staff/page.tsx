@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from "@/components/ui/use-toast";
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -195,6 +196,7 @@ export default function StaffDashboard({ orderId }: Props) {
   const [selectedReview, setSelectedReview] = useState<any | null>(null); // để show modal xem chi tiết
   const [replyText, setReplyText] = useState('');
   const [processingIds, setProcessingIds] = useState<number[]>([]); // ids đang xử lý (loading)
+  const { toast } = useToast()
 
 
 
@@ -299,13 +301,19 @@ export default function StaffDashboard({ orderId }: Props) {
   const handleConfirmOrder = async (order: Order) => {
     try {
       if (!order || !order.id) {
-        alert("Không tìm thấy đơn hàng để xác nhận!");
+        toast({
+          title: "Không tìm thấy đơn hàng để xác nhận!",
+          variant: "destructive", // hoặc "error" nếu bạn đã config
+        })
         return;
       }
 
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
       if (!token) {
-        alert("Vui lòng đăng nhập lại!");
+        toast({
+          title: "Vui lòng đăng nhập lại!",
+          variant: "destructive", 
+        })
         return;
       }
 
@@ -321,14 +329,24 @@ export default function StaffDashboard({ orderId }: Props) {
         setPendingOrders((prev) =>
           prev.map((o) => (o.id === order.id ? { ...o, status: 'CONFIRMED' } : o))
         );
-        alert(`✅ Đơn hàng ${order.orderCode} đã được xác nhận và email gửi thành công!`);
+        toast({
+          title: `✅ Đơn hàng ${order.orderCode} đã được xác nhận và email gửi thành công!`,
+          variant: "success",
+        });
       } else {
-        alert("❌ Có lỗi xảy ra khi xác nhận đơn!");
+        toast({
+          title: "Có lỗi xảy ra",
+          description: "Không thể xác nhận đơn, vui lòng thử lại!",
+          variant: "destructive",
+        })
       }
 
     } catch (err: any) {
       console.error("❌ Lỗi xác nhận đơn:", err.response?.data || err.message);
-      alert(err.response?.data?.error || "Không thể xác nhận đơn hàng. Vui lòng thử lại.");
+      toast({
+        title: err.response?.data?.error || "Không thể xác nhận đơn hàng. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -352,10 +370,16 @@ export default function StaffDashboard({ orderId }: Props) {
         prev.map((o) => (o.status === "PENDING" ? { ...o, status: "CONFIRMED" } : o))
       );
 
-      alert("Đã xác nhận tất cả đơn hàng PENDING!");
+      toast({
+        title: "Đã xác nhận tất cả đơn hàng PENDING!",
+        variant: "success",
+      });
     } catch (error: any) {
       console.error("❌ Lỗi xác nhận tất cả đơn:", error.response?.data || error.message);
-      alert("Không thể xác nhận tất cả đơn. Vui lòng thử lại!");
+      toast({
+        title: "Không thể xác nhận tất cả đơn. Vui lòng thử lại!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -426,14 +450,26 @@ export default function StaffDashboard({ orderId }: Props) {
       setSendingEmailIds(prev => prev.filter(id => !successIds.includes(id)));
 
       if (failedIds.length) {
-        alert(`❌ Một số đơn gửi email thất bại: ${failedIds.join(", ")}`);
+        toast({
+          title: "❌ Gửi email thất bại",
+          description: `Một số đơn không gửi được: ${failedIds.join(", ")}`,
+          variant: "destructive",
+        })
       } else {
-        alert("✅ Gửi email tất cả thành công!");
+        toast({
+          title: "✅ Thành công",
+          description: "Tất cả email đã được gửi đi thành công!",
+          variant: "default",
+        })
       }
 
     } catch (err: any) {
       console.error("❌ Lỗi gửi email tất cả:", err.response?.data || err.message);
-      alert("❌ Không thể gửi email tất cả. Vui lòng thử lại!");
+      toast({
+        title: "❌ Gửi email thất bại",
+        description: "Không thể gửi tất cả email. Vui lòng thử lại!",
+        variant: "destructive",
+      })
       setSendingEmailIds([]);
     }
   };
@@ -468,11 +504,12 @@ export default function StaffDashboard({ orderId }: Props) {
       window.URL.revokeObjectURL(fileURL); // giải phóng bộ nhớ
     } catch (error: any) {
       console.error("Lỗi khi tải hóa đơn:", error);
-      alert(
-        error.response?.status === 404
+      toast({
+        title: "❌ Lỗi khi tải hóa đơn",
+        description: error.response?.status === 404
           ? "Không tìm thấy hóa đơn. Vui lòng kiểm tra ID đơn hàng!"
           : "Không thể tải hóa đơn. Vui lòng thử lại!"
-      );
+      });
     }
   };
 
@@ -532,13 +569,21 @@ export default function StaffDashboard({ orderId }: Props) {
   const handleAddDish = async () => {
     try {
       if (!newDish.name || !newDish.price || !newDish.quantity || !newDish.category) {
-        alert("Vui lòng điền đầy đủ thông tin món ăn!");
+        toast({
+          title: "⚠️ Thiếu thông tin",
+          description: "Vui lòng điền đầy đủ thông tin món ăn!",
+          variant: "destructive",
+        })
         return;
       }
 
       const validCategories = ["APPETIZER", "BBQ", "HOTPOT", "SNACK", "DESSERT", "DRINK"];
       if (!validCategories.includes(newDish.category.toUpperCase())) {
-        alert("Category không hợp lệ! Chọn một trong:APPETIZER, HOTPOT, BBQ, SNACK, DESSERT, DRINK");
+        toast({
+          title: "⚠️ Danh mục không hợp lệ",
+          description: "Chọn một trong: APPETIZER, HOTPOT, BBQ, SNACK, DESSERT, DRINK",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -559,7 +604,10 @@ export default function StaffDashboard({ orderId }: Props) {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert("Thêm món ăn thành công!");
+      toast({
+        title: "Thêm món ăn thành công!",
+        variant: "default",
+      });
       fetchDishes();
       setShowAddCard(false);
       setNewDish({ name: "", description: "", price: 0, quantity: 0, category: "", imageUrl: "" });
@@ -568,7 +616,11 @@ export default function StaffDashboard({ orderId }: Props) {
 
     } catch (err: any) {
       console.error("Add dish error:", err.response?.data || err.message);
-      alert("Không thể thêm món ăn. Vui lòng thử lại!");
+      toast({
+        title: "Không thể thêm món ăn.",
+        description: "Vui lòng thử lại!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -604,13 +656,20 @@ export default function StaffDashboard({ orderId }: Props) {
         editingDish
       );
 
-      alert("Cập nhật món ăn thành công!");
+      toast({
+        title: "Thành công",
+        description: "Cập nhật món ăn thành công!",
+      })
       fetchDishes();
       setShowEditCard(false);
       setEditingDish(null);
     } catch (error) {
       console.error("Update dish error:", error);
-      alert("Không thể cập nhật món ăn. Vui lòng thử lại!");
+      toast({
+        title: "Không thể cập nhật món ăn.",
+        description: "Vui lòng thử lại!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -635,7 +694,11 @@ export default function StaffDashboard({ orderId }: Props) {
   const handleSubmitUploadImage = async () => {
     try {
       if (!uploadTargetDish || !uploadImageFile) {
-        alert("Vui lòng chọn ảnh!");
+        toast({
+          title: "⚠️ Thiếu ảnh",
+          description: "Vui lòng chọn ảnh!",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -653,7 +716,10 @@ export default function StaffDashboard({ orderId }: Props) {
         }
       );
 
-      alert("✅ Cập nhật hình ảnh thành công!");
+      toast({
+        title: "✅ Cập nhật hình ảnh thành công!",
+        variant: "default",
+      });
       console.log("Server response:", response.data);
 
       fetchDishes();
@@ -674,7 +740,11 @@ export default function StaffDashboard({ orderId }: Props) {
         console.error("📌 Error message:", error.message);
       }
 
-      alert("Không thể cập nhật hình ảnh. Vui lòng thử lại!");
+      toast({
+        title: "Không thể cập nhật hình ảnh.",
+        description: "Vui lòng thử lại!",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1028,7 +1098,11 @@ export default function StaffDashboard({ orderId }: Props) {
       setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, status } : r));
     } catch (err) {
       console.error("Lỗi cập nhật status:", err);
-      alert("Không thể cập nhật trạng thái. Thử lại.");
+      toast({
+        title: "❌ Lỗi cập nhật trạng thái",
+        description: "Không thể cập nhật trạng thái. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     } finally {
       setProcessing(reviewId, false);
     }
@@ -1036,7 +1110,11 @@ export default function StaffDashboard({ orderId }: Props) {
 
   const handleReply = async (reviewId: number) => {
     if (!replyText.trim()) {
-      alert("Nhập nội dung phản hồi trước khi gửi.");
+      toast({
+        title: "⚠️ Thiếu nội dung",
+        description: "Vui lòng nhập nội dung phản hồi trước khi gửi.",
+        variant: "destructive",
+      });
       return;
     }
     try {
@@ -1047,10 +1125,17 @@ export default function StaffDashboard({ orderId }: Props) {
       });
       setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, reply: replyText } : r));
       setReplyText('');
-      alert("Đã phản hồi review.");
+      toast({
+        title: "✅ Phản hồi thành công",
+        description: "Đã phản hồi review.",
+        variant: "default",
+      });
     } catch (err) {
-      console.error("Lỗi reply:", err);
-      alert("Không thể phản hồi. Thử lại.");
+      toast({
+        title: "❌ Lỗi khi phản hồi",
+        description: "Không thể phản hồi. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     } finally {
       setProcessing(reviewId, false);
     }

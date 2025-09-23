@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef, use } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MessageCircle, Send, Bot, User, Tent, Sparkles, Zap } from "lucide-react"
+import { MessageCircle, Send, Bot, User, Sparkles, Zap, Tent } from "lucide-react"
 import Link from "next/link"
 import { useChat } from "@/context/ChatContext"
 import { useAuth } from "@/context/AuthContext"
@@ -15,12 +14,15 @@ import { useAuth } from "@/context/AuthContext"
 export default function AIConsultantPage() {
   const { messages, addMessage, clearMessages } = useChat()
   const { user } = useAuth()
-  
-  const [inputMessage, setInputMessage] = useState("")
-  const messagesContainerRef = useRef<HTMLDivElement | null>(null)
 
-  const [popularServices, setPopularServices] = useState<any[]>([]);
-  const [loadingPopular, setLoadingPopular] = useState(false);
+  const [inputMessage, setInputMessage] = useState("")
+  const [popularServices, setPopularServices] = useState<any[]>([])
+  const [loadingPopular, setLoadingPopular] = useState(false)
+
+  // NEW: typing indicator state
+  const [isBotTyping, setIsBotTyping] = useState(false)
+
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null)
 
   const quickQuestions = [
     "Tôi muốn đi cắm trại 2-3 ngày với gia đình",
@@ -34,7 +36,7 @@ export default function AIConsultantPage() {
   const getAvailableSlots = (service: any) => {
     if (!service.availability) return 0
     return service.availability.reduce(
-      (acc: number, a: any) => acc + (a.totalSlots - a.bookedSlots),
+      (acc: number, a: any) => acc + (a.totalSlots - (a.bookedSlots ?? 0)),
       0
     )
   }
@@ -47,6 +49,9 @@ export default function AIConsultantPage() {
     addMessage({ type: "user", content: userText })
     setInputMessage("")
 
+    // show typing indicator
+    setIsBotTyping(true)
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -58,6 +63,9 @@ export default function AIConsultantPage() {
 
       const data = await res.json()
 
+      // hide typing indicator BEFORE adding final bot message
+      setIsBotTyping(false)
+
       // bot trả lời
       addMessage({
         type: "bot",
@@ -65,6 +73,9 @@ export default function AIConsultantPage() {
         services: data.services || [],
       })
     } catch (err) {
+      // hide typing indicator
+      setIsBotTyping(false)
+
       addMessage({
         type: "bot",
         content: "Xin lỗi, AI hiện không phản hồi.",
@@ -76,45 +87,38 @@ export default function AIConsultantPage() {
     setInputMessage(q)
   }
 
+  // scroll when messages or typing indicator changes
   useEffect(() => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
     }
-  }, [messages])
-  
-  //Load popular services
+  }, [messages, isBotTyping])
+
+  // Load popular services
   useEffect(() => {
-  let mounted = true;
-  async function loadPopular() {
-    setLoadingPopular(true);
-    try {
-      // gọi API (thay bằng URL BE nếu cần, ví dụ http://localhost:8080/apis/v1/services)
-      const res = await fetch("http://localhost:8080/apis/v1/services", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch services");
-      const all = await res.json();
-      if (!mounted) return;
-
-      // filter tag = "POPULAR" (so sánh in hoa/thoáng)
-      const popular = Array.isArray(all)
-        ? all.filter((s: any) => String(s.tag ?? "").toUpperCase() === "POPULAR")
-        : [];
-
-      setPopularServices(popular);
-    } catch (err) {
-      console.error("Load popular services error:", err);
-      setPopularServices([]);
-    } finally {
-      if (mounted) setLoadingPopular(false);
+    let mounted = true
+    async function loadPopular() {
+      setLoadingPopular(true)
+      try {
+        const res = await fetch("http://localhost:8080/apis/v1/services", { cache: "no-store" })
+        if (!res.ok) throw new Error("Failed to fetch services")
+        const all = await res.json()
+        if (!mounted) return
+        const popular = Array.isArray(all) ? all.filter((s: any) => String(s.tag ?? "").toUpperCase() === "POPULAR") : []
+        setPopularServices(popular)
+      } catch (err) {
+        console.error("Load popular services error:", err)
+        setPopularServices([])
+      } finally {
+        if (mounted) setLoadingPopular(false)
+      }
     }
-  }
+    loadPopular()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
-  loadPopular();
-  return () => {
-    mounted = false;
-  };
-}, []);
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -164,55 +168,36 @@ export default function AIConsultantPage() {
                 {messages.map((message) => (
                   <div key={message.id} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                     <Avatar className="w-8 h-8 flex-shrink-0">
-                    {message.type === "bot" ? (
-                      // bot vẫn dùng image (hoặc fallback)
-                      <AvatarImage src="/ai-avatar.jpg" alt="OG AI" />
-                    ) : (
-                      // user avatar: lấy user từ context
-                      (user?.avatar) ? (
+                      {message.type === "bot" ? (
+                        <AvatarImage src="/ai-avatar.jpg" alt="OG AI" />
+                      ) : user?.avatar ? (
                         <AvatarImage src={user?.avatar} alt="Bạn" className="rounded-full object-cover" />
                       ) : (
                         <AvatarFallback className="bg-blue-100 text-blue-600">
                           <User className="w-4 h-4" />
                         </AvatarFallback>
-                      )
-                    )}
-                  </Avatar>
+                      )}
+                    </Avatar>
 
                     <div className={`max-w-[80%] rounded-lg p-3 ${message.type === "user" ? "bg-blue-500 text-white" : "bg-white text-gray-900 border border-gray-200"}`}>
                       {/* Try parse message.content if it's JSON string */}
                       {(() => {
-                        let parsed: any = null;
+                        let parsed: any = null
                         try {
-                          parsed = typeof message.content === "string" ? JSON.parse(message.content) : message.content;
+                          parsed = typeof message.content === "string" ? JSON.parse(message.content) : message.content
                         } catch (e) {
-                          parsed = null;
+                          parsed = null
                         }
 
-                        // If it's structured service_request/combo_request, render nicely
                         if (parsed && (parsed.type === "service_request" || parsed.type === "combo_request")) {
                           return (
                             <div className="space-y-3">
                               <div className="text-sm font-medium text-gray-800">{parsed.reply}</div>
-
-                              {/* criteria */}
                               {parsed.criteria && (
                                 <div className="text-xs text-gray-600 border rounded-lg p-2 bg-gray-50">
-                                  {parsed.criteria.location && (
-                                    <p>
-                                      <b>Địa điểm:</b> {parsed.criteria.location}
-                                    </p>
-                                  )}
-                                  {parsed.criteria.days && (
-                                    <p>
-                                      <b>Số ngày:</b> {parsed.criteria.days}
-                                    </p>
-                                  )}
-                                  {parsed.criteria.tag && (
-                                    <p>
-                                      <b>Tag:</b> {parsed.criteria.tag}
-                                    </p>
-                                  )}
+                                  {parsed.criteria.location && <p><b>Địa điểm:</b> {parsed.criteria.location}</p>}
+                                  {parsed.criteria.days && <p><b>Số ngày:</b> {parsed.criteria.days}</p>}
+                                  {parsed.criteria.tag && <p><b>Tag:</b> {parsed.criteria.tag}</p>}
                                   {parsed.criteria.minPrice !== undefined || parsed.criteria.maxPrice !== undefined ? (
                                     <p>
                                       <b>Giá:</b>{" "}
@@ -223,18 +208,15 @@ export default function AIConsultantPage() {
                                 </div>
                               )}
                             </div>
-                          );
+                          )
                         }
-
-                        // default: plain text
-                        return <div className="whitespace-pre-wrap break-words">{message.content}</div>;
+                        return <div className="whitespace-pre-wrap break-words">{message.content}</div>
                       })()}
 
-                      {/* render services passed as field on message */}
                       {message.services?.length ? (
                         <div className="space-y-2 mt-3">
                           {message.services.map((s: any) => {
-                            const availableSlots = getAvailableSlots(s);
+                            const availableSlots = getAvailableSlots(s)
                             return (
                               <Link key={s.id} href={`/services/${s.id}`} className="block p-3 border rounded-lg hover:bg-gray-50">
                                 <div className="flex items-center justify-between">
@@ -246,12 +228,11 @@ export default function AIConsultantPage() {
                                   {availableSlots > 0 ? `Còn ${availableSlots} chỗ` : "Hết chỗ"}
                                 </div>
                               </Link>
-                            );
+                            )
                           })}
                         </div>
                       ) : null}
 
-                      {/* render combos if any */}
                       {message.combos?.length ? (
                         <div className="space-y-2 mt-3">
                           {message.combos.map((c: any) => (
@@ -264,17 +245,51 @@ export default function AIConsultantPage() {
                       ) : null}
 
                       <div className={`text-xs mt-1 ${message.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                        {message.timestamp?.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                        {message.timestamp?.toLocaleTimeString?.("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                       </div>
                     </div>
                   </div>
                 ))}
+
+                {/* Typing indicator (shown while waiting for AI) */}
+                {isBotTyping && (
+                  <div className="flex gap-3 items-start" aria-live="polite">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src="/ai-avatar.jpg" alt="OG AI" />
+                    </Avatar>
+
+                    <div className="max-w-[60%] rounded-lg p-2 bg-white text-gray-700 border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "0s" }}
+                          />
+                          <span
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "0.12s" }}
+                          />
+                          <span
+                            className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"
+                            style={{ animationDelay: "0.24s" }}
+                          />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
 
               {/* Input */}
               <div className="border-t p-4 bg-white rounded-b-lg">
                 <div className="flex gap-2">
-                  <Input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder="Nhập câu hỏi của bạn..." onKeyPress={(e) => e.key === "Enter" && handleSendMessage()} className="flex-1 border-gray-300 focus:border-green-500" />
+                  <Input
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Nhập câu hỏi của bạn..."
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    className="flex-1 border-gray-300 focus:border-green-500"
+                  />
                   <Button onClick={handleSendMessage} disabled={!inputMessage.trim()} className="bg-green-500 hover:bg-green-600 text-white border-0">
                     <Send className="w-4 h-4" />
                   </Button>
