@@ -391,18 +391,7 @@ export const fetchBookings = async (token: string): Promise<Booking[]> => {
       message = 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
     }
 
-    console.error('Error fetching bookings:', {
-      status,
-      message,
-      data,
-      error: error.message,
-      stack: error.stack,
-      response: error.response ? {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers,
-      } : null,
-    });
+ 
     throw { status, data, message } as ApiError;
   }
 };

@@ -425,6 +425,64 @@ export default function BookingManagementPage() {
     })
   }
 
+  // Lấy ngày check-in/check-out thông minh từ booking, services hoặc combos
+  const getBookingDates = (booking: Booking) => {
+    // Priority 1: Use booking-level dates if available
+    if (booking.checkInDate && booking.checkOutDate) {
+      return {
+        checkInDate: booking.checkInDate,
+        checkOutDate: booking.checkOutDate
+      };
+    }
+
+    // Priority 2: Find first service with dates
+    const serviceWithDates = booking.services?.find(service => 
+      service.checkInDate && service.checkOutDate
+    );
+    
+    if (serviceWithDates) {
+      return {
+        checkInDate: serviceWithDates.checkInDate,
+        checkOutDate: serviceWithDates.checkOutDate
+      };
+    }
+
+    // Priority 3: Find first combo with dates
+    const comboWithDates = booking.combos?.find(combo => 
+      combo.checkInDate && combo.checkOutDate
+    );
+    
+    if (comboWithDates) {
+      return {
+        checkInDate: comboWithDates.checkInDate,
+        checkOutDate: comboWithDates.checkOutDate
+      };
+    }
+
+    // Fallback: Return null if no dates found
+    return {
+      checkInDate: null,
+      checkOutDate: null
+    };
+  };
+
+  // Kiểm tra booking đã qua hạn
+  const isBookingExpired = (booking: Booking) => {
+    const now = new Date();
+    const { checkOutDate } = getBookingDates(booking);
+    
+    // Nếu có checkOutDate thông minh, so sánh với checkOutDate
+    if (checkOutDate) {
+      return new Date(checkOutDate) < now;
+    }
+    
+    // Nếu không có checkOutDate, so sánh với bookingDate + 1 ngày
+    const bookingDate = new Date(booking.bookingDate);
+    const bookingEndDate = new Date(bookingDate);
+    bookingEndDate.setDate(bookingEndDate.getDate() + 1);
+    return bookingEndDate < now;
+  }
+
   const handleAutoConfirm = async (bookingId: string) => {
     try {
       setBookings((prev) =>
@@ -587,60 +645,6 @@ export default function BookingManagementPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Booking</h1>
           <p className="text-gray-600">Xác nhận tự động, gán nhân viên và theo dõi trạng thái booking</p>
         </div>
-
-        {/* Auto Confirm Settings */}
-        <Card className="mb-6 border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Cài đặt xác nhận tự động
-            </CardTitle>
-            <CardDescription>
-              Tự động xác nhận booking khi thanh toán thành công và có nhân viên khả dụng
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="auto-confirm" className="font-medium">
-                  Bật xác nhận tự động
-                </Label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Booking sẽ được tự động xác nhận khi đáp ứng điều kiện
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    id="auto-confirm"
-                    checked={autoConfirmEnabled}
-                    onChange={(e) => setAutoConfirmEnabled(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-11 h-6 bg-gray-300 rounded-full shadow-inner transition-colors ${autoConfirmEnabled ? "bg-green-600" : ""
-                      }`}
-                  ></div>
-                  <span
-                    className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${autoConfirmEnabled ? "translate-x-5" : ""
-                      }`}
-                  ></span>
-                </label>
-
-                <Badge
-                  className={`transition-colors ${autoConfirmEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                    }`}
-                >
-                  {autoConfirmEnabled ? "Đang bật" : "Đã tắt"}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-
-        </Card>
-
         {/* Filters and Search */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardContent className="p-6">
@@ -744,34 +748,6 @@ export default function BookingManagementPage() {
                 </Select>
               </div>
 
-              {/* Thao tác hàng loạt */}
-              {/* <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Thao tác hàng loạt
-                </Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={selectedBookings.length === 0}
-                    onClick={() => handleBulkAction("confirm")}
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Xác nhận ({selectedBookings.length})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={selectedBookings.length === 0}
-                    onClick={() => handleBulkAction("export")}
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent disabled:opacity-50"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Xuất
-                  </Button>
-                </div>
-              </div> */}
             </div>
             
             {/* Thống kê kết quả và phân trang */}
@@ -828,15 +804,17 @@ export default function BookingManagementPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const currentPageIds = paginatedBookings.map(b => Number(b.id));
+                      // Chỉ lấy booking chưa qua hạn
+                      const selectableBookings = paginatedBookings.filter(b => !isBookingExpired(b));
+                      const currentPageIds = selectableBookings.map(b => Number(b.id));
                       const selectedNumbers = selectedBookings.map(id => Number(id));
-                      const allSelected = currentPageIds.every(id => selectedNumbers.includes(id));
+                      const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedNumbers.includes(id));
                       
                       if (allSelected) {
                         // Bỏ chọn tất cả trang hiện tại
                         setSelectedBookings(prev => prev.filter(id => !currentPageIds.includes(Number(id))));
                       } else {
-                        // Chọn tất cả trang hiện tại
+                        // Chọn tất cả trang hiện tại (chỉ booking chưa qua hạn)
                         setSelectedBookings(prev => {
                           const prevNumbers = prev.map(id => Number(id));
                           const newIds = currentPageIds.filter(id => !prevNumbers.includes(id));
@@ -845,11 +823,17 @@ export default function BookingManagementPage() {
                       }
                     }}
                     className="text-xs"
+                    disabled={paginatedBookings.every(b => isBookingExpired(b))}
                   >
                     {(() => {
-                      const currentPageIds = paginatedBookings.map(b => Number(b.id));
+                      const selectableBookings = paginatedBookings.filter(b => !isBookingExpired(b));
+                      const currentPageIds = selectableBookings.map(b => Number(b.id));
                       const selectedNumbers = selectedBookings.map(id => Number(id));
-                      const allSelected = currentPageIds.every(id => selectedNumbers.includes(id));
+                      const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedNumbers.includes(id));
+                      
+                      if (selectableBookings.length === 0) {
+                        return 'Tất cả đã qua hạn';
+                      }
                       return allSelected ? 'Bỏ chọn trang' : 'Chọn tất cả trang';
                     })()}
                   </Button>
@@ -871,11 +855,17 @@ export default function BookingManagementPage() {
               ) : (
                 paginatedBookings.map((booking) => (
 
-                <div key={booking.id} className="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
+                <div key={booking.id} className={`border rounded-lg p-6 transition-colors ${
+                  isBookingExpired(booking) 
+                    ? 'bg-gray-100 border-gray-300 opacity-75' 
+                    : 'hover:bg-gray-50'
+                }`}>
                   <div className="flex items-start gap-4">
                     <Checkbox
                       checked={selectedBookings.includes(Number(booking.id))}
+                      disabled={isBookingExpired(booking)}
                       onCheckedChange={(checked) => {
+                        if (isBookingExpired(booking)) return;
                         const bookingId = Number(booking.id); // ép kiểu number
                         if (checked) {
                           setSelectedBookings([...selectedBookings, bookingId]);
@@ -902,6 +892,12 @@ export default function BookingManagementPage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
+                          {isBookingExpired(booking) && (
+                            <Badge className="bg-gray-100 text-gray-800 border-0">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Đã qua hạn
+                            </Badge>
+                          )}
                           {getStatusBadge(booking.status)}
                           {booking.payment?.status && (
                             <Badge
@@ -977,15 +973,21 @@ export default function BookingManagementPage() {
                           {(() => {
                             const availableStaff = getAvailableStaffForShift(booking.checkInDate);
                             const hasAvailableStaff = availableStaff.length > 0;
+                            const isExpired = isBookingExpired(booking);
 
                             return (
                               <>
-                                <div className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${hasAvailableStaff
-                                  ? 'text-green-600 bg-green-50'
-                                  : 'text-amber-600 bg-amber-50'
+                                <div className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
+                                  isExpired
+                                    ? 'text-gray-600 bg-gray-100'
+                                    : hasAvailableStaff
+                                    ? 'text-green-600 bg-green-50'
+                                    : 'text-amber-600 bg-amber-50'
                                   }`}>
                                   <Clock className="w-3 h-3" />
-                                  {hasAvailableStaff
+                                  {isExpired
+                                    ? 'Booking đã qua hạn'
+                                    : hasAvailableStaff
                                     ? `${availableStaff.length} nhân viên đang trực`
                                     : 'Không có nhân viên trong ca'
                                   }
@@ -993,14 +995,20 @@ export default function BookingManagementPage() {
                                 <Select
                                   value={assignedStaffMap[booking.id as number]?.id?.toString() || ""}
                                   onValueChange={(staffId) => handleAssignStaff(booking.id as number, staffId)}
-                                  disabled={!hasAvailableStaff}
+                                  disabled={!hasAvailableStaff || isExpired}
                                 >
                                   <SelectTrigger
                                     className={`w-80 h-13 px-4 text-sm rounded-lg border border-gray-300 shadow-sm bg-white 
-      ${!hasAvailableStaff ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400 focus:ring-2 focus:ring-blue-500"}`}
+      ${(!hasAvailableStaff || isExpired) ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400 focus:ring-2 focus:ring-blue-500"}`}
                                   >
                                     <SelectValue
-                                      placeholder={hasAvailableStaff ? "Chọn nhân viên để gán" : "Không có nhân viên khả dụng"}
+                                      placeholder={
+                                        isExpired 
+                                          ? "Booking đã qua hạn" 
+                                          : hasAvailableStaff 
+                                          ? "Chọn nhân viên để gán" 
+                                          : "Không có nhân viên khả dụng"
+                                      }
                                     />
                                   </SelectTrigger>
 
@@ -1068,7 +1076,7 @@ export default function BookingManagementPage() {
                           </Select> */}
 
                           {/* Auto Confirm Button */}
-                          {booking.status === "pending" && booking.payment?.status === "PAID" && (
+                          {booking.status === "pending" && booking.payment?.status === "PAID" && !isBookingExpired(booking) && (
                             <Button
                               size="sm"
                               onClick={() => handleAutoConfirm(booking.id as string)}
@@ -1098,23 +1106,7 @@ export default function BookingManagementPage() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 Xem chi tiết
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Chỉnh sửa
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <MessageSquare className="w-4 h-4 mr-2" />
-                                Nhắn tin khách hàng
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Download className="w-4 h-4 mr-2" />
-                                Tải hóa đơn
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Xóa booking
-                              </DropdownMenuItem>
+                          
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

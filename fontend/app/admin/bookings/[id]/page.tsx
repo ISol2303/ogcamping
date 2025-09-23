@@ -170,7 +170,7 @@ export default function AdminBookingDetailPage() {
         if (response.ok) {
           const usersData = await response.json();
           setUsers(usersData);
-          
+
           // Convert users to Staff format - chỉ lấy nhân viên có role STAFF
           const staffData: Staff[] = usersData
             .filter((user: any) => user.status === 'ACTIVE' && user.role === 'STAFF')
@@ -182,7 +182,7 @@ export default function AdminBookingDetailPage() {
               isAvailable: true,
               avatar: user.avatar
             }));
-          
+
           setStaff(staffData);
         }
       } catch (error) {
@@ -565,18 +565,27 @@ export default function AdminBookingDetailPage() {
         const canCheckIn = checkInDateTime ? new Date() >= checkInDateTime : false;
 
         return (
-          <Button
-            onClick={handleCheckIn}
-            disabled={!canCheckIn}
-            className={`w-full ${canCheckIn
-              ? "bg-blue-500 hover:bg-blue-600 text-white"
-              : "bg-gray-400 text-white cursor-not-allowed"
-              }`}
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Xác nhận khách Check-In
-          </Button>
+          <div className="w-full">
+            <Button
+              onClick={handleCheckIn}
+              disabled={!canCheckIn}
+              className={`w-full ${canCheckIn
+                ? "bg-blue-500 hover:bg-blue-600 text-white"
+                : "bg-gray-400 text-white cursor-not-allowed"
+                }`}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Xác nhận khách Check-In
+            </Button>
+
+            {!canCheckIn && (
+              <Label className="text-sm text-red-500 mt-2 block">
+                Chỉ cho phép xác nhận khi đến giờ check-in
+              </Label>
+            )}
+          </div>
         );
+
 
 
       case "IN_PROGRESS":
@@ -607,7 +616,7 @@ export default function AdminBookingDetailPage() {
         `Tổng tiền: ${formatCurrency(booking.totalAmount)}\n\n` +
         `Hành động này không thể hoàn tác!`
       );
-      
+
       if (!confirmed) {
         return; // Người dùng hủy thao tác
       }
@@ -618,7 +627,7 @@ export default function AdminBookingDetailPage() {
         `Tổng tiền: ${formatCurrency(booking.totalAmount)}\n\n` +
         `Booking sẽ chuyển sang trạng thái đã xác nhận.`
       );
-      
+
       if (!confirmed) {
         return;
       }
@@ -638,7 +647,7 @@ export default function AdminBookingDetailPage() {
       setBooking((prev) =>
         prev ? { ...prev, status: updated.status as BookingStatus } : prev
       )
-      
+
       // Hiển thị thông báo thành công
       if (newStatus === "CANCELLED") {
         setNotif("✅ Đã hủy booking thành công!");
@@ -648,7 +657,7 @@ export default function AdminBookingDetailPage() {
         setNotif(`✅ Đã cập nhật trạng thái thành công!`);
       }
       setTimeout(() => setNotif(null), 3000);
-      
+
     } catch (err) {
       console.error(err)
       setNotif("❌ Không thể cập nhật trạng thái!");
@@ -747,8 +756,8 @@ export default function AdminBookingDetailPage() {
           </div>
         </div>
       )}
-      
-      
+
+
 
       <div className="container mx-auto px-4 py-8">
         {/* Booking Header */}
@@ -1157,14 +1166,14 @@ export default function AdminBookingDetailPage() {
                       </Button>
                     </>
                   )}
-                  
+
                   {booking.assignedStaff && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-600 mb-2">Nhân viên đã được gán cho booking này</p>
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setBooking(prev => prev ? {...prev, assignedStaff: undefined} : null);
+                          setBooking(prev => prev ? { ...prev, assignedStaff: undefined } : null);
                           setSelectedStaff("");
                         }}
                         className="text-red-600 border-red-300 hover:bg-red-50"

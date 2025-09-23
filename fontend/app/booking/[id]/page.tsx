@@ -1087,23 +1087,7 @@ export default function BookingManagementPage() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 Xem chi tiết
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Chỉnh sửa
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <MessageSquare className="w-4 h-4 mr-2" />
-                                Nhắn tin khách hàng
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Download className="w-4 h-4 mr-2" />
-                                Tải hóa đơn
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Xóa booking
-                              </DropdownMenuItem>
+                             
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

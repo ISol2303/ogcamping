@@ -55,7 +55,6 @@ import {
   fetchServices,
   fetchEquipment,
   fetchCustomers,
-  createStaff,
   fetchLocations,
   fetchInventory,
   fetchPromotions,
@@ -543,12 +542,10 @@ export default function AdminDashboard() {
 
         const [
           statsData,
-          bookingsData,
           staffData,
           servicesData,
           equipmentData,
           customersData,
-          locationsData,
           inventoryData,
           promotionsData,
         ] = await Promise.all([
@@ -560,15 +557,6 @@ export default function AdminDashboard() {
               period: selectedPeriod,
             });
             setError(err.message || 'Không thể lấy dữ liệu thống kê');
-            return [];
-          }),
-          fetchBookings(token).catch((err: ApiError) => {
-            console.error('Lỗi lấy đặt chỗ:', {
-              message: err.message || 'Không có thông báo lỗi',
-              status: err.status || 'Không có trạng thái',
-              data: err.data || 'Không có dữ liệu',
-            });
-            setError(err.message || 'Không thể lấy dữ liệu đặt chỗ');
             return [];
           }),
           fetchStaff(token).catch((err: ApiError) => {
@@ -605,15 +593,6 @@ export default function AdminDashboard() {
               data: err.data || 'Không có dữ liệu',
             });
             setError(err.message || 'Không thể lấy dữ liệu khách hàng');
-            return [];
-          }),
-          fetchLocations(token).catch((err: ApiError) => {
-            console.error('Lỗi lấy địa điểm:', {
-              message: err.message || 'Không có thông báo lỗi',
-              status: err.status || 'Không có trạng thái',
-              data: err.data || 'Không có dữ liệu',
-            });
-            setError(err.message || 'Không thể lấy dữ liệu địa điểm');
             return [];
           }),
           fetchInventory(token).catch((err: ApiError) => {
@@ -670,12 +649,12 @@ export default function AdminDashboard() {
           : [];
 
         setStats(validStats);
-        setBookings(validateArray(bookingsData, 'đặt chỗ'));
+        setBookings([]); // Bookings sẽ được fetch riêng khi cần
         setStaff(validateArray(staffData, 'nhân viên'));
         setServices(validateArray(servicesData, 'dịch vụ'));
-        setEquipment(validateArray(equipmentData, 'thiết bị')); // Line 677
+        setEquipment(validateArray(equipmentData, 'thiết bị'));
         setCustomers(validateArray(customersData, 'khách hàng'));
-        setLocations(validateArray(locationsData, 'địa điểm'));
+        setLocations([]); // Locations sẽ được fetch riêng khi cần
         setInventory(validateArray(inventoryData, 'kho'));
         setPromotions(validateArray(promotionsData, 'khuyến mãi'));
       } catch (error: any) {
@@ -685,14 +664,14 @@ export default function AdminDashboard() {
           message: error.response?.data?.message || error.message || 'Không thể tải dữ liệu bảng điều khiển',
         };
 
-        console.error('Lỗi trong fetchData:', {
-          status: apiError.status,
-          message: apiError.message,
-          data: apiError.data,
-          errorMessage: error.message || 'Không có thông báo lỗi',
-          errorCode: error.code || 'Không có mã lỗi',
-          stack: error.stack || 'Không có dấu vết ngăn xếp',
-        });
+        // console.error('Lỗi trong fetchData:', {
+        //   status: apiError.status,
+        //   message: apiError.message,
+        //   data: apiError.data,
+        //   errorMessage: error.message || 'Không có thông báo lỗi',
+        //   errorCode: error.code || 'Không có mã lỗi',
+        //   stack: error.stack || 'Không có dấu vết ngăn xếp',
+        // });
 
         setError(apiError.message);
       } finally {
@@ -711,8 +690,14 @@ export default function AdminDashboard() {
         return;
       }
       await checkBooking(token, bookingId, action);
-      const bookingsData = await fetchBookings(token);
-      setBookings(bookingsData.filter((item) => item._id && typeof item._id === 'string'));
+      
+      // Fetch bookings riêng để cập nhật danh sách
+      try {
+        const bookingsData = await fetchBookings(token);
+        setBookings(bookingsData.filter((item) => item._id && typeof item._id === 'string'));
+      } catch (fetchError) {
+        console.warn('Không thể cập nhật danh sách bookings:', fetchError);
+      }
     } catch (error: any) {
       const apiError = error as ApiError;
       setError(apiError.message || `Không thể ${action === 'checkin' ? 'nhận phòng' : 'trả phòng'}`);

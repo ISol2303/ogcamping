@@ -87,8 +87,59 @@ interface UpdateShiftData {
   endTime?: string;
   status?: string;
 }
+
+interface CreateStaffData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  department?: string;
+  joinDate?: string;
+  status?: string;
+}
 // API Service Functions
 const API_BASE_URL = "http://localhost:8080/apis/v1/admin";
+
+const staffAPI = {
+  // Create new staff
+  createStaff: async (data: CreateStaffData): Promise<User> => {
+    const response = await fetch(`${API_BASE_URL}/staff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to create staff');
+    }
+    return response.json();
+  },
+
+  // Update staff
+  updateStaff: async (userId: number, data: Partial<CreateStaffData>): Promise<User> => {
+    const response = await fetch(`http://localhost:8080/apis/v1/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to update staff');
+    }
+    return response.json();
+  },
+
+  // Delete staff
+  deleteStaff: async (userId: number): Promise<void> => {
+    const response = await fetch(`http://localhost:8080/apis/v1/users/${userId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to delete staff');
+    }
+  },
+};
 
 const shiftAPI = {
   // Get all shifts
@@ -168,6 +219,32 @@ export default function StaffManagement() {
   const [isShiftsLoading, setIsShiftsLoading] = useState(true);
   const [selectedStaffForShift, setSelectedStaffForShift] = useState<{ [key: number]: string }>({});
   const [shiftDateFilter, setShiftDateFilter] = useState<string>('all'); // 'all', 'today', 'week'
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
+  const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<User | null>(null);
+  const [isUpdatingStaff, setIsUpdatingStaff] = useState(false);
+  const [isDeletingStaff, setIsDeletingStaff] = useState<number | null>(null);
+
+  // Form state for staff creation
+  const [staffForm, setStaffForm] = useState<CreateStaffData>({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    department: '',
+    joinDate: new Date().toISOString().split('T')[0], // Today's date
+    status: 'ACTIVE',
+  });
+
+  // Form state for staff editing (without password)
+  const [editStaffForm, setEditStaffForm] = useState<Partial<CreateStaffData>>({
+    name: '',
+    email: '',
+    phone: '',
+    department: '',
+    joinDate: '',
+    status: 'ACTIVE',
+  });
 
   // Form states for shift creation/editing
   const [shiftForm, setShiftForm] = useState<CreateShiftData>({
@@ -391,6 +468,172 @@ export default function StaffManagement() {
     setIsEditShiftOpen(true);
   };
 
+  // Handle staff creation
+  const handleCreateStaff = async () => {
+    // Validation
+    if (!staffForm.name.trim()) {
+      alert('Vui lòng nhập họ và tên');
+      return;
+    }
+    if (!staffForm.email.trim()) {
+      alert('Vui lòng nhập email');
+      return;
+    }
+    if (!staffForm.phone.trim()) {
+      alert('Vui lòng nhập số điện thoại');
+      return;
+    }
+    if (!staffForm.password.trim()) {
+      alert('Vui lòng nhập mật khẩu');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(staffForm.email)) {
+      alert('Email không hợp lệ');
+      return;
+    }
+
+    // Phone validation (basic)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(staffForm.phone.replace(/\s/g, ''))) {
+      alert('Số điện thoại không hợp lệ (10-11 số)');
+      return;
+    }
+
+    setIsCreatingStaff(true);
+    try {
+      const newStaff = await staffAPI.createStaff(staffForm);
+      
+      // Add to staff list
+      setStaffList(prev => [...prev, newStaff]);
+      
+      // Reset form
+      setStaffForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        department: '',
+        joinDate: new Date().toISOString().split('T')[0],
+        status: 'ACTIVE',
+      });
+      
+      // Close dialog
+      setIsAddStaffOpen(false);
+      
+      alert('✅ Thêm nhân viên thành công!');
+    } catch (err: any) {
+      console.error('Error creating staff:', err);
+      alert(`❌ Có lỗi xảy ra: ${err.message}`);
+    } finally {
+      setIsCreatingStaff(false);
+    }
+  };
+
+  // Handle edit staff
+  const handleEditStaff = (staff: User) => {
+    setEditingStaff(staff);
+    setEditStaffForm({
+      name: staff.name,
+      email: staff.email,
+      phone: staff.phone,
+      department: staff.department || '',
+      joinDate: staff.joinDate || '',
+      status: staff.status,
+    });
+    setIsEditStaffOpen(true);
+  };
+
+  // Handle staff update
+  const handleUpdateStaff = async () => {
+    if (!editingStaff) return;
+
+    // Validation
+    if (!editStaffForm.name?.trim()) {
+      alert('Vui lòng nhập họ và tên');
+      return;
+    }
+    if (!editStaffForm.email?.trim()) {
+      alert('Vui lòng nhập email');
+      return;
+    }
+    if (!editStaffForm.phone?.trim()) {
+      alert('Vui lòng nhập số điện thoại');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editStaffForm.email)) {
+      alert('Email không hợp lệ');
+      return;
+    }
+
+    // Phone validation (basic)
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(editStaffForm.phone.replace(/\s/g, ''))) {
+      alert('Số điện thoại không hợp lệ (10-11 số)');
+      return;
+    }
+
+    setIsUpdatingStaff(true);
+    try {
+      const updatedStaff = await staffAPI.updateStaff(editingStaff.id, editStaffForm);
+      
+      // Update staff list
+      setStaffList(prev => prev.map(staff => 
+        staff.id === editingStaff.id ? updatedStaff : staff
+      ));
+      
+      // Reset form and close dialog
+      setEditStaffForm({
+        name: '',
+        email: '',
+        phone: '',
+        department: '',
+        joinDate: '',
+        status: 'ACTIVE',
+      });
+      setEditingStaff(null);
+      setIsEditStaffOpen(false);
+      
+      alert('✅ Cập nhật nhân viên thành công!');
+    } catch (err: any) {
+      console.error('Error updating staff:', err);
+      alert(`❌ Có lỗi xảy ra: ${err.message}`);
+    } finally {
+      setIsUpdatingStaff(false);
+    }
+  };
+
+  // Handle staff deletion
+  const handleDeleteStaff = async (staff: User) => {
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn xóa nhân viên "${staff.name}"?\n\n` +
+      `Email: ${staff.email}\n` +
+      `Hành động này không thể hoàn tác!`
+    );
+
+    if (!confirmed) return;
+
+    setIsDeletingStaff(staff.id);
+    try {
+      await staffAPI.deleteStaff(staff.id);
+      
+      // Remove from staff list
+      setStaffList(prev => prev.filter(s => s.id !== staff.id));
+      
+      alert('✅ Xóa nhân viên thành công!');
+    } catch (err: any) {
+      console.error('Error deleting staff:', err);
+      alert(`❌ Có lỗi xảy ra: ${err.message}`);
+    } finally {
+      setIsDeletingStaff(null);
+    }
+  };
+
   if (isLoading || isShiftsLoading) return <div>Đang tải dữ liệu...</div>;
 
   // Badge cho staff status (ACTIVE/INACTIVE)
@@ -468,23 +711,212 @@ export default function StaffManagement() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Họ và tên</Label>
-                  <Input id="name" placeholder="Nhập họ và tên" />
+                  <Label htmlFor="staff-name">Họ và tên *</Label>
+                  <Input 
+                    id="staff-name" 
+                    placeholder="Nhập họ và tên"
+                    value={staffForm.name}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Nhập email" />
+                  <Label htmlFor="staff-email">Email *</Label>
+                  <Input 
+                    id="staff-email" 
+                    type="email" 
+                    placeholder="Nhập email"
+                    value={staffForm.email}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Số điện thoại</Label>
-                  <Input id="phone" placeholder="Nhập số điện thoại" />
+                  <Label htmlFor="staff-phone">Số điện thoại *</Label>
+                  <Input 
+                    id="staff-phone" 
+                    placeholder="Nhập số điện thoại"
+                    value={staffForm.phone}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, phone: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="staff-password">Mật khẩu *</Label>
+                  <Input 
+                    id="staff-password" 
+                    type="password" 
+                    placeholder="Nhập mật khẩu"
+                    value={staffForm.password}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, password: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="staff-department">Phòng ban</Label>
+                  <Input 
+                    id="staff-department" 
+                    placeholder="Nhập phòng ban (tùy chọn)"
+                    value={staffForm.department}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, department: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="staff-joinDate">Ngày vào làm</Label>
+                  <Input 
+                    id="staff-joinDate" 
+                    type="date"
+                    value={staffForm.joinDate}
+                    onChange={(e) => setStaffForm(prev => ({ ...prev, joinDate: e.target.value }))}
+                    disabled={isCreatingStaff}
+                  />
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <Button className="flex-1">Thêm nhân viên</Button>
+                  <Button 
+                    className="flex-1" 
+                    onClick={handleCreateStaff}
+                    disabled={isCreatingStaff}
+                  >
+                    {isCreatingStaff ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Đang tạo...
+                      </>
+                    ) : (
+                      'Thêm nhân viên'
+                    )}
+                  </Button>
                   <Button
                     variant="outline"
                     className="flex-1 bg-transparent"
-                    onClick={() => setIsAddStaffOpen(false)}
+                    onClick={() => {
+                      setIsAddStaffOpen(false);
+                      setStaffForm({
+                        name: '',
+                        email: '',
+                        phone: '',
+                        password: '',
+                        department: '',
+                        joinDate: new Date().toISOString().split('T')[0],
+                        status: 'ACTIVE',
+                      });
+                    }}
+                    disabled={isCreatingStaff}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Staff Dialog */}
+          <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Chỉnh sửa nhân viên</DialogTitle>
+                <DialogDescription>Cập nhật thông tin nhân viên</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-staff-name">Họ và tên *</Label>
+                  <Input 
+                    id="edit-staff-name" 
+                    placeholder="Nhập họ và tên"
+                    value={editStaffForm.name || ''}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                    disabled={isUpdatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-staff-email">Email *</Label>
+                  <Input 
+                    id="edit-staff-email" 
+                    type="email" 
+                    placeholder="Nhập email"
+                    value={editStaffForm.email || ''}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={isUpdatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-staff-phone">Số điện thoại *</Label>
+                  <Input 
+                    id="edit-staff-phone" 
+                    placeholder="Nhập số điện thoại"
+                    value={editStaffForm.phone || ''}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, phone: e.target.value }))}
+                    disabled={isUpdatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-staff-department">Phòng ban</Label>
+                  <Input 
+                    id="edit-staff-department" 
+                    placeholder="Nhập phòng ban (tùy chọn)"
+                    value={editStaffForm.department || ''}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, department: e.target.value }))}
+                    disabled={isUpdatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-staff-joinDate">Ngày vào làm</Label>
+                  <Input 
+                    id="edit-staff-joinDate" 
+                    type="date"
+                    value={editStaffForm.joinDate || ''}
+                    onChange={(e) => setEditStaffForm(prev => ({ ...prev, joinDate: e.target.value }))}
+                    disabled={isUpdatingStaff}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-staff-status">Trạng thái</Label>
+                  <Select 
+                    value={editStaffForm.status || 'ACTIVE'} 
+                    onValueChange={(value) => setEditStaffForm(prev => ({ ...prev, status: value }))}
+                    disabled={isUpdatingStaff}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Đang làm việc</SelectItem>
+                      <SelectItem value="INACTIVE">Tạm nghỉ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    className="flex-1" 
+                    onClick={handleUpdateStaff}
+                    disabled={isUpdatingStaff}
+                  >
+                    {isUpdatingStaff ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Đang cập nhật...
+                      </>
+                    ) : (
+                      'Cập nhật'
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-transparent"
+                    onClick={() => {
+                      setIsEditStaffOpen(false);
+                      setEditingStaff(null);
+                      setEditStaffForm({
+                        name: '',
+                        email: '',
+                        phone: '',
+                        department: '',
+                        joinDate: '',
+                        status: 'ACTIVE',
+                      });
+                    }}
+                    disabled={isUpdatingStaff}
                   >
                     Hủy
                   </Button>
@@ -641,7 +1073,10 @@ export default function StaffManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tổng nhân viên</p>
-                  <p className="text-3xl font-bold text-gray-900">24</p>
+                  <p className="text-3xl font-bold text-gray-900">{staffList.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {staffList.length > 0 ? 'nhân viên' : 'Chưa có nhân viên'}
+                  </p>
                 </div>
                 <Users className="w-8 h-8 text-blue-600" />
               </div>
@@ -652,7 +1087,15 @@ export default function StaffManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Đang làm việc</p>
-                  <p className="text-3xl font-bold text-gray-900">18</p>
+                  <p className="text-3xl font-bold text-green-700">
+                    {staffList.filter(staff => staff.status === 'ACTIVE').length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {staffList.length > 0 
+                      ? `${Math.round((staffList.filter(staff => staff.status === 'ACTIVE').length / staffList.length) * 100)}% hoạt động`
+                      : 'Chưa có dữ liệu'
+                    }
+                  </p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
@@ -663,7 +1106,12 @@ export default function StaffManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Ca trực hôm nay</p>
-                  <p className="text-3xl font-bold text-gray-900">8</p>
+                  <p className="text-3xl font-bold text-purple-700">
+                    {shifts.filter(shift => isToday(shift.shiftDate)).length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {shifts.filter(shift => isToday(shift.shiftDate)).reduce((total, shift) => total + shift.assignments.length, 0)} lượt trực
+                  </p>
                 </div>
                 <Calendar className="w-8 h-8 text-purple-600" />
               </div>
@@ -673,10 +1121,18 @@ export default function StaffManagement() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Cần tuyển</p>
-                  <p className="text-3xl font-bold text-gray-900">3</p>
+                  <p className="text-sm font-medium text-gray-600">Tạm nghỉ</p>
+                  <p className="text-3xl font-bold text-orange-700">
+                    {staffList.filter(staff => staff.status === 'INACTIVE').length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {staffList.filter(staff => staff.status === 'INACTIVE').length > 0 
+                      ? 'cần theo dõi' 
+                      : 'Tất cả đang làm việc'
+                    }
+                  </p>
                 </div>
-                <UserPlus className="w-8 h-8 text-orange-600" />
+                <XCircle className="w-8 h-8 text-orange-600" />
               </div>
             </CardContent>
           </Card>
@@ -684,10 +1140,9 @@ export default function StaffManagement() {
 
         {/* Main Content */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full lg:w-auto grid-cols-3">
+          <TabsList className="grid w-full lg:w-auto grid-cols-2">
             <TabsTrigger value="staff">Danh sách nhân viên</TabsTrigger>
             <TabsTrigger value="shifts">Lịch ca trực</TabsTrigger>
-            <TabsTrigger value="performance">Hiệu suất</TabsTrigger>
           </TabsList>
 
           <TabsContent value="staff">
@@ -758,11 +1213,26 @@ export default function StaffManagement() {
                         <TableCell>{getStaffStatusBadge(staff.status)}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditStaff(staff)}
+                              disabled={isDeletingStaff === staff.id}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="w-4 h-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteStaff(staff)}
+                              disabled={isDeletingStaff === staff.id}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              {isDeletingStaff === staff.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
                             </Button>
                           </div>
                         </TableCell>
@@ -956,20 +1426,6 @@ export default function StaffManagement() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="performance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hiệu suất làm việc</CardTitle>
-                <CardDescription>Theo dõi hiệu suất và đánh giá nhân viên</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p>Tính năng đang được phát triển...</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

@@ -340,16 +340,6 @@ export default function CheckoutPage() {
                         </div>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                      <RadioGroupItem value="cod" id="cod" />
-                      <Label htmlFor="cod" className="flex items-center gap-3 cursor-pointer flex-1">
-                        <Banknote className="w-5 h-5 text-orange-600" />
-                        <div>
-                          <div className="font-medium">Thanh toán tại quầy</div>
-                          <div className="text-sm text-gray-600">Thanh toán bằng tiền mặt</div>
-                        </div>
-                      </Label>
-                    </div>
                   </RadioGroup>
 
                 </CardContent>
