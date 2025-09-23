@@ -93,20 +93,25 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-6 mx-auto">
           {/* Shop dropdown (ghép Cửa hàng + Thuê thiết bị + Combo) */}
           <div
-            className="relative"
-            onMouseEnter={openShop}
+            className="relative inline-block"
+            onMouseEnter={openShop}        // wrapper nhận sự kiện
             onMouseLeave={closeShopDelayed}
             onFocus={openShop}
             onBlur={closeShopDelayed}
           >
-            <button className={`inline-flex items-center gap-2 ${linkClass('/store')} focus:outline-none`}>
+            <button
+              aria-haspopup="true"
+              aria-expanded={shopOpen}
+              className={`inline-flex items-center gap-2 ${linkClass('/store')} focus:outline-none px-1`}
+            >
               Cửa hàng
               <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${shopOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Large dropdown: keep open longer and make wider */}
+            {/* đặt mt-1 để tránh khoảng trống, và pointer-events chỉ active khi mở */}
             <div
-              className={`absolute left-0 mt-3 bg-white border rounded-lg shadow-lg transform transition-all duration-100 pointer-events-auto ${shopOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} z-40`}
+              className={`absolute left-0 top-full mt-1 bg-white border rounded-lg shadow-lg transform transition-all duration-150 z-40
+                ${shopOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
               role="menu"
               style={{ minWidth: 260 }}
             >
@@ -123,19 +128,24 @@ export default function Navbar() {
 
           {/* Info dropdown (Về chúng tôi + Liên hệ) */}
           <div
-            className="relative"
+            className="relative inline-block"
             onMouseEnter={openInfo}
             onMouseLeave={closeInfoDelayed}
             onFocus={openInfo}
             onBlur={closeInfoDelayed}
           >
-            <button className={`inline-flex items-center gap-2 ${linkClass('/about')} focus:outline-none`}>
+            <button
+              aria-haspopup="true"
+              aria-expanded={infoOpen}
+              className={`inline-flex items-center gap-2 ${linkClass('/about')} focus:outline-none px-1`}
+            >
               Về chúng tôi
               <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${infoOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <div
-              className={`absolute left-0 mt-3 bg-white border rounded-lg shadow-lg transform transition-all duration-100 pointer-events-auto ${infoOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'} z-40`}
+              className={`absolute left-0 top-full mt-1 bg-white border rounded-lg shadow-lg transform transition-all duration-150 z-40
+                ${infoOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
               role="menu"
               style={{ minWidth: 300 }}
             >

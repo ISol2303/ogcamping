@@ -127,6 +127,8 @@ export default function HomePage() {
         // - booking phải có ít nhất 1 service item chưa được review (item.hasReview === false OR item.hasReview undefined)
         const candidates = (bookings || [])
           .filter((b: any) => {
+            console.log("Checking booking:", b);
+            
             if (b.status !== "COMPLETED") return false
             if (!b.checkOutDate) return false
             // --- CHANGED: if booking-level hasReview true => skip ---
@@ -191,7 +193,7 @@ export default function HomePage() {
   const handleGoReview = () => {
     if (serviceToReview) {
       setShowReviewPopup(false)
-      router.push(`/services/${serviceToReview}#reviews`); // chuyển đến phần reviews của dịch vụ
+      router.push(`/orders/service`); // chuyển đến phần reviews của dịch vụ
     }
   }
   
