@@ -9,8 +9,8 @@ type User = {
   role: string;
   name?: string;
   avatar?: string;
-  firstName?: string;
-  lastName?: string;
+  firstname?: string;
+  lastname?: string;
 };
 
 type JwtPayload = {
@@ -19,6 +19,8 @@ type JwtPayload = {
   role: string;
   name?: string;
   avatar?: string;
+  firstname?: string;
+  lastname?: string;
   exp: number;
   firstName?: string;
   lastName?: string;
@@ -58,25 +60,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Token valid:', decoded.exp * 1000 > Date.now());
 
         if (decoded.exp * 1000 > Date.now()) {
-          //          const userData = {
-          //            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
-          //            email: decoded.sub, // JWT sub thường là email
-          // setUser({
-          //   id: decoded.id,
-          //   email: decoded.sub,
-          //   role: decoded.role,
-          //   name: decoded.name,
-          //   avatar: decoded.avatar,
-          // };
-          setUser({
-            id: decoded.id,
-            email: decoded.sub,
+          const userData: User = {
+            id: decoded.id.toString(), // Sử dụng id thực sự từ JWT
+            email: decoded.sub, // JWT sub thường là email
             role: decoded.role,
             name: decoded.name,
             avatar: decoded.avatar,
-            firstName: decoded.firstName,
-            lastName: decoded.lastName
-          });
+            firstname: decoded.firstname,
+            lastname: decoded.lastname,
+          };
+          setUser(userData);
           setToken(storedToken);
         } else {
           console.log('Token expired, logging out');
@@ -126,7 +119,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem("user", JSON.stringify(userData));
         sessionStorage.setItem("authToken", token);
         sessionStorage.setItem("user", JSON.stringify(userData));
-        sessionStorage.setItem("userId", JSON.stringify(userData.id));
       } else {
         sessionStorage.setItem("authToken", token);
         sessionStorage.setItem("user", JSON.stringify(userData));
@@ -147,6 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     sessionStorage.removeItem("user");
     sessionStorage.removeItem("userId");
     localStorage.removeItem("userId");
+
     setUser(null);
     setToken(null);
   };

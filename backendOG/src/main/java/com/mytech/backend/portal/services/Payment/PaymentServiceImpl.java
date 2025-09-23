@@ -308,6 +308,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         } else {
             payment.setStatus(PaymentStatus.FAILED);
+            // 🔹 Hủy luôn booking khi payment fail
+            booking.setStatus(BookingStatus.CANCELLED);
+            bookingRepository.save(booking);
         }
 
         payment.setUpdatedAt(LocalDateTime.now());

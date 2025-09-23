@@ -58,13 +58,13 @@ public class PaymentController {
             Long bookingId = Optional.ofNullable(paymentResponse.getBookingId())
                     .orElseThrow(() -> new IllegalArgumentException("BookingId is null from paymentResponse"));
 
-            String status = success ? "success" : "failure";
+            String basePath = success ? "success" : "failure";
 
-            // Redirect to website (original behavior)
             String redirectUrl = String.format(
-                    "http://localhost:3000/checkout/success?bookingId=%d&status=%s",
-                    bookingId, status
+                    "http://localhost:3000/checkoutBooking/%s?bookingId=%d",
+                    basePath, bookingId
             );
+
 
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(redirectUrl))
@@ -84,7 +84,7 @@ public class PaymentController {
 
             // Redirect to website for failure case (original behavior)
             String fallbackUrl = String.format(
-                    "http://localhost:3000/checkout/failure?bookingId=%d&error=%s",
+                    "http://localhost:3000/checkoutBooking/failure?bookingId=%d&error=%s",
                     fallbackBookingId,
                     UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8)
             );

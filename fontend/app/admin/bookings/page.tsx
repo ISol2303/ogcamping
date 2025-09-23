@@ -463,14 +463,37 @@ export default function BookingManagementPage() {
 
   const getAvailableStaffForShift = (bookingDate: string) => {
     const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // Thời gian hiện tại tính bằng phút
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const today = now.toISOString().split('T')[0]; 
+    // Debug logging
+    console.log('🔍 DEBUG getAvailableStaffForShift:');
+    console.log('📅 Today:', today);
+    console.log('📅 Booking Date:', bookingDate);
+    console.log('⏰ Current time (minutes):', currentTime, `(${Math.floor(currentTime/60)}:${String(currentTime%60).padStart(2,'0')})`);
+    console.log('📊 Total shifts:', shifts.length);
+    console.log('👥 Total users:', users.length);
 
-    // Tìm các ca trực hôm nay có thời gian phù hợp với hiện tại
     const currentShifts = shifts.filter(shift => {
-      if (shift.shiftDate !== today) return false;
+      console.log('🔄 Checking shift:', {
+        id: shift.id,
+        date: shift.shiftDate,
+        time: `${shift.startTime}-${shift.endTime}`,
+        status: shift.status,
+        assignments: shift.assignments?.length || 0
+      });
 
-      // Chuyển đổi thời gian ca trực sang phút (hỗ trợ cả HH:MM và HH:MM:SS)
+      const shiftDate = new Date(shift.shiftDate);
+      const todayDate = new Date(today);
+      const timeDiff = Math.abs(shiftDate.getTime() - todayDate.getTime());
+      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff > 1) {
+        console.log('❌ Date too far:', shift.shiftDate, 'vs', today, '- days diff:', daysDiff);
+        return false;
+      }
+
+      console.log('✅ Date accepted:', shift.shiftDate, 'vs', today, '- days diff:', daysDiff);
+
       const startTimeParts = shift.startTime.split(':');
       const endTimeParts = shift.endTime.split(':');
       const startHour = parseInt(startTimeParts[0]);
@@ -481,19 +504,45 @@ export default function BookingManagementPage() {
       const startTime = startHour * 60 + startMin;
       const endTime = endHour * 60 + endMin;
 
-      // Kiểm tra thời gian hiện tại có nằm trong ca trực không
-      const isTimeMatch = currentTime >= startTime && currentTime <= endTime;
-      const isStatusValid = ['REGISTERED', 'APPROVED', 'IN_PROGRESS'].includes(shift.status);
+      console.log('⏱️ Time comparison:', {
+        shiftStart: startTime,
+        shiftEnd: endTime,
+        currentTime: currentTime,
+        startFormatted: `${Math.floor(startTime/60)}:${String(startTime%60).padStart(2,'0')}`,
+        endFormatted: `${Math.floor(endTime/60)}:${String(endTime%60).padStart(2,'0')}`
+      });
+
+      let isTimeMatch = false;
+      
+      if (shift.shiftDate === today) {
+        isTimeMatch = currentTime >= startTime && currentTime <= endTime;
+      } else {
+        isTimeMatch = true;
+      }
+      
+      const isStatusValid = ['REGISTERED', 'ACTIVE', 'APPROVED', 'IN_PROGRESS'].includes(shift.status);
+
+      console.log('✅ Validation results:', {
+        isTimeMatch,
+        isStatusValid,
+        shiftDate: shift.shiftDate,
+        isToday: shift.shiftDate === today,
+        finalResult: isTimeMatch && isStatusValid
+      });
 
       return isTimeMatch && isStatusValid;
     });
+
+    console.log('🎯 Found current shifts:', currentShifts.length);
 
     // Lấy danh sách nhân viên đang trong ca trực hiện tại
     const availableStaff: Staff[] = [];
 
     currentShifts.forEach(shift => {
-      shift.assignments.forEach(assignment => {
+      console.log('👤 Processing shift assignments:', shift.assignments?.length || 0);
+      shift.assignments?.forEach(assignment => {
         const user = users.find(u => u.id === assignment.userId);
+        console.log('🔍 Looking for user:', assignment.userId, 'found:', !!user);
         // Bỏ điều kiện u.status === 'ACTIVE' tạm thời để test
         if (user) {
           availableStaff.push({
@@ -504,6 +553,7 @@ export default function BookingManagementPage() {
             shift: `${shift.startTime.substring(0, 5)}-${shift.endTime.substring(0, 5)}`,
             isAvailable: true
           });
+          console.log('✅ Added staff:', user.name);
         }
       });
     });
@@ -513,6 +563,7 @@ export default function BookingManagementPage() {
       index === self.findIndex(s => s.id === staff.id)
     );
 
+    console.log('🏁 Final result:', uniqueStaff.length, 'unique staff members');
     return uniqueStaff;
   }
 
@@ -888,16 +939,6 @@ export default function BookingManagementPage() {
                             <span>
                               CheckOut: {booking.checkOutDate ? formatDateTime(booking.checkOutDate) : '*'}
                             </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Users className="w-4 h-4" />
-                            <span>
-                              {(booking.numberOfPeople
-                                ?? booking.services?.[0]?.numberOfPeople
-                                ?? booking.combos?.[0]?.numberOfPeople
-                                ?? 0)} người
-                            </span>
-
                           </div>
                         </div>
 

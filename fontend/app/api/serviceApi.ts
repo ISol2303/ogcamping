@@ -8,12 +8,22 @@ export type Service = {
   maxDays: number;
   minCapacity: number;
   maxCapacity: number;
+  duration?: string;
+  capacity?: string;
   active: boolean;
   tag: ServiceTag;
   averageRating: number | null;
   totalReviews: number | null;
   availableSlots: number;
   imageUrl?: string; // nếu có hình ảnh
+  highlights?: string[]; // Điểm nổi bật của dịch vụ
+  included?: string[]; // Dịch vụ bao gồm
+  itinerary?: ItineraryItem[]; // Lịch trình chi tiết
+};
+
+export type ItineraryItem = {
+  day: number;
+  description: string;
 };
 type ServiceTag = "NEW" | "POPULAR" | "DISCOUNT";
 export const getServices = async (): Promise<Service[]> => {

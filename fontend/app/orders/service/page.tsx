@@ -22,6 +22,9 @@ interface ServiceItem {
   price: number;
   total: number;
   hasReview?: boolean;
+  checkInDate?: string | null;
+  checkOutDate?: string | null;
+  numberOfPeople?: number;
 }
 
 interface Booking {
@@ -239,12 +242,46 @@ export default function ServiceBookingHistory() {
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return dateString;
     return d.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
+  };
+
+  const getBookingDates = (booking: Booking) => {
+    if (booking.checkInDate && booking.checkOutDate) {
+      return {
+        checkInDate: booking.checkInDate,
+        checkOutDate: booking.checkOutDate
+      };
+    }
+
+    const serviceWithDates = booking.services?.find(service => 
+      service.checkInDate && service.checkOutDate
+    );
+    
+    if (serviceWithDates) {
+      return {
+        checkInDate: serviceWithDates.checkInDate,
+        checkOutDate: serviceWithDates.checkOutDate
+      };
+    }
+
+    const comboWithDates = booking.combos?.find(combo => 
+      combo.checkInDate && combo.checkOutDate
+    );
+    
+    if (comboWithDates) {
+      return {
+        checkInDate: comboWithDates.checkInDate,
+        checkOutDate: comboWithDates.checkOutDate
+      };
+    }
+
+    return {
+      checkInDate: null,
+      checkOutDate: null
+    };
   };
 
   const statuses = [
@@ -427,24 +464,15 @@ export default function ServiceBookingHistory() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                      <p className="text-sm font-bold text-gray-700">Số khách</p>
-                      <p className="text-sm">{b.numberOfPeople ?? '-'}</p>
-                    </div>
-                    <div>
                       <p className="text-sm font-bold text-gray-700">Check-in / Check-out</p>
-                      <p className="text-sm">{formatDate(b.checkInDate)} — {formatDate(b.checkOutDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-700">Số dịch vụ</p>
-                      <p className="text-sm">{b.services?.length ?? 0}</p>
+                      <p className="text-sm">{formatDate(getBookingDates(b).checkInDate)} — {formatDate(getBookingDates(b).checkOutDate)}</p>
                     </div>
                   </div>
 
                   <Separator className="my-4" />
 
                   <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-700">{b.services?.length || 0} dịch vụ</p>
-
+                    
                     <div className="flex items-center gap-2">
                       {b.hasReview ? (
                         <Button size="sm" variant="outline" disabled className="opacity-80 cursor-not-allowed border-gray-200 text-gray-500">
@@ -497,23 +525,106 @@ export default function ServiceBookingHistory() {
                 <Separator />
 
                 <div>
-                  <h4 className="font-semibold mb-3">Dịch vụ trong booking</h4>
-                  <div className="space-y-3">
-                    {selectedBooking.services?.map((item, idx) => (
-                      <div key={idx} className="flex items-center p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{item.name || `Dịch vụ #${item.serviceId ?? item.id}`}</p>
-                          <p className="text-sm text-gray-600">Số lượng: {item.quantity} — Giá: {formatPrice(item.price)}</p>
-                        </div>
-                        <div className="ml-4 flex flex-col gap-2">
-                          {item.serviceId && (
-                            <Link href={`/services/${item.serviceId}#reviews`}>
-                              <Button size="sm">Xem dịch vụ</Button>
-                            </Link>
-                          )}
+                  <h4 className="font-semibold mb-3">Chi tiết booking</h4>
+                  <div className="space-y-4">
+                    {/* Services Section */}
+                    {selectedBooking.services && selectedBooking.services.length > 0 && (
+                      <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Dịch vụ ({selectedBooking.services.length})</h5>
+                        <div className="space-y-2">
+                          {selectedBooking.services.map((item, idx) => (
+                            <div key={`service-${idx}`} className="flex items-center p-3 border rounded-lg bg-blue-50">
+                              <div className="flex-1">
+                                <p className="font-medium">{item.name || `Dịch vụ #${item.serviceId ?? item.id}`}</p>
+                                <p className="text-sm text-gray-600">
+                                  Số lượng: {item.quantity} — Giá: {formatPrice(item.price)}
+                                  {item.numberOfPeople && ` — ${item.numberOfPeople} người`}
+                                </p>
+                                {item.checkInDate && item.checkOutDate && (
+                                  <p className="text-xs text-gray-500">
+                                    {formatDate(item.checkInDate)} → {formatDate(item.checkOutDate)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="ml-4 flex flex-col gap-2">
+                                {item.serviceId && (
+                                  <Link href={`/services/${item.serviceId}#reviews`}>
+                                    <Button size="sm" variant="outline">Xem dịch vụ</Button>
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Combos Section */}
+                    {selectedBooking.combos && selectedBooking.combos.length > 0 && (
+                      <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Combo ({selectedBooking.combos.length})</h5>
+                        <div className="space-y-2">
+                          {selectedBooking.combos.map((item, idx) => (
+                            <div key={`combo-${idx}`} className="flex items-center p-3 border rounded-lg bg-green-50">
+                              <div className="flex-1">
+                                <p className="font-medium">{item.name || `Combo #${item.comboId ?? item.id}`}</p>
+                                <p className="text-sm text-gray-600">
+                                  Số lượng: {item.quantity} — Giá: {formatPrice(item.price)}
+                                  {item.numberOfPeople && ` — ${item.numberOfPeople} người`}
+                                </p>
+                                {item.checkInDate && item.checkOutDate && (
+                                  <p className="text-xs text-gray-500">
+                                    {formatDate(item.checkInDate)} → {formatDate(item.checkOutDate)}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="ml-4 flex flex-col gap-2">
+                                {item.comboId && (
+                                  <Link href={`/combos/${item.comboId}#reviews`}>
+                                    <Button size="sm" variant="outline">Xem combo</Button>
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Equipment Section */}
+                    {selectedBooking.equipments && selectedBooking.equipments.length > 0 && (
+                      <div>
+                        <h5 className="font-medium text-gray-700 mb-2">Thiết bị ({selectedBooking.equipments.length})</h5>
+                        <div className="space-y-2">
+                          {selectedBooking.equipments.map((item, idx) => (
+                            <div key={`equipment-${idx}`} className="flex items-center p-3 border rounded-lg bg-purple-50">
+                              <div className="flex-1">
+                                <p className="font-medium">{item.name || `Thiết bị #${item.equipmentId ?? item.id}`}</p>
+                                <p className="text-sm text-gray-600">
+                                  Số lượng: {item.quantity} — Giá: {formatPrice(item.price)}
+                                </p>
+                              </div>
+                              <div className="ml-4 flex flex-col gap-2">
+                                {item.equipmentId && (
+                                  <Link href={`/equipment/${item.equipmentId}`}>
+                                    <Button size="sm" variant="outline">Xem thiết bị</Button>
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {(!selectedBooking.services || selectedBooking.services.length === 0) &&
+                     (!selectedBooking.combos || selectedBooking.combos.length === 0) &&
+                     (!selectedBooking.equipments || selectedBooking.equipments.length === 0) && (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>Không có dịch vụ nào trong booking này</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -923,18 +923,31 @@ export default function AdminDashboard() {
           <Tabs defaultValue="overview" className="space-y-8">
             <div className="border-b border-gray-200 pb-4">
               <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                <TabsList className="grid grid-cols-3 lg:grid-cols-5 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
+                <TabsList className="grid grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
                   <TabsTrigger value="overview" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Tổng quan</TabsTrigger>
-                  <TabsTrigger value="bookings" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Đặt chỗ</TabsTrigger>
+                  <TabsTrigger value="staff" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300" asChild>
+                    <Link href="/admin/bookings/" className="whitespace-nowrap px-3 py-1">
+                      Đặt Chỗ
+                    </Link>
+                  </TabsTrigger>
                   <TabsTrigger value="staff" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300" asChild>
                     <Link href="/admin/staff/" className="whitespace-nowrap px-3 py-1">
                       Nhân viên
                     </Link>
                   </TabsTrigger>
-                  <TabsTrigger value="services" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Dịch vụ</TabsTrigger>
+                  <TabsTrigger value="staff" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300" asChild>
+                    <Link href="/admin/services/" className="whitespace-nowrap px-3 py-1">
+                      Dịch Vụ
+                    </Link>
+                  </TabsTrigger>
+                  <TabsTrigger value="staff" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300" asChild>
+                    <Link href="/admin/combo/" className="whitespace-nowrap px-3 py-1">
+                      Combo
+                    </Link>
+                  </TabsTrigger>
                   <TabsTrigger value="equipment" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Thiết bị</TabsTrigger>
                 </TabsList>
-                <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
+                <TabsList className="grid grid-cols-2 lg:grid-cols-6 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
                   <TabsTrigger value="gear">Sản phẩm</TabsTrigger>
                   <TabsTrigger value="categories">Danh mục</TabsTrigger>
                   <TabsTrigger value="customers" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Khách hàng</TabsTrigger>

@@ -230,7 +230,7 @@ export default function ServiceDetailPage() {
       return updatedCart;
     });
 
-    router.push('/cart')
+    router.push('/cartBooking')
   };  
   return (
     <div className="min-h-screen bg-gray-50">

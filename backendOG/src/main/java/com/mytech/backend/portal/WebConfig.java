@@ -20,7 +20,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String basePath = "file:///" + uploadDir.replace("\\", "/") + "/";
-
+        registry.addResourceHandler("/uploads/**").addResourceLocations(basePath);
         // Services
         registry.addResourceHandler("/uploads/services/**")
                 .addResourceLocations(basePath + "services/");

@@ -41,7 +41,8 @@ import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { format, parseISO, compareAsc } from "date-fns";
-import { Service } from "@/app/api/admin"
+import { Service } from "@/app/api/serviceApi"
+
 
 interface Review {
   id: number
@@ -364,11 +365,7 @@ export default function ServiceDetailPage() {
       <header className="border-b bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/admin" className="flex items-center gap-2">
-              <Tent className="h-8 w-8 text-green-600" />
-              <span className="text-2xl font-bold text-green-800">OG Camping Admin</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
+           
             <nav className="flex items-center gap-2 text-sm text-gray-600">
               <Link href="/admin" className="hover:text-green-600">
                 Dashboard
@@ -561,40 +558,9 @@ export default function ServiceDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Service Highlights */}
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle>Điểm nổi bật</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {service.highlights.map((highlight, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{highlight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+             
             </div>
 
-            {/* What's Included */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Dịch vụ bao gồm</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {service.included.map((item, index) => (
-                    <div key={index} className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="reviews" className="space-y-6">

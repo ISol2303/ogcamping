@@ -18,7 +18,7 @@ export default function ServicesPage() {
   const [user, setUser] = useState<{ email: string; name: string; role: string } | null>(null)
   const router = useRouter()
   const handleGoToCart = () => {
-    router.push("/cart");
+    router.push("/cartBooking");
   };
   // Check login status on component mount
   useEffect(() => {

@@ -131,7 +131,7 @@ public class BookingServiceImpl implements BookingService {
 
                 // Tạo BookingItem
                 BookingItem item = BookingItem.builder()
-                        .booking(booking) // 🔥 quan trọng
+                        .booking(booking)
                         .service(service)
                         .type(ItemType.SERVICE)
                         .quantity(1)
@@ -151,6 +151,12 @@ public class BookingServiceImpl implements BookingService {
                 Combo combo = comboRepository.findById(c.getComboId())
                         .orElseThrow(() -> new RuntimeException("Combo not found: " + c.getComboId()));
 
+                // Lấy số người do người dùng chọn
+                Integer numberOfPeople = c.getNumberOfPeople();
+                if (numberOfPeople == null || numberOfPeople <= 0) {
+                    throw new RuntimeException("Số lượng người cho combo " + combo.getName() + " phải lớn hơn 0");
+                }
+
                 BookingItem item = BookingItem.builder()
                         .booking(booking)
                         .combo(combo)
@@ -159,7 +165,7 @@ public class BookingServiceImpl implements BookingService {
                         .price(combo.getPrice())
                         .checkInDate(c.getCheckInDate())
                         .checkOutDate(c.getCheckOutDate())
-                        .numberOfPeople(c.getNumberOfPeople())
+                        .numberOfPeople(numberOfPeople)
                         .build();
 
                 bookingItems.add(item);

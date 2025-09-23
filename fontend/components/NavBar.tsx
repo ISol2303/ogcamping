@@ -71,6 +71,10 @@ export default function Navbar() {
     router.push("/cart")
   }
 
+  const handleGoToCartBooking = () => {
+    router.push("/cartBooking")
+  }
+
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center">
@@ -168,7 +172,12 @@ export default function Navbar() {
               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">{cartCount}</Badge>
             )}
           </button>
-
+          <button onClick={handleGoToCartBooking} className="relative p-2 rounded hover:bg-gray-100 transition">
+            <ShoppingCart className="h-5 w-5 text-gray-800" />
+            {cartCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">{cartCount}</Badge>
+            )}
+          </button>
           {isLoggedIn && user ? (
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">

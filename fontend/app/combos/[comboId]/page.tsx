@@ -140,7 +140,7 @@ export default function ComboDetailPage() {
       return updatedCart;
     });
 
-    router.push("/cart");
+    router.push("/cartBooking");
   };
 
 
@@ -169,7 +169,7 @@ export default function ComboDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
-    
+
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
@@ -286,7 +286,9 @@ export default function ComboDetailPage() {
                     <h3 className="font-semibold text-green-800 mb-2">Giá Combo Ưu Đãi</h3>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Tổng giá lẻ:</span>
-                      <span className="line-through text-gray-500">{combo.originalPrice.toLocaleString()}đ</span>
+                      <span className="line-through text-gray-500">{combo?.originalPrice != null
+                        ? combo.originalPrice.toLocaleString() + "đ"
+                        : "0đ"}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-600">Giá combo:</span>
@@ -405,7 +407,9 @@ export default function ComboDetailPage() {
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <span className="text-2xl font-bold text-gray-900">{combo.price.toLocaleString()}đ</span>
-                    <span className="text-sm text-gray-500 line-through">{combo.originalPrice.toLocaleString()}đ</span>
+                    <span className="text-sm text-gray-500 line-through">{combo?.originalPrice != null
+                      ? combo.originalPrice.toLocaleString() + "đ"
+                      : "0đ"}</span>
                   </div>
                   <Badge variant="secondary" className="bg-red-100 text-red-700">
                     Tiết kiệm {(combo.originalPrice - combo.price).toLocaleString()}đ

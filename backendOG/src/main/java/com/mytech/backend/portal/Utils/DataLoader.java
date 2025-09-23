@@ -259,11 +259,13 @@ public class DataLoader {
                 .name("Tour chèo thuyền Cửu Chân")
                 .description("Khám phá sông nước Cửu Chân bằng thuyền")
                 .price(350_000.0)
-                .location("Thanh Hóa")
+                .location("Củ chi")
                 .active(true)
+                .minDays(1).maxDays(1)
+                .minCapacity(1).maxCapacity(1)
                 .allowExtraPeople(true)
                 .extraFeePerPerson(200_000.0)
-                .maxExtraPeople(3)
+                .maxExtraPeople(0)
                 .imageUrl("/uploads/services/thuyen.jpg")
                 .build());
 

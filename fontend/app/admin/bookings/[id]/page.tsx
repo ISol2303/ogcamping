@@ -247,7 +247,7 @@ export default function AdminBookingDetailPage() {
         checkInDate: data.checkInDate || data.services?.[0]?.checkInDate || null,
         checkOutDate: data.checkOutDate || data.services?.[0]?.checkOutDate || null,
 
-        people: data.numberOfPeople || data.services?.[0].numberOfPeople || 0,
+        people: data.numberOfPeople || data.services?.[0]?.numberOfPeople || 0,
         status: data.status || "PENDING",
         paymentMethod: data.payment?.method || "",
         paymentStatus: data.payment?.status || "PENDING",
