@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ShoppingCart, Sparkles, ChevronDown } from "lucide-react"
+import { ShoppingCart, Sparkles, ChevronDown, BookmarkPlus } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
@@ -173,7 +173,7 @@ export default function Navbar() {
             )}
           </button>
           <button onClick={handleGoToCartBooking} className="relative p-2 rounded hover:bg-gray-100 transition">
-            <ShoppingCart className="h-5 w-5 text-gray-800" />
+            <BookmarkPlus  className="h-5 w-5 text-gray-800" />
             {cartCount > 0 && (
               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">{cartCount}</Badge>
             )}

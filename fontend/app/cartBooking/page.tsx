@@ -22,6 +22,7 @@ import {
     CreditCard,
     Sparkles,
     Settings,
+    BookmarkPlus,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -132,7 +133,7 @@ export default function CartPage() {
                 <div className="container mx-auto px-4 py-20">
                     <div className="max-w-md mx-auto text-center">
                         <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center mx-auto mb-8">
-                            <ShoppingCart className="w-12 h-12 text-green-600" />
+                            <BookmarkPlus  className="w-12 h-12 text-green-600" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 mb-4">Giỏ hàng trống</h1>
                         <p className="text-gray-600 mb-8 leading-relaxed">
@@ -196,7 +197,7 @@ export default function CartPage() {
             <div className="container mx-auto px-4 pb-20">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center">
-                        <ShoppingCart className="w-6 h-6 text-green-600" />
+                        <BookmarkPlus  className="w-6 h-6 text-green-600" />
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Danh sách của bạn</h1>

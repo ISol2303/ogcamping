@@ -295,7 +295,7 @@ export default function ComboManagement() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-0">
+          {/* <Card className="hover:shadow-lg transition-shadow border-0">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -314,7 +314,7 @@ export default function ComboManagement() {
                 <Star className="w-8 h-8 text-yellow-600" />
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Main Content */}
