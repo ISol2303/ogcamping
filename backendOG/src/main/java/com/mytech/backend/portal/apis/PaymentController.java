@@ -150,7 +150,7 @@ public class PaymentController {
                     PaymentResponseDTO tmp = paymentService.findByTransactionId(txnRef);
                     fallbackBookingId = tmp != null ? tmp.getBookingId() : 0L;
                 } catch (Exception ignored) {
-                    
+
                     fallbackBookingId = 0L;
                 }
             }
