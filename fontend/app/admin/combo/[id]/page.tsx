@@ -281,11 +281,6 @@ export default function ComboDetailPage() {
               <span>Quay lại Combo</span>
             </Link>
             <div className="h-6 w-px bg-gray-300"></div>
-            <Link href="/admin" className="flex items-center gap-2">
-              <Tent className="h-8 w-8 text-green-600" />
-              <span className="text-2xl font-bold text-green-800">OG Camping Admin</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
             <nav className="flex items-center gap-2 text-sm text-gray-600">
               <Link href="/admin" className="hover:text-green-600">
                 Dashboard
@@ -389,10 +384,6 @@ export default function ComboDetailPage() {
               <div className="flex items-center gap-1 text-sm">
                 <Wrench className="w-4 h-4 text-purple-600" />
                 <span>{equipmentCount} thiết bị</span>
-              </div>
-              <div className="flex items-center gap-1 text-sm">
-                <Utensils className="w-4 h-4 text-orange-600" />
-                <span>{foodCount} món ăn</span>
               </div>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -525,20 +516,6 @@ export default function ComboDetailPage() {
                       ))}
                     </ul>
                   </div>
-                  {/* 
-                  {combo.notIncluded.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-2">Không bao gồm:</h4>
-                      <ul className="space-y-1">
-                        {combo.notIncluded.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
-                            <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-gray-700">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )} */}
 
                   <div className="text-sm text-gray-500 pt-4 border-t">
                     <p>Tạo: {formatDate(combo.createdAt)}</p>
@@ -550,7 +527,7 @@ export default function ComboDetailPage() {
           </TabsContent>
 
           <TabsContent value="items" className="space-y-6">
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-2 gap-6">
               {/* Services */}
               <Card className="border-0 shadow-lg">
                 <CardHeader>
@@ -602,31 +579,6 @@ export default function ComboDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Food */}
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Utensils className="w-5 h-5 text-orange-600" />
-                    Đồ ăn ({foodCount})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {combo.foods?.map((food, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-orange-50 rounded-lg"
-                      >
-                        <div>
-                          <div className="font-medium text-gray-900">{food}</div>
-                          <div className="text-sm text-gray-600">Số lượng: 1</div>
-                        </div>
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 

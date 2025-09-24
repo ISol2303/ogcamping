@@ -238,37 +238,7 @@ export default function ComboManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="w-5 h-5" />
-              <span>Quay lại Admin</span>
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <Link href="/" className="flex items-center gap-2">
-              <Tent className="h-8 w-8 text-green-600" />
-              <span className="text-2xl font-bold text-green-800">OG Camping Admin</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-              <Bell className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Avatar>
-              <AvatarImage src="/admin-avatar.png" />
-              <AvatarFallback>AD</AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      
 
       <div className="container mx-auto px-4 py-8">
         {showMessage && (

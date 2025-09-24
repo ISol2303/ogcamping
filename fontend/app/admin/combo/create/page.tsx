@@ -332,11 +332,6 @@ export default function CreateComboPage() {
               <ArrowLeft className="w-5 h-5" />
               <span>Quay lại danh sách</span>
             </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <Link href="/" className="flex items-center gap-2">
-              <Tent className="h-8 w-8 text-green-600" />
-              <span className="text-2xl font-bold text-green-800">OG Camping Admin</span>
-            </Link>
           </div>
         </div>
       </header>
