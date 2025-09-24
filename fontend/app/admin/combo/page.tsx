@@ -239,7 +239,14 @@ export default function ComboManagement() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       
-
+         <Link
+                  href="/admin"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                  <span>Quay lại</span>
+                </Link>
+                
       <div className="container mx-auto px-4 py-8">
         {showMessage && (
           <div className="mb-4 p-3 rounded bg-green-100 text-green-800 font-medium">
