@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/navigation/app_router.dart';
 import '../../../core/providers/booking_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/models/booking.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
   final String bookingId;
@@ -93,17 +94,36 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
       );
 
       setState(() {
+        // Get service and combo names
+        final services = booking.items.where((item) => item.type == BookingType.SERVICE).toList();
+        final combos = booking.items.where((item) => item.type == BookingType.COMBO).toList();
+        
+        String displayName = '';
+        if (combos.isNotEmpty && services.isNotEmpty) {
+          displayName = '${combos.length} combo, ${services.length} dịch vụ';
+        } else if (combos.isNotEmpty) {
+          displayName = combos.length == 1 
+              ? 'Combo: ${combos.first.details['name'] ?? 'Combo'}'
+              : '${combos.length} combo';
+        } else if (services.isNotEmpty) {
+          displayName = services.length == 1 
+              ? 'Dịch vụ: ${services.first.details['name'] ?? 'Service'}'
+              : '${services.length} dịch vụ';
+        } else {
+          displayName = 'Đặt chỗ';
+        }
+
         bookingDetails = {
           'id': booking.id,
-          'serviceName': booking.items.isNotEmpty
-              ? booking.items.first.details['name'] ?? 'Service'
-              : 'Service',
+          'serviceName': displayName,
           'totalAmount': booking.totalAmount,
           'checkInDate': booking.checkInDate,
           'checkOutDate': booking.checkOutDate,
           'status': booking.status,
           'participants': booking.participants,
           'items': booking.items.length,
+          'services': services.length,
+          'combos': combos.length,
         };
         isLoadingBooking = false;
       });

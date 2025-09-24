@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/models/camping_service.dart';
 import '../../../core/navigation/app_router.dart';
@@ -192,7 +193,7 @@ class _ServiceCard extends StatelessWidget {
                   // Service Image
                   if (service.imageUrl.isNotEmpty)
                     Image.network(
-                      'http://192.168.56.1:8080${service.imageUrl}',
+                      AppConfig.getImageUrl(service.imageUrl),
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,

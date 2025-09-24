@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/providers/booking_provider.dart';
 import '../../../core/models/combo_package.dart';
@@ -41,7 +42,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
 
     try {
       final servicesProvider = context.read<ServicesProvider>();
-      final combo = await servicesProvider.getComboById(widget.comboId);
+      final combo = await servicesProvider.getComboByIdFromApi(widget.comboId);
       
       if (combo != null) {
         setState(() {
@@ -153,7 +154,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                   // Combo Image
                   if (_combo!.imageUrl.isNotEmpty)
                     Image.network(
-                      _combo!.fullImageUrl,
+                      AppConfig.getImageUrl(_combo!.imageUrl),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(

@@ -1,3 +1,5 @@
+import '../config/app_config.dart';
+
 class ComboItem {
   final int serviceId;
   final String serviceName;
@@ -149,7 +151,7 @@ class ComboPackage {
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     }
-    return 'http://192.168.56.1:8080$imageUrl';
+    return AppConfig.getImageUrl(imageUrl);
   }
 
   // Backward compatibility getters

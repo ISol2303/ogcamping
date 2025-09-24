@@ -319,46 +319,8 @@ class _BookingHistoryCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                // Items
-                Text(
-                  'Dịch vụ đã đặt:',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 8),
-
-                ...booking.items.map((item) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${item.details['name']} x${item.quantity}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                        Text(
-                          '${(item.price * item.quantity).toStringAsFixed(0)}đ',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                // Items - Separate Services and Combos
+                ..._buildBookingItems(context, booking),
 
                 const SizedBox(height: 12),
 
@@ -451,6 +413,132 @@ class _BookingHistoryCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildBookingItems(BuildContext context, Booking booking) {
+    final services = booking.items.where((item) => item.type == BookingType.SERVICE).toList();
+    final combos = booking.items.where((item) => item.type == BookingType.COMBO).toList();
+    
+    // Debug logging
+    print('🔍 Booking ${booking.id} items analysis:');
+    print('- Total items: ${booking.items.length}');
+    print('- Services found: ${services.length}');
+    print('- Combos found: ${combos.length}');
+    for (var item in booking.items) {
+      print('  - Item: ${item.details['name']} | Type: ${item.type} | ID: ${item.id}');
+    }
+    
+    List<Widget> widgets = [];
+    
+    // Services section
+    if (services.isNotEmpty) {
+      widgets.add(
+        Text(
+          'Dịch vụ đã đặt:',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 8));
+      
+      for (var item in services) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${item.details['name']} x${item.quantity}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                Text(
+                  '${(item.price * item.quantity).toStringAsFixed(0)}đ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      
+      if (combos.isNotEmpty) {
+        widgets.add(const SizedBox(height: 12));
+      }
+    }
+    
+    // Combos section
+    if (combos.isNotEmpty) {
+      widgets.add(
+        Text(
+          'Combo đã đặt:',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 8));
+      
+      for (var item in combos) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.card_giftcard,
+                        size: 16,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${item.details['name']} x${item.quantity}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${(item.price * item.quantity).toStringAsFixed(0)}đ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+    
+    return widgets;
   }
 }
 

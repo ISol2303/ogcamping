@@ -466,6 +466,28 @@ class BookingProvider extends ChangeNotifier {
       },
     )).toList();
     
+    // Convert combos to BookingItems
+    if (response.combos.isNotEmpty) {
+      final comboItems = response.combos.map((combo) {
+        if (combo is Map<String, dynamic>) {
+          return BookingItem(
+            id: combo['id']?.toString() ?? '',
+            type: BookingType.COMBO,
+            quantity: combo['quantity'] ?? 1,
+            price: (combo['price'] ?? 0).toDouble(),
+            details: {
+              'name': combo['name'] ?? 'Combo',
+              'comboId': combo['comboId'],
+              'total': combo['total'] ?? combo['price'] ?? 0,
+            },
+          );
+        }
+        return null;
+      }).where((item) => item != null).cast<BookingItem>().toList();
+      
+      items.addAll(comboItems);
+    }
+    
     return Booking(
       id: response.id.toString(),
       userId: response.customerId.toString(),

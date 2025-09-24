@@ -47,6 +47,10 @@ class BookingRepository {
         final numericId = _extractNumericId(item.id);
         print('Combo item.id: ${item.id} -> numericId: $numericId');
 
+        // Get numberOfPeople from CartItem field
+        final numberOfPeople = item.numberOfPeople ?? participants;
+        print('Combo numberOfPeople: $numberOfPeople');
+
         // Use dates from CartItem if available, otherwise use method parameters
         final itemCheckInDate = item.checkInDate ?? checkInDate;
         final itemCheckOutDate = item.checkOutDate ?? checkOutDate;
@@ -58,6 +62,7 @@ class BookingRepository {
           'quantity': item.quantity,
           'checkInDate': '${itemCheckInDate.toIso8601String().split('T')[0]}T08:00:00',
           'checkOutDate': '${itemCheckOutDate.toIso8601String().split('T')[0]}T12:00:00',
+          'numberOfPeople': numberOfPeople,
           'extraPeople': 0,
         };
       }).toList();

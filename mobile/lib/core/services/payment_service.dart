@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import '../config/app_config.dart';
 import '../models/payment.dart';
 import 'in_app_browser_service.dart';
 
 class PaymentService {
-  static const String baseUrl = 'http://192.168.56.1:8080/apis/v1/payments';
+  static String get baseUrl => AppConfig.paymentUrl;
 
   Future<PaymentResponseDTO> createPayment(PaymentRequestDTO request) async {
     try {

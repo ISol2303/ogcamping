@@ -176,8 +176,40 @@ class ServicesProvider extends ChangeNotifier {
 
   ComboPackage? getComboById(String id) {
     try {
-      return _combos.firstWhere((combo) => combo.id == id);
+      // Convert String id to int for comparison
+      final intId = int.parse(id);
+      return _combos.firstWhere((combo) => combo.id == intId);
     } catch (e) {
+      return null;
+    }
+  }
+
+  // Load combo by ID from API
+  Future<ComboPackage?> getComboByIdFromApi(String id) async {
+    try {
+      print('ServicesProvider: Loading combo by ID from API: $id');
+      
+      // First check if combo exists in local list
+      final localCombo = getComboById(id);
+      if (localCombo != null) {
+        print('ServicesProvider: Found combo in local list: ${localCombo.name}');
+        return localCombo;
+      }
+      
+      // If not found locally, load all combos from API
+      await loadCombos();
+      
+      // Try to find combo again after loading
+      final combo = getComboById(id);
+      if (combo != null) {
+        print('ServicesProvider: Successfully loaded combo from API: ${combo.name}');
+        return combo;
+      } else {
+        print('ServicesProvider: Combo with ID $id not found in API response');
+        return null;
+      }
+    } catch (e) {
+      print('ServicesProvider: Error loading combo by ID from API: $e');
       return null;
     }
   }

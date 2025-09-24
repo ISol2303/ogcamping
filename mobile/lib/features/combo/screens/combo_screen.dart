@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/providers/services_provider.dart';
+import '../../../core/providers/booking_provider.dart';
 import '../../../core/models/combo_package.dart';
 import '../../../core/navigation/app_router.dart';
 import '../../../shared/widgets/loading_widget.dart';
@@ -193,25 +195,57 @@ class _ComboCard extends StatelessWidget {
             Container(
               height: 200,
               width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.card_giftcard,
-                      size: 64,
-                      color: Colors.white.withOpacity(0.7),
+                  // Combo Image
+                  if (combo.imageUrl.isNotEmpty)
+                    Image.network(
+                      AppConfig.getImageUrl(combo.imageUrl),
+                      width: double.infinity,
+                      height: 200,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.card_giftcard,
+                              size: 64,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.card_giftcard,
+                          size: 64,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
                     ),
-                  ),
                   if (combo.isPopular)
                     Positioned(
                       top: 12,
@@ -419,68 +453,88 @@ class _ComboCard extends StatelessWidget {
                     const SizedBox(height: 12),
                   ],
 
-                  // Price
+                  // Price and Actions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '${combo.discountedPrice.toStringAsFixed(0)}đ',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        color:
+                                            Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${combo.originalPrice?.toStringAsFixed(0)}đ',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        decoration: TextDecoration.lineThrough,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Tiết kiệm ${combo.savings.toStringAsFixed(0)}đ',
+                              style:
+                                  Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                '${combo.discountedPrice.toStringAsFixed(0)}đ',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'Combo',
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${combo.originalPrice?.toStringAsFixed(0)}đ',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      decoration: TextDecoration.lineThrough,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                              ),
-                            ],
+                            ),
                           ),
-                          Text(
-                            'Tiết kiệm ${combo.savings.toStringAsFixed(0)}đ',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: 100,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _quickAddToCart(context, combo),
+                              icon: const Icon(Icons.add_shopping_cart, size: 16),
+                              label: const Text('Thêm', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: const Size(0, 32),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          'Combo',
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -491,5 +545,36 @@ class _ComboCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _quickAddToCart(BuildContext context, ComboPackage combo) {
+    // Quick add to cart with default values
+    final bookingProvider = context.read<BookingProvider>();
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    
+    bookingProvider.addComboToCart(
+      combo,
+      selectedDate: tomorrow.toIso8601String().split('T')[0],
+      numberOfPeople: combo.minPeople ?? 1,
+    );
+
+    final checkOutDate = tomorrow.add(Duration(days: combo.maxDays));
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Đã thêm ${combo.name} vào giỏ hàng\n${_formatDate(tomorrow)} - ${_formatDate(checkOutDate)} (${combo.minPeople ?? 1} người)',
+        ),
+        action: SnackBarAction(
+          label: 'Xem giỏ hàng',
+          onPressed: () => context.pushNamed(AppRoutes.cart),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

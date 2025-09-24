@@ -384,20 +384,19 @@ class _CartScreenState extends State<CartScreen> {
                           children: [
                             const Text('Tạm tính:'),
                             Text(
-                                '${bookingProvider.totalWithDuration.toStringAsFixed(0)}đ'),
+                                '${(_calculateGrandTotal(bookingProvider.cartItems) - _calculateTotalExtraFee(bookingProvider.cartItems)).toStringAsFixed(0)}đ'),
                           ],
                         ),
                         const SizedBox(height: 8),
 
                         // Phụ thu (nếu có)
-                        if (_calculateTotalExtraFee(bookingProvider.cartItems) >
-                            0) ...[
+                        if (_calculateTotalExtraFee(bookingProvider.cartItems) > 0) ...[
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Phụ thu:'),
                               Text(
-                                  '${_calculateTotalExtraFee(bookingProvider.cartItems).toStringAsFixed(0)}đ'),
+                                  '+${_calculateTotalExtraFee(bookingProvider.cartItems).toStringAsFixed(0)}đ'),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -417,7 +416,7 @@ class _CartScreenState extends State<CartScreen> {
 
                         const Divider(),
 
-                        // Tổng cộng (bao gồm phụ thu, không có thuế)
+                        // Tổng cộng (bao gồm phụ thu)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/camping_service.dart';
 import '../models/combo_package.dart';
 import '../models/equipment.dart';
@@ -10,15 +11,8 @@ import '../models/customer.dart';
 import '../models/booking_response.dart';
 
 class ApiService {
-  // Backend URL - detect platform and use appropriate URL
-  static String get baseUrl {
-    // For Flutter web, use the same host as the web app
-    if (kIsWeb) {
-      return 'http://localhost:8080/apis/v1';
-    }
-    // For mobile, use IP address for real device connectivity
-    return 'http://192.168.56.1:8080/apis/v1';
-  }
+  // Backend URL - uses centralized configuration
+  static String get baseUrl => AppConfig.baseUrl;
 
   static const Duration requestTimeout =
       Duration(seconds: 60); // Increase timeout

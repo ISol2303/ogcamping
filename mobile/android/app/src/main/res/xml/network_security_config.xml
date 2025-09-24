@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    Network Security Configuration
+    
+    IMPORTANT: When changing the backend IP address in AppConfig._backendHost,
+    make sure to update the domain list below to match the new IP address.
+    
+    Current backend IP: 192.168.56.1 (matches AppConfig._backendHost)
+    
+    Common development IPs:
+    - 192.168.56.1 (VirtualBox/VMware host-only)
+    - 192.168.1.xxx (Local network)
+    - 10.0.2.2 (Android emulator host)
+    - localhost/127.0.0.1 (Local development)
+-->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
+        <!-- Current backend IP (update when changing AppConfig._backendHost) -->
         <domain includeSubdomains="true">192.168.56.1</domain>
+        
+        <!-- Common development domains -->
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
+        
+        <!-- Add your local network IP here if needed -->
+        <!-- <domain includeSubdomains="true">192.168.1.100</domain> -->
     </domain-config>
 </network-security-config>

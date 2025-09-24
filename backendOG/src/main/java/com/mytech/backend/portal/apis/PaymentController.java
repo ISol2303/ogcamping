@@ -135,21 +135,30 @@ public class PaymentController {
         } catch (Exception e) {
             log.error("VNPay mobile callback error: {}", e.getMessage(), e);
 
-            // fallback: nếu params có bookingId thì lấy ra, nếu không thì để 0
-            Long fallbackBookingId = null;
+            String txnRef = params.get("vnp_TxnRef");
+            Long fallbackBookingId = 0L;
+
             try {
-                String txnRef = params.get("vnp_TxnRef");
-                PaymentResponseDTO tmp = paymentService.findByTransactionId(txnRef); // viết hàm findByTxnRef trong service
-                fallbackBookingId = tmp != null ? tmp.getBookingId() : 0L;
-            } catch (Exception ignored) {
-                fallbackBookingId = 0L;
+                if (txnRef != null) {
+                    // confirm thất bại luôn
+                    PaymentResponseDTO failedResponse = paymentService.confirmPaymentVNPay(txnRef, false);
+                    fallbackBookingId = Optional.ofNullable(failedResponse.getBookingId()).orElse(0L);
+                }
+            } catch (Exception ex2) {
+                log.warn("Could not confirm failed payment: {}", ex2.getMessage());
+                try {
+                    PaymentResponseDTO tmp = paymentService.findByTransactionId(txnRef);
+                    fallbackBookingId = tmp != null ? tmp.getBookingId() : 0L;
+                } catch (Exception ignored) {
+                    fallbackBookingId = 0L;
+                }
             }
 
-            // Redirect về HTML page for failure case
+            // Redirect về app với trạng thái failure
             String fallbackUrl = String.format(
                     "ogcamping://payment/result?bookingId=%d&status=failure&txnRef=%s",
                     fallbackBookingId,
-                    UriUtils.encodeQueryParam(e.getMessage(), StandardCharsets.UTF_8)
+                    txnRef != null ? txnRef : "unknown"
             );
 
             return ResponseEntity.status(HttpStatus.FOUND)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/providers/services_provider.dart';
 import '../../../core/providers/booking_provider.dart';
 import '../../../core/models/camping_service.dart';
@@ -177,7 +178,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   // Service Image
                   if (_service!.imageUrl.isNotEmpty)
                     Image.network(
-                      'http://192.168.56.1:8080${_service!.imageUrl}',
+                      AppConfig.getImageUrl(_service!.imageUrl),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(

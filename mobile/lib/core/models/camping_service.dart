@@ -1,3 +1,5 @@
+import '../config/app_config.dart';
+
 enum ServiceType { camping, glamping }
 
 enum ServiceStatus { available, booked, maintenance }
@@ -188,9 +190,7 @@ class CampingService {
   }
 
   String _getFullImageUrl(String url) {
-    if (url.startsWith('http')) {
-      return url;
-    }
-    return 'http://192.168.56.1:8080$url';
+    // Use centralized configuration for image URLs
+    return AppConfig.getImageUrl(url);
   }
 }
