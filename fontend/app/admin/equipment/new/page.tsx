@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fetchAreas, fetchCategories, fetchCurrentUser } from '../../../api/admin';
+import { ArrowLeft, Link } from 'lucide-react';
 
 export default function NewEquipmentPage() {
   const [formData, setFormData] = useState({
@@ -82,7 +83,7 @@ export default function NewEquipmentPage() {
 
       // await createEquipment(token, form); // Gửi API
 
-      router.push('/admin/equipment');
+      router.push('/admin');
     } catch (error: any) {
       setError(error.message || 'Failed to create equipment');
     }
@@ -93,6 +94,13 @@ export default function NewEquipmentPage() {
       {error && (
         <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">{error}</div>
       )}
+       <Link
+                href="/admin"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span>Quay lại</span>
+        </Link>
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle>Thêm thiết bị mới</CardTitle>
