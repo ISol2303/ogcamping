@@ -294,7 +294,7 @@ const getStatusBadge = (status: string) => {
   switch (status) {
     case 'confirmed':
     case 'active':
-    case 'AVAILABLE': // Updated
+    case 'AVAILABLE':
     case 'sufficient':
       return <Badge className="bg-green-100 text-green-800">{translatedStatus}</Badge>;
     case 'completed':
@@ -304,7 +304,7 @@ const getStatusBadge = (status: string) => {
       return <Badge className="bg-yellow-100 text-yellow-800">{translatedStatus}</Badge>;
     case 'cancelled':
     case 'inactive':
-    case 'OUT_OF_STOCK': // Updated
+    case 'OUT_OF_STOCK':
       return <Badge className="bg-red-100 text-red-800">{translatedStatus}</Badge>;
     case 'low':
       return <Badge className="bg-orange-100 text-orange-800">{translatedStatus}</Badge>;
@@ -655,7 +655,14 @@ export default function AdminDashboard() {
         setEquipment(validateArray(equipmentData, 'thiết bị'));
         setCustomers(validateArray(customersData, 'khách hàng'));
         setLocations([]); // Locations sẽ được fetch riêng khi cần
-        setInventory(validateArray(inventoryData, 'kho'));
+        // Map Equipment[] to InventoryItem[]
+        setInventory(validateArray(inventoryData, 'kho').map(item => ({
+          _id: item._id,
+          name: item.name,
+          quantity: item.quantityInStock, // Assuming quantityInStock maps to quantity
+          threshold: 5, // Setting a default threshold value
+          status: item.quantityInStock > 5 ? 'sufficient' : 'low', // Setting a default status based on quantity
+        })));
         setPromotions(validateArray(promotionsData, 'khuyến mãi'));
       } catch (error: any) {
         const apiError: ApiError = {
@@ -943,7 +950,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <TabsContent value="overview">
+         <TabsContent value="overview">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">

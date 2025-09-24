@@ -38,6 +38,7 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -638,7 +639,15 @@ export default function BookingManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
+       {/* Back Button */}
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span>Quay lại</span>
+              </Link>
+      
       <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">

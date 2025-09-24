@@ -935,43 +935,57 @@ export const fetchLocations = async (token: string): Promise<Location[]> => {
 /**
  * Fetch inventory
  */
-export const fetchInventory = async (token: string): Promise<InventoryItem[]> => {
+export const fetchInventory = async (token: string): Promise<Equipment[]> => {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
   try {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    const response = await axios.get(`${API_URL}/apis/v1/admin/inventory`, {
+    const response = await axios.get(`${API_URL}/apis/v1/admin/gears`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 10000,
     });
-    return response.data;
-  } catch (error: any) {
-    const status = error.response?.status || 500;
-    const data = error.response?.data || {};
-    let message = data.error || data.message || error.message || 'Failed to fetch inventory';
 
-    if (status === 401) {
-      message = 'Xác thực thất bại. Vui lòng đăng nhập lại.';
-    } else if (status === 403) {
-      message = 'Bạn không có quyền truy cập. Vui lòng kiểm tra vai trò.';
-    } else if (status === 404) {
-      message = 'Không tìm thấy danh sách kho hàng.';
-    } else if (error.code === 'ERR_NETWORK') {
-      message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
-    } else if (status === 500) {
-      message = 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
+    const gears = response.data;
+    if (!Array.isArray(gears)) {
+      throw new Error('Invalid gears data: Expected an array');
     }
 
-    console.error('Error fetching inventory:', {
+    const mapped: Equipment[] = gears.map((g: any) => ({
+      _id: String(g.id || g._id),
+      name: g.name || '',
+      category: typeof g.category === 'string' ? g.category : String(g.category || ''),
+      area: typeof g.area === 'string' ? g.area : String(g.area || ''),
+      description: g.description || '',
+      quantityInStock: Number(g.quantityInStock || 0),
+      available: Number(g.available || 0),
+      pricePerDay: Number(g.pricePerDay || 0),
+      total: Number(g.total || 0),
+      status: String(g.status || 'AVAILABLE').toUpperCase() === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'AVAILABLE',
+      image: g.image,
+      createdAt: g.createdAt,
+    }));
+
+    return mapped;
+  } catch (error: any) {
+    const isAxiosError = axios.isAxiosError(error);
+    const status = isAxiosError ? error.response?.status || 500 : 500;
+    const data = isAxiosError ? error.response?.data || {} : {};
+    let message = data.error || data.message || error.message || 'Failed to fetch inventory';
+
+    if (isAxiosError) {
+      if (status === 401) message = 'Xác thực thất bại. Vui lòng đăng nhập lại.';
+      else if (status === 403) message = 'Bạn không có quyền truy cập.';
+      else if (status === 404) message = 'Không tìm thấy dữ liệu kho.';
+      else if (error.code === 'ERR_NETWORK') message = 'Không kết nối được server. Kiểm tra backend có chạy không.';
+    }
+
+    console.error('Detailed error fetching inventory:', {
+      url: `${API_URL}/apis/v1/admin/gears`,
       status,
       message,
       data,
-      error: error.message,
-      stack: error.stack,
-      response: error.response ? {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers,
-      } : null,
+      errorCode: error.code,
+      response: error.response ? error.response.data : null,
     });
+
     throw { status, data, message } as ApiError;
   }
 };

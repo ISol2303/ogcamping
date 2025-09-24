@@ -1,5 +1,18 @@
 package com.mytech.backend.portal.Utils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import com.mytech.backend.portal.models.Area;
+import com.mytech.backend.portal.models.Category;
+import com.mytech.backend.portal.models.Gear;
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingItem;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
@@ -13,23 +26,18 @@ import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.Service.ServiceAvailability;
 import com.mytech.backend.portal.models.Service.ServiceTag;
 import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.repositories.AreaRepository;
 import com.mytech.backend.portal.repositories.BookingRepository;
+import com.mytech.backend.portal.repositories.CategoryRepository;
 import com.mytech.backend.portal.repositories.ComboRepository;
 import com.mytech.backend.portal.repositories.CustomerRepository;
+import com.mytech.backend.portal.repositories.GearRepository;
 import com.mytech.backend.portal.repositories.ReviewRepository;
 import com.mytech.backend.portal.repositories.ServiceAvailabilityRepository;
 import com.mytech.backend.portal.repositories.ServiceRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
@@ -45,6 +53,9 @@ public class DataLoader {
     private final BookingRepository bookingRepo;
     private final ComboRepository comboRepo;
     private final ReviewRepository reviewRepository;
+    private final AreaRepository areaRepository; // Thêm repository cho Area
+    private final CategoryRepository categoryRepository; // Thêm repository cho Category
+    private final GearRepository gearRepository; // Thêm repository cho Gear
 
     // Mã hóa mật khẩu (nên inject như Bean nếu muốn)
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -56,11 +67,12 @@ public class DataLoader {
     CommandLineRunner seed() {
         return args -> {
             // Phòng ngừa: nếu đã có dữ liệu thì bỏ qua việc seed
-            if (serviceRepo.count() > 0 || customerRepo.count() > 0 || comboRepo.count() > 0) {
-                System.out.println("DataLoader: đã tìm thấy dữ liệu — bỏ qua seed.");
-                return;
-            }
-
+        	if (serviceRepo.count() > 0 || customerRepo.count() > 0 || comboRepo.count() > 0 ||
+                    areaRepository.count() > 0 || categoryRepository.count() > 0 || gearRepository.count() > 0) {
+                    System.out.println("DataLoader: đã tìm thấy dữ liệu — bỏ qua seed.");
+                    return;
+                }
+            
             // 1) Tạo users + customers
             Customer[] createdCustomers = seedUsers();
 
@@ -80,12 +92,136 @@ public class DataLoader {
 
             // 5) Tạo combos
             seedCombos(services);
+            
+            // 6) Tạo areas
+            List<Area> areas = seedAreas();
+
+            // 7) Tạo categories
+            List<Category> categories = seedCategories();
+
+            // 8) Tạo gears
+            seedGears(areas, categories);
 
             System.out.println("DataLoader: Customers, Services, Bookings, Reviews, Combos đã được seed thành công!");
         };
     }
 
-    // ---------------------------
+    private List<Area> seedAreas() {
+        Area a1 = Area.builder()
+                .name(Area.AreaName.TRONG_LEU)
+                .description("Khu vực trong lều, dành cho các thiết bị sử dụng bên trong lều cắm trại.")
+                .build();
+
+        Area a2 = Area.builder()
+                .name(Area.AreaName.NGOAI_LEU)
+                .description("Khu vực ngoài lều, dành cho các thiết bị sử dụng ngoài trời.")
+                .build();
+
+        Area a3 = Area.builder()
+                .name(Area.AreaName.BEP)
+                .description("Khu vực bếp, dành cho các thiết bị nấu nướng và BBQ.")
+                .build();
+
+        areaRepository.saveAll(List.of(a1, a2, a3));
+        return List.of(a1, a2, a3);
+    }
+
+    private void seedGears(List<Area> areas, List<Category> categories) {
+        if (areas.isEmpty() || categories.isEmpty()) return;
+
+        Gear g1 = Gear.builder()
+                .name("Lều cắm trại 4 người")
+                .category(categories.get(0).getName()) // Lều
+                .area(areas.get(0).getName()) // TRONG_LEU
+                .description("Lều 4 người, chống nước, dễ lắp ráp.")
+                .quantityInStock(10)
+                .pricePerDay(150_000.0)
+                .image("/uploads/gears/tent_4p.jpg")
+                .available(8)
+                .total(10)
+                .status(Gear.GearStatus.AVAILABLE)
+                .build();
+
+        Gear g2 = Gear.builder()
+                .name("Bếp gas mini")
+                .category(categories.get(1).getName()) // Bếp
+                .area(areas.get(2).getName()) // BEP
+                .description("Bếp gas mini tiện lợi, phù hợp cho cắm trại.")
+                .quantityInStock(5)
+                .pricePerDay(50_000.0)
+                .image("/uploads/gears/gas_stove.jpg")
+                .available(3)
+                .total(5)
+                .status(Gear.GearStatus.AVAILABLE)
+                .build();
+
+        Gear g3 = Gear.builder()
+                .name("Ghế gấp cắm trại")
+                .category(categories.get(2).getName()) // Đồ dùng cắm trại
+                .area(areas.get(1).getName()) // NGOAI_LEU
+                .description("Ghế gấp nhẹ, dễ mang theo, chịu tải đến 100kg.")
+                .quantityInStock(20)
+                .pricePerDay(30_000.0)
+                .image("/uploads/gears/camping_chair.jpg")
+                .available(15)
+                .total(20)
+                .status(Gear.GearStatus.AVAILABLE)
+                .build();
+
+        Gear g4 = Gear.builder()
+                .name("Dây thừng đa năng")
+                .category(categories.get(3).getName()) // Phụ kiện
+                .area(areas.get(1).getName()) // NGOAI_LEU
+                .description("Dây thừng dài 10m, chịu lực tốt, đa năng.")
+                .quantityInStock(0)
+                .pricePerDay(20_000.0)
+                .image("/uploads/gears/rope.jpg")
+                .available(0)
+                .total(0)
+                .status(Gear.GearStatus.OUT_OF_STOCK)
+                .build();
+
+        Gear g5 = Gear.builder()
+                .name("Đèn pin cắm trại")
+                .category(categories.get(2).getName()) // Đồ dùng cắm trại
+                .area(areas.get(0).getName()) // TRONG_LEU
+                .description("Đèn pin LED siêu sáng, pin sạc USB.")
+                .quantityInStock(8)
+                .pricePerDay(40_000.0)
+                .image("/uploads/gears/flashlight.jpg")
+                .available(6)
+                .total(8)
+                .status(Gear.GearStatus.AVAILABLE)
+                .build();
+
+        gearRepository.saveAll(List.of(g1, g2, g3, g4, g5));
+    }
+
+	private List<Category> seedCategories() {
+        Category c1 = Category.builder()
+                .name("Lều")
+                .description("Các loại lều cắm trại, từ lều đơn đến lều gia đình.")
+                .build();
+
+        Category c2 = Category.builder()
+                .name("Bếp")
+                .description("Thiết bị nấu nướng, bếp gas, bếp than và phụ kiện liên quan.")
+                .build();
+
+        Category c3 = Category.builder()
+                .name("Đồ dùng cắm trại")
+                .description("Các vật dụng hỗ trợ cắm trại như ghế, bàn, đèn...")
+                .build();
+
+        Category c4 = Category.builder()
+                .name("Phụ kiện")
+                .description("Các phụ kiện nhỏ như dây thừng, dao, bình nước...")
+                .build();
+
+        categoryRepository.saveAll(List.of(c1, c2, c3, c4));
+        return List.of(c1, c2, c3, c4);
+    }
+	// ---------------------------
     // Helper: tạo user + customer
     // ---------------------------
     private Customer createUserWithCustomer(

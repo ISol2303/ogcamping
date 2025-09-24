@@ -33,14 +33,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import Link from "next/link"
 import { 
   Plus, 
   Search, 
   Edit, 
   Trash2, 
   Package,
-  Loader2
+  Loader2,
+  ArrowLeft // giữ lại icon
 } from "lucide-react"
+
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -222,6 +225,15 @@ export default function AdminCategoriesPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
+        {/* Back Button */}
+        <Link
+          href="/admin"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Quay lại</span>
+        </Link>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Quản lý danh mục</h1>
