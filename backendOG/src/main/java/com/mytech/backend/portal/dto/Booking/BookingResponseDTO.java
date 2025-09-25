@@ -18,6 +18,10 @@ import java.util.List;
 public class BookingResponseDTO {
     private Long id;
     private Long customerId;
+    private String customerName;
+    private String email;
+    private String phone;
+    private String address;
     private List<BookingItemResponseDTO> services;   // đổi từ serviceNames
     private List<BookingItemResponseDTO> combos;     // đổi từ comboNames
     private List<BookingItemResponseDTO> equipments; // đổi từ equipmentNames
@@ -32,6 +36,9 @@ public class BookingResponseDTO {
     private String internalNotes;
     private Double totalPrice;
     private boolean hasReview;
+    private List<BookingItemResponseDTO> items;
+    private LocalDateTime emailSentAt;
+    
 }
 
 

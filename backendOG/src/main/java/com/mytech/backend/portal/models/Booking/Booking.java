@@ -1,12 +1,5 @@
 package com.mytech.backend.portal.models.Booking;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.hibernate.annotations.CreationTimestamp;
-
 import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.Equipment.Equipment;
@@ -14,25 +7,13 @@ import com.mytech.backend.portal.models.Payment.Payment;
 import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.User.User;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "bookings")
@@ -64,12 +45,12 @@ public class Booking {
     private String feedback;
     private boolean hasReview;
 
-    @Column(nullable = false)
-    private BigDecimal amount = BigDecimal.ZERO;
-
     @ManyToOne
     @JoinColumn(name = "assigned_staff_id")
     private User assignedStaff; // nhân viên được gán
+    
+    @Column(name = "email_sent_at")
+    private LocalDateTime emailSentAt;
 
     @Column(name = "total_price")
     private Long totalPrice;
@@ -80,7 +61,8 @@ public class Booking {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<BookingItem> items = new ArrayList<>();
 
     public Long calculateTotalPrice() {
@@ -130,9 +112,5 @@ public class Booking {
 
         return total;
     }
-
-    // email sent at
-    @Column(name = "email_sent_at")
-    private LocalDateTime emailSentAt;
 
 }

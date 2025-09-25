@@ -6,7 +6,6 @@ import { useToast } from "@/components/ui/use-toast";
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,6 +63,48 @@ interface Order {
   emailSentAt?: string | null;
   items: OrderItem[];
 }
+// BookingItem chung cho service, combo, equipment
+interface BookingItem {
+  id: number;
+  type: "SERVICE" | "COMBO" | "EQUIPMENT";
+  name: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  checkInDate?: string | null;
+  checkOutDate?: string | null;
+  numberOfPeople?: number | null;
+}
+
+interface Booking {
+  id: number;
+  bookingCode?: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  address: string;
+  totalPrice: number;
+  status: string;
+  note?: string | null;
+  checkInDate: string | null;
+  checkOutDate: string | null;
+  bookingDate: string | null;
+  numberOfPeople: number | null;
+  services: BookingItem[];
+  combos: BookingItem[];
+  equipments: BookingItem[];
+}
+
+interface PaymentDTO {
+  id?: number;
+  method?: string;
+  status?: string;
+  amount?: number;
+  providerTransactionId?: string;
+  createdAt?: string | null;
+}
+
+
 
 
 
@@ -197,8 +238,11 @@ export default function StaffDashboard({ orderId }: Props) {
   const [selectedReview, setSelectedReview] = useState<any | null>(null); // để show modal xem chi tiết
   const [replyText, setReplyText] = useState('');
   const [processingIds, setProcessingIds] = useState<number[]>([]); // ids đang xử lý (loading)
-  const [reason, setReason] = useState("");
   const { toast } = useToast()
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+
 
 
 
@@ -253,6 +297,8 @@ export default function StaffDashboard({ orderId }: Props) {
         // 4️⃣ Lấy equipment checks
         const equipmentResponse = await axios.get('http://localhost:8080/equipment/checks');
         setEquipmentChecks(equipmentResponse.data);
+
+
       } catch (err: any) {
         console.error('Lỗi fetchData:', err);
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -271,84 +317,113 @@ export default function StaffDashboard({ orderId }: Props) {
 
     fetchData();
   }, [router]);
+  //dữ liệu Booking
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchBookings = async () => {
       try {
-        const ordersResponse = await axios.get('http://localhost:8080/apis/orders/all');
-        setPendingOrders(ordersResponse.data);
+        const token =
+          localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+        if (!token) {
+          console.log("Token không tồn tại, redirect login");
+          router.push("/login");
+          return;
+        }
+
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+        // ✅ gọi API booking mới
+        const response = await axios.get(
+          "http://localhost:8080/apis/v1/bookings/all"
+        );
+
+        console.log("Bookings response:", response.data);
+
+        // Map về đúng format frontend đang dùng
+        const mapped: Booking[] = response.data.map((b: any) => ({
+          id: b.id,
+          bookingCode: b.bookingCode,
+          customerName: b.customerName || "-",
+          email: b.email || "-",
+          phone: b.phone || "-",
+          address: b.address || "-",
+          totalPrice: b.totalPrice || 0,
+          checkInDate: b.checkInDate,
+          checkOutDate: b.checkOutDate,
+          bookingDate: b.bookingDate,          // ✅ booking date
+          numberOfPeople: b.numberOfPeople,    // ✅ number of people
+          status: b.status,
+          note: b.note || "",
+          services: b.services || [],
+          combos: b.combos || [],
+          equipments: b.equipments || [],
+        }));
+
+
+        setBookings(mapped);
+        setFilteredBookings(mapped); // nếu bạn có filter
       } catch (error) {
-        console.error("Lỗi khi lấy danh sách order:", error);
+        console.error("Lỗi khi lấy danh sách booking:", error);
       }
     };
 
-    fetchOrders();
-  }, []);
+    fetchBookings();
+  }, [router]);
+
   //list order
-  const handleViewOrder = (order: any) => {
-    console.log("👉 handleViewOrder called with:", order); // log ngay đầu
-    setSelectedOrder(order);
-    try {
-      if (!order) {
-        throw new Error("Không tìm thấy dữ liệu đơn hàng");
-      }
-      setSelectedOrder(order);
-      setError(null);
-    } catch (err: any) {
-      console.error("Lỗi khi chọn đơn hàng:", err.message);
-      setError(err.message);
-      setSelectedOrder(null);
+  const handleViewBooking = (booking: Booking) => {
+    if (!booking) {
+      setError("Không tìm thấy dữ liệu booking");
+      setSelectedBooking(null);
+      return;
     }
+    // Map dữ liệu trực tiếp từ backend, không gán mặc định
+    // Log toàn bộ booking object để kiểm tra dữ liệu
+    console.log("👉 handleViewBooking called with booking:", booking);
+    console.log("Number of people:", booking.numberOfPeople);
+    console.log("Booking date:", booking.bookingDate);
+
+    setSelectedBooking(booking);
+    console.log("Selected booking:", selectedBooking);
+
+    console.log("Received booking:", booking);
+    setError(null);
   };
-  //xác nhận đơn hàng 
-  const handleConfirmOrder = async (order: Order) => {
+
+
+
+
+  const handleConfirmBooking = async (booking: Booking) => {
+    if (!booking?.id) return;
+
     try {
-      if (!order || !order.id) {
-        toast({
-          title: "Không tìm thấy đơn hàng để xác nhận!",
-          variant: "destructive", // hoặc "error" nếu bạn đã config
-        })
-        return;
-      }
-
+      setLoading(true);
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (!token) {
-        toast({
-          title: "Vui lòng đăng nhập lại!",
-          variant: "destructive", 
-        })
-        return;
-      }
-
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      const response = await axios.patch(
-        `http://localhost:8080/apis/orders/${order.id}/confirm`,
+      const res = await axios.put(
+        `http://localhost:8080/apis/v1/bookings/${booking.id}/confirm`,
         {},
         config
       );
 
-      if (response.data?.status === "CONFIRMED") {
-        setPendingOrders((prev) =>
-          prev.map((o) => (o.id === order.id ? { ...o, status: 'CONFIRMED' } : o))
-        );
-        toast({
-          title: `✅ Đơn hàng ${order.orderCode} đã được xác nhận và email gửi thành công!`,
-          variant: "success",
-        });
-      } else {
-        toast({
-          title: "Có lỗi xảy ra",
-          description: "Không thể xác nhận đơn, vui lòng thử lại!",
-          variant: "destructive",
-        })
-      }
+      console.log('Backend response after confirm:', res.data);
 
+      toast({ title: `Đã xác nhận booking #${booking.id}`, variant: 'success' });
+
+      // Update state
+      setBookings((prev) =>
+        prev.map((b) => (b.id === booking.id ? { ...b, ...res.data } : b))
+      );
+      setSelectedBooking((prev) => (prev?.id === booking.id ? { ...prev, ...res.data } : prev));
     } catch (err: any) {
-      console.error("❌ Lỗi xác nhận đơn:", err.response?.data || err.message);
+      console.error('Lỗi xác nhận booking:', err?.response?.data ?? err.message);
       toast({
-        title: err.response?.data?.error || "Không thể xác nhận đơn hàng. Vui lòng thử lại.",
-        variant: "destructive",
+        title: err?.response?.data?.error ?? 'Lỗi xác nhận booking',
+        variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -386,46 +461,7 @@ export default function StaffDashboard({ orderId }: Props) {
   };
 
 
-  // // send email single
-  // const handleSendEmailSingle = async (order: Order) => {
-  //   if (!order || !order.id) return;
 
-  //   // 🔥 Thêm vào danh sách đang gửi email (loading)
-  //   setSendingEmailIds(prev => [...prev, order.id]);
-
-  //   try {
-  //     const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-  //     if (!token) {
-  //       alert("Token không tồn tại, vui lòng đăng nhập lại!");
-  //       return;
-  //     }
-
-  //     const config = { headers: { Authorization: `Bearer ${token}` } };
-
-  //     // Gửi email qua API
-  //     const response = await axios.patch(
-  //       `http://localhost:8080/apis/orders/${order.id}/send-email`,
-  //       {},
-  //       config
-  //     );
-
-  //     alert(`✅ ${response.data}`);
-
-  //     // 🔥 Cập nhật trạng thái emailSentAt trên frontend để disable nút gửi email
-  //     setPendingOrders(prev =>
-  //       prev.map(o =>
-  //         o.id === order.id ? { ...o, emailSentAt: new Date().toISOString() } : o
-  //       )
-  //     );
-
-  //   } catch (err: any) {
-  //     console.error("❌ Lỗi gửi email đơn:", err.response?.data || err.message);
-  //     alert("Không thể gửi email đơn. Vui lòng thử lại!");
-  //   } finally {
-  //     // 🔥 Xóa khỏi danh sách đang gửi email
-  //     setSendingEmailIds(prev => prev.filter(id => id !== order.id));
-  //   }
-  // };
 
 
   //send email all
@@ -478,42 +514,56 @@ export default function StaffDashboard({ orderId }: Props) {
 
 
   //in hóa đơn 
-  const handlePrintInvoice = async (orderId: number) => {
+  const handlePrintInvoice = async (booking: Booking) => {
     try {
-      // Gọi backend Spring Boot trên port 8080
-      const response = await axios.get(`http://localhost:8080/apis/orders/${orderId}/invoice`, {
-        responseType: "blob", // quan trọng để nhận PDF
-      });
+      const token =
+        localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      if (!token) throw new Error("Token không tồn tại");
 
-      // Kiểm tra dữ liệu trả về
-      if (!response.data) {
-        throw new Error("Không có dữ liệu PDF từ server");
+      const response = await axios.get(
+        `http://localhost:8080/pdf/bill/${booking.id}/invoice`,
+        {
+          responseType: "blob", // quan trọng để nhận PDF
+          headers: {
+            Authorization: `Bearer ${token}`, // nếu backend bảo vệ bằng JWT
+          },
+          validateStatus: (status) => status < 500, // tránh throw khi server lỗi 500
+        }
+      );
+
+      // Kiểm tra nếu server trả về lỗi
+      if (!response.data || response.data.size === 0) {
+        throw new Error(
+          `Không có dữ liệu PDF từ server. Status: ${response.status}`
+        );
       }
 
-      // Tạo URL tạm cho file PDF
       const blob = new Blob([response.data], { type: "application/pdf" });
       const fileURL = window.URL.createObjectURL(blob);
 
-      // Tạo link download tạm thời
+      // Tải file PDF
       const fileLink = document.createElement("a");
       fileLink.href = fileURL;
-      fileLink.setAttribute("download", `invoice_${orderId}.pdf`);
+      fileLink.setAttribute(
+        "download",
+        `invoice_${booking.bookingCode || booking.id}.pdf`
+      );
       document.body.appendChild(fileLink);
       fileLink.click();
-
-      // Xóa link tạm
       fileLink.remove();
-      window.URL.revokeObjectURL(fileURL); // giải phóng bộ nhớ
+      window.URL.revokeObjectURL(fileURL);
     } catch (error: any) {
       console.error("Lỗi khi tải hóa đơn:", error);
       toast({
         title: "❌ Lỗi khi tải hóa đơn",
-        description: error.response?.status === 404
-          ? "Không tìm thấy hóa đơn. Vui lòng kiểm tra ID đơn hàng!"
-          : "Không thể tải hóa đơn. Vui lòng thử lại!"
+        description:
+          error.response?.status === 404
+            ? "Không tìm thấy hóa đơn. Vui lòng kiểm tra ID đơn hàng!"
+            : error.message || "Không thể tải hóa đơn. Vui lòng thử lại!",
       });
     }
   };
+
 
   //DISH
 
@@ -1242,71 +1292,90 @@ export default function StaffDashboard({ orderId }: Props) {
                     <TableHeader>
                       <TableRow>
                         <TableHead>ID</TableHead>
-                        <TableHead>Mã đơn hàng</TableHead>
-                        <TableHead>Email khách hàng </TableHead>
+                        {/* <TableHead>Mã booking</TableHead> */}
+                        <TableHead>Email khách hàng</TableHead>
                         <TableHead>Khách hàng</TableHead>
-                        <TableHead >Giá đơn</TableHead>
-                        <TableHead>Ngày</TableHead>
-                        {/* <TableHead>Ưu tiên</TableHead> */}
+                        <TableHead>Số điện thoại</TableHead>
+                        <TableHead>Địa chỉ</TableHead>
+                        <TableHead>Giá đơn</TableHead>
+                        <TableHead>Ngày Check in</TableHead>
+                        <TableHead>Ngày Check out</TableHead>
                         <TableHead className="w-[110px] text-center align-middle">Trạng thái</TableHead>
                         <TableHead>Thao tác</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.id}</TableCell>
-                          <TableCell className="font-medium">{order.orderCode}</TableCell>
+                      {filteredBookings.map((booking: Booking) => (
+                        <TableRow key={booking.id}>
+                          {/* ID */}
+                          <TableCell className="font-medium">{booking.id}</TableCell>
 
-                          <TableCell className="font-medium">{order.email}</TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium w-[150px] truncate]" >{order.customerName}</p>
-                              <p className="text-sm text-gray-600">{order.phone}</p>
-                            </div>
+                          {/* Mã booking
+                          <TableCell className="font-medium">{booking.bookingCode || "-"}</TableCell> */}
+
+                          {/* Email */}
+                          <TableCell className="font-medium">{booking.email || "-"}</TableCell>
+
+                          {/* Tên KH */}
+                          <TableCell className="font-medium">{booking.customerName || "-"}</TableCell>
+
+                          {/* Phone */}
+                          <TableCell className="font-medium">{booking.phone || "-"}</TableCell>
+
+                          {/* Address */}
+                          <TableCell className="font-medium">{booking.address || "-"}</TableCell>
+
+                          {/* Giá đơn */}
+                          <TableCell className="font-medium text-green-600">
+                            {booking.totalPrice
+                              ? booking.totalPrice.toLocaleString() + " đ"
+                              : "-"}
                           </TableCell>
-                          <TableCell className="font-medium text-green-600">{order.totalPrice ? order.totalPrice.toLocaleString() + ' đ' : '-'} </TableCell>
-                          <TableCell>{new Date(order.bookingDate).toLocaleString()}</TableCell>
-                          {/* <TableCell>{getPriorityBadge(order.priority)}</TableCell> */}
-                          <TableCell className="min-w-[180px] text-center align-middle">{getStatusBadge(order.status)}</TableCell>
+
+                          {/* Ngày Check in */}
+                          <TableCell>
+                            {booking.checkInDate
+                              ? new Date(booking.checkInDate).toLocaleDateString()
+                              : "-"}
+                          </TableCell>
+
+                          {/* Ngày Check out */}
+                          <TableCell>
+                            {booking.checkOutDate
+                              ? new Date(booking.checkOutDate).toLocaleDateString()
+                              : "-"}
+                          </TableCell>
+
+                          {/* Trạng thái */}
+                          <TableCell className="min-w-[180px] text-center align-middle">
+                            {getStatusBadge(booking.status)}
+                          </TableCell>
+
+                          {/* Actions */}
                           <TableCell>
                             <div className="flex gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  console.log("👉 Eye clicked for order:", order); // log khi click
-                                  handleViewOrder(order);
-                                }}
+                                onClick={() => handleViewBooking(booking)}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
 
                               <Button
                                 variant="ghost"
-                                className="min-w-[110px] text-center align-middle "
+                                className="min-w-[110px] text-center align-middle"
                                 size="sm"
-                                disabled={order.status === 'CONFIRMED'} // disable nếu đã xác nhận
-                                onClick={() => handleConfirmOrder(order)}
+                                disabled={booking.status === "CONFIRMED"}
+                                onClick={() => handleConfirmBooking(booking)}
                               >
                                 ✅ Xác nhận
                               </Button>
-                              {/* <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={!!order.emailSentAt || sendingEmailIds.includes(order.id)} // đã gửi hoặc đang gửi
-                                onClick={() => handleSendEmailSingle(order)}
-                              >
-                                <Mail className="w-4 h-4" />
-                              </Button> */}
                             </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
-
-
-
                   </Table>
                 </div>
               </CardContent>
@@ -1348,111 +1417,113 @@ export default function StaffDashboard({ orderId }: Props) {
                 </CardContent>
               </Card>
             </div>
-            {selectedOrder && (
+            {selectedBooking && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-                <div className="bg-white p-6 rounded-2xl shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+                <div className="bg-white p-6 rounded-2xl shadow-xl w-[750px] max-h-[90vh] overflow-y-auto">
+
                   {/* Header */}
-                  <div className="text-center mb-4">
-                    {/* Logo */}
-                    <div className="flex items-left justify-left mb-2">
-                      <Tent className="h-6 w-6 text-green-600" />
-                      <span className="text-xl font-bold text-green-800">OG CAMPING BILL </span>
-                    </div>
-                    {/* Hóa đơn */}
-                    <h2 className="text-2xl font-bold text-gray-800">🧾 Hóa đơn đặt tour</h2>
-                    <p className="text-sm text-gray-500 mt-1">Mã đơn hàng: #{selectedOrder.id}</p>
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">🧾 Hóa đơn đặt tour</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Mã đơn hàng: <span className="font-semibold">#{selectedBooking.bookingCode}</span>
+                    </p>
                   </div>
 
-                  {/* Body */}
-                  <div className="divide-y divide-gray-200 border rounded-lg">
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Tên khách hàng</p>
-                      <p className="text-gray-800">{selectedOrder.customerName}</p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 break-words">
-                      <p className="font-semibold text-gray-600">Email</p>
-                      <p className="text-gray-800">{selectedOrder.email}</p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Số điện thoại</p>
-                      <p className="text-gray-800">{selectedOrder.phone}</p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3">
-                      <p className="font-semibold text-gray-600">Ngày đặt</p>
-                      <p className="text-gray-800">
-                        {new Date(selectedOrder.bookingDate).toLocaleString("vi-VN")}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Giá tiền</p>
-                      <p className="text-gray-800 font-medium">
-                        {selectedOrder.totalPrice?.toLocaleString("vi-VN")} VND
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3">
-                      <p className="font-semibold text-gray-600">Tour đặt</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.service?.name || "Chưa có thông tin"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Dịch vụ đã chọn</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.serviceName || "Chưa có thông tin"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3">
-                      <p className="font-semibold text-gray-600">Thiết bị thuê</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.equipment || "Không thuê"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Số người tham gia</p>
-                      <p className="text-gray-800">{selectedOrder.people}</p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 break-words">
-                      <p className="font-semibold text-gray-600">Yêu cầu đặc biệt</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.specialRequests || "Không có"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3 bg-gray-50">
-                      <p className="font-semibold text-gray-600">Người liên hệ khẩn cấp</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.emergencyContact || "Không có"}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 p-3">
-                      <p className="font-semibold text-gray-600">SĐT khẩn cấp</p>
-                      <p className="text-gray-800">
-                        {selectedOrder.emergencyPhone || "Không có"}
-                      </p>
-                    </div>
+                  {/* Customer Info */}
+                  <div className="border rounded-lg divide-y divide-gray-200 mb-6">
+                    {[
+                      ["Tên khách hàng", selectedBooking.customerName],
+                      ["Email", selectedBooking.email],
+                      ["Số điện thoại", selectedBooking.phone],
+                      ["Địa chỉ", selectedBooking.address || "-"],
+                      ["Ngày đặt", selectedBooking.bookingDate ? new Date(selectedBooking.bookingDate).toLocaleString("vi-VN") : "-"],
+                      ["Check-in", selectedBooking.checkInDate ? new Date(selectedBooking.checkInDate).toLocaleDateString("vi-VN") : "-"],
+                      ["Check-out", selectedBooking.checkOutDate ? new Date(selectedBooking.checkOutDate).toLocaleDateString("vi-VN") : "-"],
+                      ["Số người tham gia", selectedBooking.numberOfPeople ?? "-"],
+                    ].map(([label, value], idx) => (
+                      <div key={idx} className={`grid grid-cols-2 p-3 ${idx % 2 === 0 ? "bg-gray-50" : ""}`}>
+                        <p className="font-semibold text-gray-600">{label}</p>
+                        <p className="text-gray-800">{value}</p>
+                      </div>
+                    ))}
+                    {selectedBooking.note && (
+                      <div className="grid grid-cols-2 p-3">
+                        <p className="font-semibold text-gray-600">Ghi chú</p>
+                        <p className="text-gray-800">{selectedBooking.note}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Order Details */}
+                  {["services", "combos", "equipments"].map((key) => {
+                    const items = (selectedBooking as any)[key] || [];
+                    if (items.length === 0) return null;
+
+                    return (
+                      <div key={key} className="mb-6">
+                        <h3 className="text-lg font-bold text-gray-800 mb-2 capitalize">
+                          {key === "services" ? "Dịch vụ" : key === "combos" ? "Combo" : "Thiết bị"} đã chọn
+                        </h3>
+                        <table className="w-full text-sm border border-gray-200 rounded-lg">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Tên</th>
+                              <th className="px-3 py-2 text-center">Số lượng</th>
+                              <th className="px-3 py-2 text-right">Thành tiền</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {items.map((item: any, idx: number) => (
+                              <tr key={idx} className="border-t">
+                                <td className="px-3 py-2">{item.name}</td>
+                                <td className="px-3 py-2 text-center">{item.quantity}</td>
+                                <td className="px-3 py-2 text-right">
+                                  {item.price.toLocaleString("vi-VN")} ₫
+                                </td>
+                                {/* <td className="px-3 py-2 text-right">
+                                  {item.subtotal.toLocaleString("vi-VN")} ₫
+                                </td> */}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })}
+
+                  {/* Total */}
+                  <div className="flex justify-end text-lg font-bold text-gray-800 mt-4">
+                    Tổng cộng:{" "}
+                    <span className="ml-2 text-green-600">
+                      {selectedBooking.totalPrice.toLocaleString("vi-VN")} ₫
+                    </span>
                   </div>
 
                   {/* Footer */}
-                  <p className="text-center text-gray-500 text-sm mt-6">
-                    🎉 Cảm ơn quý khách đã tin tưởng dịch vụ của chúng tôi!
-                  </p>
-
-                  <div className="flex justify-end mt-4">
+                  <div className="flex justify-end mt-4 space-x-3">
                     <button
                       className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                      onClick={() => handlePrintInvoice(selectedOrder.id)}
+                      onClick={() => handlePrintInvoice(selectedBooking)}
                     >
                       In hóa đơn
                     </button>
                     <button
                       className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                      onClick={() => setSelectedOrder(null)}
+                      onClick={() => setSelectedBooking(null)}
                     >
                       Đóng
                     </button>
                   </div>
+
                 </div>
               </div>
             )}
+
+
+
+
+
+
 
 
 
@@ -2111,8 +2182,30 @@ export default function StaffDashboard({ orderId }: Props) {
                               </TableCell>
                               <TableCell>{new Date(r.createdAt).toLocaleString("vi-VN")}</TableCell>
                               <TableCell>
-                                {r.status !== 'PENDING' ? (
-                                  // Nếu không phải PENDING -> chỉ hiện nút xem chi tiết
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={processingIds.includes(r.id) || r.status === 'APPROVED'}
+                                    onClick={() => handleUpdateStatus(r.id, 'APPROVED')}
+                                  >
+                                    ✅
+                                  </Button>
+
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={processingIds.includes(r.id) || r.status === 'REJECTED'}
+                                    onClick={() => {
+                                      const reason = prompt("Lý do từ chối review (tùy chọn):", "") || "";
+                                      if (confirm("Xác nhận từ chối review này?")) {
+                                        handleUpdateStatus(r.id, 'REJECTED', reason);
+                                      }
+                                    }}
+                                  >
+                                    ❌
+                                  </Button>
+
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -2120,69 +2213,10 @@ export default function StaffDashboard({ orderId }: Props) {
                                       setSelectedReview(r);
                                       setReplyText(r.reply || '');
                                     }}
-                                    disabled={processingIds.includes(r.id)}
                                   >
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Chi tiết
+                                    <MessageCircle className="w-4 h-4" />
                                   </Button>
-                                ) : (
-                                  // Nếu PENDING -> giữ các nút approve / reject / reply như trước
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      disabled={processingIds.includes(r.id) || r.status === 'APPROVED'}
-                                      onClick={() => handleUpdateStatus(r.id, 'APPROVED')}
-                                    >
-                                      ✅
-                                    </Button>
-
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          disabled={processingIds.includes(r.id) || r.status === "REJECTED"}
-                                        >
-                                          ❌
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Xác nhận từ chối review?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            Bạn có chắc chắn muốn từ chối review này?  
-                                            <Input
-                                              className="mt-3"
-                                              placeholder="Lý do từ chối (tùy chọn)"
-                                              value={reason}
-                                              onChange={(e) => setReason(e.target.value)}
-                                            />
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                          <AlertDialogAction
-                                            onClick={() => handleUpdateStatus(r.id, "REJECTED", reason)}
-                                          >
-                                            Xác nhận
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
-
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setSelectedReview(r);
-                                        setReplyText(r.reply || '');
-                                      }}
-                                    >
-                                      <MessageCircle className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -2196,16 +2230,7 @@ export default function StaffDashboard({ orderId }: Props) {
             {/* Modal xem chi tiết review + reply */}
             {selectedReview && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-start z-50 pt-20 px-4">
-                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto relative">
-                  {/* Close X góc phải */}
-                  <button
-                    aria-label="Close"
-                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 rounded-full p-1"
-                    onClick={() => setSelectedReview(null)}
-                  >
-                    ✖
-                  </button>
-
+                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-bold">Review #{selectedReview.id}</h3>
@@ -2228,12 +2253,7 @@ export default function StaffDashboard({ orderId }: Props) {
                         <p className="font-semibold mb-2">Ảnh</p>
                         <div className="flex gap-2 overflow-x-auto">
                           {selectedReview.images.map((img: string, idx: number) => (
-                            <img
-                              key={idx}
-                              src={`http://localhost:8080${img}`}
-                              alt={`img-${idx}`}
-                              className="w-32 h-24 object-cover rounded-md border"
-                            />
+                            <img key={idx} src={`http://localhost:8080${img}`} alt={`img-${idx}`} className="w-32 h-24 object-cover rounded-md border" />
                           ))}
                         </div>
                       </div>
@@ -2244,12 +2264,7 @@ export default function StaffDashboard({ orderId }: Props) {
                         <p className="font-semibold mb-2">Video</p>
                         <div className="flex gap-2 overflow-x-auto">
                           {selectedReview.videos.map((v: string, idx: number) => (
-                            <video
-                              key={idx}
-                              src={`http://localhost:8080${v}`}
-                              controls
-                              className="w-48 h-32 rounded-md border"
-                            />
+                            <video key={idx} src={`http://localhost:8080${v}`} controls className="w-48 h-32 rounded-md border" />
                           ))}
                         </div>
                       </div>
@@ -2257,42 +2272,17 @@ export default function StaffDashboard({ orderId }: Props) {
 
                     <div>
                       <p className="font-semibold">Phản hồi hiện tại</p>
-                      <div className="p-3 bg-gray-50 rounded">
-                        {selectedReview.reply || <span className="text-gray-400">Chưa có phản hồi</span>}
-                      </div>
+                      <div className="p-3 bg-gray-50 rounded">{selectedReview.reply || <span className="text-gray-400">Chưa có phản hồi</span>}</div>
                     </div>
 
-                    {/* Nếu từng bị từ chối: show moderationReason */}
-                    {selectedReview.status === 'REJECTED' && (
-                      <div>
-                        <p className="font-semibold">Lý do từ chối</p>
-                        <div className="p-3 bg-red-50 text-red-700 rounded">
-                          {selectedReview.moderationReason || <span className="text-gray-400">Không có lý do</span>}
-                        </div>
+                    <div>
+                      <p className="font-semibold mb-2">Viết phản hồi</p>
+                      <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button variant="outline" onClick={() => { setReplyText(''); setSelectedReview(null); }}>Hủy</Button>
+                        <Button onClick={() => handleReply(selectedReview.id)} disabled={processingIds.includes(selectedReview.id)}>Gửi phản hồi</Button>
                       </div>
-                    )}
-
-                    {/* Chỉ cho edit/ gửi phản hồi khi đang PENDING */}
-                    {selectedReview.status === 'PENDING' ? (
-                      <div>
-                        <p className="font-semibold mb-2">Viết phản hồi</p>
-                        <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} />
-                        <div className="flex justify-end gap-2 mt-2">
-                          <Button variant="outline" onClick={() => { setReplyText(''); setSelectedReview(null); }}>Hủy</Button>
-                          <Button onClick={() => handleReply(selectedReview.id)} disabled={processingIds.includes(selectedReview.id)}>Gửi phản hồi</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      // Nếu không phải PENDING thì hiển thị 1 note nhỏ (read-only)
-                      <div className="text-sm text-gray-500">
-                        <p>Trạng thái: <span className="font-medium">
-                          {selectedReview.status === 'PENDING' && 'Chờ duyệt'}
-                          {selectedReview.status === 'APPROVED' && 'Đã duyệt'}
-                          {selectedReview.status === 'REJECTED' && 'Từ chối'}
-                          {selectedReview.status === 'HIDDEN' && 'Ẩn'}
-                        </span></p>     
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
