@@ -1,99 +1,109 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>Xác nhận đặt chỗ - OGCAMPING</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xác Nhận Đơn Đặt Chỗ</title>
   <style>
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #f4f6f8;
+      background-color: #f2f5f9;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       color: #333;
     }
+
     .container {
       max-width: 650px;
-      margin: 30px auto;
+      margin: auto;
       background: #fff;
       border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
       overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
+
     .header {
       background: linear-gradient(135deg, #27ae60, #2ecc71);
-      color: #fff;
       text-align: center;
       padding: 30px 20px;
+      color: white;
     }
+
     .header img {
-      width: 100px;
-      margin-bottom: 12px;
+      width: 90px;
       border-radius: 50%;
-      border: 2px solid #fff;
+      border: 3px solid #fff;
+      margin-bottom: 12px;
     }
-    .header h2 {
+
+    .header h1 {
       margin: 0;
-      font-size: 28px;
+      font-size: 26px;
     }
-    .header p {
-      margin: 5px 0 0;
-      font-size: 16px;
-    }
+
     .content {
       padding: 25px 30px;
       line-height: 1.6;
-    }
-    .content h3 {
-      color: #27ae60;
-      margin-top: 0;
-    }
-    .order-info {
-      background: #f9f9f9;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 20px 0;
-    }
-    .order-info p {
-      margin: 8px 0;
       font-size: 15px;
     }
-    .order-code {
-      font-size: 18px;
-      font-weight: bold;
-      color: #27ae60;
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
     }
-    .highlight {
-      font-weight: bold;
-      color: #2c3e50;
+
+    .info-table th,
+    .info-table td {
+      padding: 12px 15px;
+      text-align: left;
     }
+
+    .info-table th {
+      background: #f7f9fa;
+      color: #555;
+      font-weight: 600;
+      width: 40%;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .info-table td {
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .info-table tr:last-child td,
+    .info-table tr:last-child th {
+      border-bottom: none;
+    }
+
     .total-price {
       font-size: 18px;
       font-weight: bold;
-      color: #e74c3c;
-      margin-top: 10px;
+      color: #27ae60;
+      text-align: right;
     }
-    .button {
-      display: inline-block;
-      background: #27ae60;
-      color: white;
-      padding: 14px 28px;
-      margin-top: 25px;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 15px;
-      transition: 0.3s;
-    }
-    .button:hover {
-      background: #219150;
-    }
+
     .footer {
-      background: #f1f1f1;
+      background: #f8f8f8;
       text-align: center;
       padding: 18px;
       font-size: 13px;
       color: #666;
+      border-top: 1px solid #eaeaea;
+    }
+
+    .footer a {
+      color: #27ae60;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -101,34 +111,59 @@
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <img src="cid:ogLogo" alt="OGCAMPING Logo" />
-      <h2>OG CAMPING</h2>
-      <p>Xác nhận đơn đặt chỗ của bạn</p>
+      <img th:src="|cid:ogLogo|" alt="OGCAMPING Logo" />
+      <h1>Xác Nhận Đơn Đặt Chỗ</h1>
+      <p>Cảm ơn bạn đã chọn OGCAMPING 🌿</p>
     </div>
 
     <!-- Content -->
     <div class="content">
-      <p>Xin chào <strong th:text="${customerName}">${customerName}</strong>,</p>
-      <p>Bạn đã đặt chỗ thành công tại <b>OGCAMPING</b>. Dưới đây là thông tin đơn hàng của bạn:</p>
+      <p>Xin chào <strong th:text="${customerName}">Customer Name</strong>,</p>
+      <p>Bạn đã đặt chỗ thành công tại <b>OGCAMPING</b>. Dưới đây là chi tiết đơn hàng:</p>
 
-      <div class="order-info">
-        <p class="order-code">Mã đơn hàng: <span th:text="${orderId}">${orderId}</span></p>
-        <p>Ngày check-in: <span th:text="${checkInDate}">${checkInDate}</span></p>
-        <p>Ngày check-out: <span th:text="${checkOutDate}">${checkOutDate}</span></p>
-        <p>Số người: <span class="highlight" th:text="${numberOfPeople}">${numberOfPeople}</span></p>
-        <p>Số điện thoại: <span th:text="${phone}">${phone}</span></p>
-        <p>Yêu cầu đặc biệt: <span th:text="${note != null ? note : 'Không có'}">${note != null ? note : 'Không có'}</span></p>
-        <p class="total-price">Tổng tiền: <span th:text="${totalPrice}">${totalPrice}</span></p>
-      </div>
+      <table class="info-table">
+        <tr>
+          <th>Mã đơn hàng:</th>
+          <td th:text="${orderId}">#123456</td>
+        </tr>
+        <tr>
+          <th>Ngày Check In:</th>
+          <td th:text="${checkInDate}">-</td>
+        </tr>
+        <tr>
+          <th>Ngày Check Out:</th>
+          <td th:text="${checkOutDate}">-</td>
+        </tr>
+        <tr>
+          <th>Số lượng người:</th>
+          <td th:text="${numberOfPeople}">-</td>
+        </tr>
+        <tr>
+          <th>Ghi chú:</th>
+          <td th:text="${note}">Không có</td>
+        </tr>
+        <tr>
+          <th>Số điện thoại:</th>
+          <td th:text="${phone}">-</td>
+        </tr>
+        <tr>
+          <th>Tổng tiền:</th>
+          <td class="total-price" th:text="${totalPrice}">0 ₫</td>
+        </tr>
+      </table>
 
-      <div style="text-align:center;">
-        <a class="button" href="https://ogcamping.vn/orders" target="_blank">📦 Xem chi tiết đơn hàng</a>
-      </div>
+      <p style="margin-top: 20px;">Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ ngay với chúng tôi.</p>
+      <p>Trân trọng,<br>Đội ngũ <b>OGCAMPING</b></p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      <p>Cảm ơn bạn đã tin tưởng <b>OGCAMPING</b>! Hẹn gặp bạn trong chuyến đi sắp tới 🌿</p>
+      <p>&copy; 2025 OGCAMPING. All rights reserved.</p>
+      <p>
+        <a href="#">Trang chủ</a> |
+        <a href="#">Liên hệ</a> |
+        <a href="#">Chính sách</a>
+      </p>
     </div>
   </div>
 </body>

@@ -208,7 +208,7 @@ public class BookingController {
             BookingResponseDTO updatedBooking = bookingService.updateBookingStatus(id, BookingStatus.CONFIRMED);
 
             // Gửi email xác nhận
-            bookingService.sendBookingConfirmationEmail(updatedBooking);
+            emailService.sendBookingConfirmationEmail(updatedBooking);
 
             return ResponseEntity.ok(updatedBooking);
 

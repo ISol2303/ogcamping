@@ -275,20 +275,20 @@ public class OrderBookingController {
     // =====================
     // 🔹 Helper gửi mail xác nhận
     // =====================
-    private void sendConfirmationEmail(OrderBooking order) {
-        try {
-            String subject = "Xác nhận đặt chỗ - OGCAMPING";
-            String body = "Xin chào " + order.getCustomerName() + ",\n\n"
-                    + "Đơn hàng của bạn đã được xác nhận bởi nhân viên OGCAMPING.\n"
-                    + "Mã đơn hàng: " + order.getOrderCode() + "\n"
-                    + "Ngày check-in: " + order.getBookingDate() + "\n"
-                    + "Tổng tiền: " + order.getTotalPrice() + " VND\n\n"
-                    + "Cảm ơn bạn đã tin tưởng OGCAMPING!";
-            emailService.sendOrderConfirmation(order.getEmail(), subject, body);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // private void sendConfirmationEmail(OrderBooking order) {
+    //     try {
+    //         String subject = "Xác nhận đặt chỗ - OGCAMPING";
+    //         String body = "Xin chào " + order.getCustomerName() + ",\n\n"
+    //                 + "Đơn hàng của bạn đã được xác nhận bởi nhân viên OGCAMPING.\n"
+    //                 + "Mã đơn hàng: " + order.getOrderCode() + "\n"
+    //                 + "Ngày check-in: " + order.getBookingDate() + "\n"
+    //                 + "Tổng tiền: " + order.getTotalPrice() + " VND\n\n"
+    //                 + "Cảm ơn bạn đã tin tưởng OGCAMPING!";
+    //         emailService.sendOrderConfirmation(order.getEmail(), subject, body);
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     // =====================
     // 🔹 API GET ALL ORDERS (staff)
@@ -407,67 +407,67 @@ public class OrderBookingController {
 //        }
 //    }
 
-    @PatchMapping("/{id}/confirm")
-    @PreAuthorize("hasRole('STAFF')")
-    @Transactional
-    public ResponseEntity<?> confirmOrder(@PathVariable("id") Long id) {
-        if (id == null) {
-            return ResponseEntity.badRequest()
-                    .body(Collections.singletonMap("error", "ID đơn hàng không được null"));
-        }
+    // @PatchMapping("/{id}/confirm")
+    // @PreAuthorize("hasRole('STAFF')")
+    // @Transactional
+    // public ResponseEntity<?> confirmOrder(@PathVariable("id") Long id) {
+    //     if (id == null) {
+    //         return ResponseEntity.badRequest()
+    //                 .body(Collections.singletonMap("error", "ID đơn hàng không được null"));
+    //     }
 
-        try {
-            // Lấy đơn hàng theo id
-            OrderBooking order = orderBookingRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với id: " + id));
+    //     try {
+    //         // Lấy đơn hàng theo id
+    //         OrderBooking order = orderBookingRepository.findById(id)
+    //                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng với id: " + id));
 
-            // Nếu đã xác nhận rồi thì trả về
-            if ("CONFIRMED".equalsIgnoreCase(order.getStatus())) {
-                return ResponseEntity.badRequest()
-                        .body(Collections.singletonMap("error", "Đơn hàng đã được xác nhận trước đó"));
-            }
+    //         // Nếu đã xác nhận rồi thì trả về
+    //         if ("CONFIRMED".equalsIgnoreCase(order.getStatus())) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Collections.singletonMap("error", "Đơn hàng đã được xác nhận trước đó"));
+    //         }
 
-            // Nếu email đã gửi trước đó thì không gửi lại
-            if (order.getEmailSentAt() != null) {
-                return ResponseEntity.badRequest()
-                        .body(Collections.singletonMap("error", "Đơn hàng này đã được gửi email trước đó"));
-            }
+    //         // Nếu email đã gửi trước đó thì không gửi lại
+    //         if (order.getEmailSentAt() != null) {
+    //             return ResponseEntity.badRequest()
+    //                     .body(Collections.singletonMap("error", "Đơn hàng này đã được gửi email trước đó"));
+    //         }
 
-            // 🔥 Chỉ gửi email trước, nếu thành công mới xác nhận
-            try {
-                emailService.sendBookingEmail(order);
-                order.setEmailSentAt(LocalDateTime.now());
+    //         // 🔥 Chỉ gửi email trước, nếu thành công mới xác nhận
+    //         try {
+    //             emailService.sendBookingEmail(order);
+    //             order.setEmailSentAt(LocalDateTime.now());
 
-                // Nếu email gửi ok thì mới set CONFIRMED
-                order.setStatus("CONFIRMED");
-                order.setConfirmedAt(LocalDateTime.now());
-                orderBookingRepository.save(order);
+    //             // Nếu email gửi ok thì mới set CONFIRMED
+    //             order.setStatus("CONFIRMED");
+    //             order.setConfirmedAt(LocalDateTime.now());
+    //             orderBookingRepository.save(order);
 
-                Map<String, Object> response = new HashMap<>();
-                response.put("message", "Đơn hàng đã được xác nhận thành công và email đã gửi.");
-                response.put("orderId", order.getId());
-                response.put("orderCode", order.getOrderCode());
-                response.put("status", order.getStatus());
-                response.put("confirmedAt", order.getConfirmedAt());
+    //             Map<String, Object> response = new HashMap<>();
+    //             response.put("message", "Đơn hàng đã được xác nhận thành công và email đã gửi.");
+    //             response.put("orderId", order.getId());
+    //             response.put("orderCode", order.getOrderCode());
+    //             response.put("status", order.getStatus());
+    //             response.put("confirmedAt", order.getConfirmedAt());
 
-                return ResponseEntity.ok(response);
+    //             return ResponseEntity.ok(response);
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                return ResponseEntity.status(500)
-                        .body(Collections.singletonMap("error", "Gửi email thất bại, đơn hàng chưa được xác nhận."));
-            }
+    //         } catch (Exception e) {
+    //             e.printStackTrace();
+    //             return ResponseEntity.status(500)
+    //                     .body(Collections.singletonMap("error", "Gửi email thất bại, đơn hàng chưa được xác nhận."));
+    //         }
 
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(404)
-                    .body(Collections.singletonMap("error", e.getMessage()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500)
-                    .body(Collections.singletonMap("error", "Có lỗi xảy ra khi xác nhận đơn"));
-        }
-    }
+    //     } catch (RuntimeException e) {
+    //         e.printStackTrace();
+    //         return ResponseEntity.status(404)
+    //                 .body(Collections.singletonMap("error", e.getMessage()));
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //         return ResponseEntity.status(500)
+    //                 .body(Collections.singletonMap("error", "Có lỗi xảy ra khi xác nhận đơn"));
+    //     }
+    // }
 
 
 
@@ -492,55 +492,55 @@ public class OrderBookingController {
                     .body(Collections.singletonMap("error", e.getMessage()));
         }
     }
-    // ====== API gửi single email ======
-    @PatchMapping("/{id}/send-email")
-    @PreAuthorize("hasRole('STAFF')")
-    @Transactional
-    public String sendEmailSingle(@PathVariable("id") Long id) {
-        OrderBooking order = orderBookingRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+    // // ====== API gửi single email ======
+    // @PatchMapping("/{id}/send-email")
+    // @PreAuthorize("hasRole('STAFF')")
+    // @Transactional
+    // public String sendEmailSingle(@PathVariable("id") Long id) {
+    //     OrderBooking order = orderBookingRepository.findById(id)
+    //         .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        if (order.getEmailSentAt() != null) {
-            return "Đơn đã gửi email trước đó, bỏ qua.";
-        }
+    //     if (order.getEmailSentAt() != null) {
+    //         return "Đơn đã gửi email trước đó, bỏ qua.";
+    //     }
 
-        try {
-            emailService.sendBookingEmail(order);
-            order.setEmailSentAt(LocalDateTime.now());
-            orderBookingRepository.save(order);
-            return "Đã gửi email đơn " + order.getOrderCode();
-        } catch (Exception e) {
-            return "Lỗi gửi email: " + e.getMessage();
-        }
-    }
+    //     try {
+    //         emailService.sendBookingEmail(order);
+    //         order.setEmailSentAt(LocalDateTime.now());
+    //         orderBookingRepository.save(order);
+    //         return "Đã gửi email đơn " + order.getOrderCode();
+    //     } catch (Exception e) {
+    //         return "Lỗi gửi email: " + e.getMessage();
+    //     }
+    // }
 
-    // ====== API gửi email tất cả các đơn chưa gửi ======
-    @PatchMapping("/send-email-all")
-    @Transactional
-    public String sendEmailAllPending() {
-        List<OrderBooking> pendingEmailOrders = orderBookingRepository.findByEmailSentAtIsNull();
+    // // ====== API gửi email tất cả các đơn chưa gửi ======
+    // @PatchMapping("/send-email-all")
+    // @Transactional
+    // public String sendEmailAllPending() {
+    //     List<OrderBooking> pendingEmailOrders = orderBookingRepository.findByEmailSentAtIsNull();
 
-        if (pendingEmailOrders.isEmpty()) {
-            return "Không có đơn hàng nào cần gửi email.";
-        }
+    //     if (pendingEmailOrders.isEmpty()) {
+    //         return "Không có đơn hàng nào cần gửi email.";
+    //     }
 
-        int success = 0;
-        int fail = 0;
+    //     int success = 0;
+    //     int fail = 0;
 
-        for (OrderBooking order : pendingEmailOrders) {
-            try {
-                emailService.sendBookingEmail(order);
-                order.setEmailSentAt(LocalDateTime.now());
-                orderBookingRepository.save(order);
-                success++;
-            } catch (Exception e) {
-                fail++;
-                // log lỗi, giữ nguyên emailSentAt = null để thử lại sau
-            }
-        }
+    //     for (OrderBooking order : pendingEmailOrders) {
+    //         try {
+    //             emailService.sendBookingEmail(order);
+    //             order.setEmailSentAt(LocalDateTime.now());
+    //             orderBookingRepository.save(order);
+    //             success++;
+    //         } catch (Exception e) {
+    //             fail++;
+    //             // log lỗi, giữ nguyên emailSentAt = null để thử lại sau
+    //         }
+    //     }
 
-        return "Gửi email xong: thành công=" + success + ", lỗi=" + fail;
-    }
+    //     return "Gửi email xong: thành công=" + success + ", lỗi=" + fail;
+    // }
     //add thông báo 
     @PostMapping("/add")
     public OrderBooking addOrder(@RequestBody OrderBooking order) {
