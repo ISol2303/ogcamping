@@ -307,6 +307,20 @@ export default function ServiceBookingHistory() {
     return true;
   });
 
+  // Tạo phiên bản đã sắp đặt ưu tiên các booking "có button"
+  const orderedBookings = [...filteredBookings].sort((a, b) => {
+  const aHasButton = (getFirstEligibleServiceId(a) !== null) || !!a.hasReview;
+  const bHasButton = (getFirstEligibleServiceId(b) !== null) || !!b.hasReview;
+
+  if (aHasButton && !bHasButton) return -1; // a lên trước
+  if (!aHasButton && bHasButton) return 1;  // b lên trước
+
+  // Nếu cùng nhóm (cùng có hoặc cùng không có button), giữ thứ tự theo ngày (mới -> cũ)
+  const aDate = new Date(a.bookingDate || a.bookingCreatedAt || a.checkInDate || 0).getTime();
+  const bDate = new Date(b.bookingDate || b.bookingCreatedAt || b.checkInDate || 0).getTime();
+  return bDate - aDate;
+});
+
   if (!isLoggedIn) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -417,7 +431,7 @@ export default function ServiceBookingHistory() {
             </div>
 
             <Button variant="outline" size="sm" onClick={() => { setStatusFilter('ALL'); setDateFrom(''); setDateTo(''); }}>
-              Reset
+              Reset Bộ Lọc
             </Button>
 
             <div className="text-sm text-gray-600 ml-2">{filteredBookings.length} kết quả</div>
@@ -439,7 +453,7 @@ export default function ServiceBookingHistory() {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {filteredBookings.map((b) => {
+          {orderedBookings.map((b) => {
             const eligibleServiceId = getFirstEligibleServiceId(b);
             return (
               <Card key={b.id} className="hover:shadow-lg transition-shadow border border-gray-200 bg-white">

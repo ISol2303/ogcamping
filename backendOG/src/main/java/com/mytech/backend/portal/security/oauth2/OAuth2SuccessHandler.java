@@ -3,7 +3,7 @@ package com.mytech.backend.portal.security.oauth2;
 import com.mytech.backend.portal.jwt.JwtUtils;
 import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User.User;
-
+import com.mytech.backend.portal.models.UserProvider.UserProvider;
 import com.mytech.backend.portal.repositories.CustomerRepository;
 import com.mytech.backend.portal.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +36,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                                         Authentication authentication) throws IOException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String registrationId = ((OAuth2AuthenticationToken) authentication)
-                .getAuthorizedClientRegistrationId(); // "google" | "facebook"
+                .getAuthorizedClientRegistrationId(); // "google" | "facebook" | ...
 
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
@@ -45,17 +45,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String picture = null;
 
         if ("google".equalsIgnoreCase(registrationId)) {
-            // Google: lấy avatar trực tiếp
             picture = oAuth2User.getAttribute("picture");
-
         } else if ("facebook".equalsIgnoreCase(registrationId)) {
-            // Facebook: fallback email nếu null
             if (email == null) {
                 String fbId = oAuth2User.getAttribute("id");
-                email = fbId + "@facebook.com"; // dùng ID để tạo email giả
+                email = fbId + "@facebook.com";
             }
-
-            // Facebook: lấy avatar từ picture.data.url
             Map<String, Object> pictureObj = oAuth2User.getAttribute("picture");
             if (pictureObj != null) {
                 Map<String, Object> data = (Map<String, Object>) pictureObj.get("data");
@@ -64,6 +59,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 }
             }
         }
+
+        // ==== LẤY providerId MỘT CÁCH AN TOÀN ====
+        String providerId = extractProviderId(oAuth2User);
+        // Nếu vẫn null thì ném lỗi rõ ràng (DB không chấp nhận provider_id = null)
+        if (providerId == null) {
+            throw new RuntimeException("Không tìm thấy provider id (sub/id/...) trong OAuth2User attributes. Attributes = "
+                    + oAuth2User.getAttributes().keySet());
+        }
+
+        String providerName = registrationId != null ? registrationId.toLowerCase() : "unknown";
+        UserProvider.Provider providerEnum = mapToProviderEnum(providerName);
 
         // Tìm user theo email
         String finalPicture = picture;
@@ -76,10 +82,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .avatar(finalPicture)
                     .role(User.Role.CUSTOMER)
                     .status(User.Status.ACTIVE)
-                    .provider("google".equalsIgnoreCase(registrationId) 
-                            ? User.Provider.GOOGLE 
-                            : User.Provider.FACEBOOK)
                     .build();
+
+            // Tạo provider liên quan cho user (bắt buộc có providerId)
+            UserProvider provider = UserProvider.builder()
+                    .provider(providerEnum)
+                    .providerId(providerId)
+                    .user(newUser)
+                    .build();
+            newUser.getProviders().add(provider);
+
             newUser = userRepository.save(newUser);
 
             // --- 2. Tạo Customer gắn với User ---
@@ -93,25 +105,30 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             return newUser;
         });
-     // --- Kiểm tra provider lock ---
-        User.Provider loginProvider = "google".equalsIgnoreCase(registrationId)
-                ? User.Provider.GOOGLE
-                : User.Provider.FACEBOOK;
 
-        if (user.getProvider() != loginProvider) {
-            // Nếu provider khác -> từ chối login
-            throw new RuntimeException("Bạn đã đăng ký bằng " + user.getProvider() +
-                    ". Vui lòng đăng nhập bằng " + user.getProvider() + ".");
+        // --- kiểm tra nếu user đã tồn tại nhưng chưa có provider này (với cùng providerId) thì link thêm ---
+        boolean hasProvider = user.getProviders().stream()
+                .anyMatch(p -> p != null && p.getProvider() == providerEnum && providerId.equals(p.getProviderId()));
+
+        if (!hasProvider) {
+            UserProvider provider = UserProvider.builder()
+                    .provider(providerEnum)
+                    .providerId(providerId)
+                    .user(user)
+                    .build();
+            user.getProviders().add(provider);
+            userRepository.save(user);
         }
 
-        // --- 3. Update avatar nếu login lại bằng FB/Google ---
+        // --- Update avatar nếu cần ---
         if (finalPicture != null) {
+            boolean needSaveUser = false;
             if (user.getAvatar() == null) {
                 user.setAvatar(finalPicture);
-                userRepository.save(user);
+                needSaveUser = true;
             }
+            if (needSaveUser) userRepository.save(user);
 
-            // Cập nhật avatar cho Customer
             customerRepository.findByUser(user).ifPresent(customer -> {
                 if (customer.getAvatar() == null) {
                     customer.setAvatar(finalPicture);
@@ -120,19 +137,53 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             });
         }
 
-        // --- 4. Tạo JWT token ---
+        // --- Tạo JWT ---
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", user.getRole() != null ? user.getRole().name() : "CUSTOMER");
-        if (user.getName() != null) claims.put("name", user.getName()); // 
+        claims.put("id", user.getId());
+        if (user.getName() != null) claims.put("name", user.getName());
         if (user.getAvatar() != null) claims.put("avatar", user.getAvatar());
 
         String token = jwtUtils.generateToken(user.getEmail(), claims);
 
-        // --- 5. Redirect về frontend ---
+        // --- Redirect ---
         String targetUrl = UriComponentsBuilder.fromHttpUrl(redirectSuccess)
                 .queryParam("token", token)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+
+    /**
+     * Thử nhiều key thường gặp để lấy providerId (Google OIDC trả về 'sub', Facebook trả 'id', ...)
+     */
+    private String extractProviderId(OAuth2User user) {
+        if (user == null) return null;
+        Object v;
+        v = user.getAttribute("sub");
+        if (v != null) return v.toString();
+        v = user.getAttribute("id");
+        if (v != null) return v.toString();
+        v = user.getAttribute("user_id");
+        if (v != null) return v.toString();
+        v = user.getAttribute("uid");
+        if (v != null) return v.toString();
+        v = user.getAttribute("openid");
+        if (v != null) return v.toString();
+        // thêm keys khác nếu provider của bạn dùng tên khác
+        return null;
+    }
+
+    private UserProvider.Provider mapToProviderEnum(String registrationId) {
+        if (registrationId == null) throw new RuntimeException("Null provider");
+        switch (registrationId.toLowerCase()) {
+            case "google":
+                return UserProvider.Provider.GOOGLE;
+            case "facebook":
+                return UserProvider.Provider.FACEBOOK;
+            default:
+                throw new RuntimeException("Unsupported provider: " + registrationId +
+                        ". Thêm mapping tương ứng trong mapToProviderEnum().");
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.mytech.backend.portal.Utils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.Service.ServiceAvailability;
 import com.mytech.backend.portal.models.Service.ServiceTag;
 import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.models.UserProvider.UserProvider;
 import com.mytech.backend.portal.repositories.AreaRepository;
 import com.mytech.backend.portal.repositories.BookingRepository;
 import com.mytech.backend.portal.repositories.CategoryRepository;
@@ -235,6 +237,7 @@ public class SeedService {
             String lastName,
             String address
     ) {
+        // Tạo user object (chưa save)
         User u = User.builder()
                 .name(name)
                 .email(email)
@@ -244,8 +247,22 @@ public class SeedService {
                 .status(status)
                 .build();
 
+        // Đảm bảo providerId cho LOCAL không null:
+        String localProviderId = (email != null && !email.isBlank())
+                ? email
+                : "local-" + System.currentTimeMillis();
+
+        // Tạo và gắn LOCAL provider ngay trước khi save
+        UserProvider localProvider = UserProvider.of(u, UserProvider.Provider.LOCAL, localProviderId);
+        if (u.getProviders() == null) {
+            u.setProviders(new HashSet<>());
+        }
+        u.getProviders().add(localProvider);
+
+        // Lưu user (sẽ persist luôn user_providers do Cascade.ALL)
         u = userRepository.save(u);
 
+        // Tạo và lưu Customer liên quan
         Customer c = Customer.builder()
                 .firstName(firstName)
                 .lastName(lastName)

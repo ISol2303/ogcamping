@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.mytech.backend.portal.dto.ResetPasswordRequestDTO;
 import com.mytech.backend.portal.dto.UserDTO;
 import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.models.UserProvider.UserProvider;
 import com.mytech.backend.portal.services.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -98,9 +99,17 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng");
         }
 
-        if (user.getProvider() != User.Provider.LOCAL) {
-            String providerName = user.getProvider().name().charAt(0) 
-                    + user.getProvider().name().substring(1).toLowerCase();
+     // Kiểm tra user có provider LOCAL không
+        boolean hasLocal = user.getProviders().stream()
+                .anyMatch(p -> p.getProvider() == UserProvider.Provider.LOCAL);
+
+        if (!hasLocal) {
+            // Lấy provider đầu tiên (ví dụ Google, Facebook)
+            UserProvider firstProvider = user.getProviders().stream().findFirst().orElse(null);
+            String providerName = firstProvider != null
+                    ? firstProvider.getProvider().name().charAt(0) +
+                      firstProvider.getProvider().name().substring(1).toLowerCase()
+                    : "provider khác";
 
             return ResponseEntity.badRequest().body("Tài khoản này được đăng ký bằng " + providerName +
                     ". Vui lòng đăng nhập qua " + providerName + ".");
@@ -123,11 +132,23 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy người dùng");
         }
 
-        if (user.getProvider() != User.Provider.LOCAL) {
-            return ResponseEntity.badRequest().body("Tài khoản này được đăng ký bằng " + user.getProvider() +
-                    ". Vui lòng đăng nhập qua " + user.getProvider() + ".");
+        // Kiểm tra provider LOCAL
+        boolean hasLocal = user.getProviders().stream()
+                .anyMatch(p -> p.getProvider() == UserProvider.Provider.LOCAL);
+
+        if (!hasLocal) {
+            // Nếu không có LOCAL, lấy provider đầu tiên để báo cho user
+            UserProvider firstProvider = user.getProviders().stream().findFirst().orElse(null);
+            String providerName = firstProvider != null
+                    ? firstProvider.getProvider().name().charAt(0) +
+                      firstProvider.getProvider().name().substring(1).toLowerCase()
+                    : "provider khác";
+
+            return ResponseEntity.badRequest().body("Tài khoản này được đăng ký bằng " + providerName +
+                    ". Vui lòng đăng nhập qua " + providerName + ".");
         }
 
+        // Nếu có LOCAL thì gửi reset code
         userService.sendResetCode(targetEmail);
         return ResponseEntity.ok("OTP đã được gửi tới " + targetEmail);
     }
