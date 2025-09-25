@@ -20,6 +20,7 @@ import com.mytech.backend.portal.services.EmailService;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,6 @@ public class BookingServiceImpl implements BookingService {
     private final SpringTemplateEngine templateEngine;
     private final EmailService emailService;
 
-    
     @Override
     @Transactional
     public BookingResponseDTO placeBooking(Long customerId, BookingRequestDTO req) {
@@ -65,6 +65,9 @@ public class BookingServiceImpl implements BookingService {
                 .note(req.getNote())
                 .status(BookingStatus.PENDING)
                 .createdAt(LocalDateTime.now())
+                .checkInDate(req.getCheckInDate())
+                .checkOutDate(req.getCheckOutDate())
+                .numberOfPeople(req.getNumberOfPeople())
                 .build();
 
         List<BookingItem> bookingItems = new ArrayList<>();
@@ -147,11 +150,7 @@ public class BookingServiceImpl implements BookingService {
                         .type(ItemType.SERVICE)
                         .quantity(1)
                         .price(price)
-                        .checkInDate(s.getCheckInDate())
-                        .checkOutDate(s.getCheckOutDate())
-                        .numberOfPeople(people)
                         .build();
-
                 bookingItems.add(item);
             }
         }
@@ -174,9 +173,9 @@ public class BookingServiceImpl implements BookingService {
                         .type(ItemType.COMBO)
                         .quantity(1)
                         .price(combo.getPrice())
-                        .checkInDate(c.getCheckInDate())
-                        .checkOutDate(c.getCheckOutDate())
-                        .numberOfPeople(numberOfPeople)
+                        // .checkInDate(c.getCheckInDate())
+                        // .checkOutDate(c.getCheckOutDate())
+                        // .numberOfPeople(numberOfPeople)
                         .build();
 
                 bookingItems.add(item);
@@ -472,16 +471,7 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public BookingResponseDTO updateBookingStatus(Long id, String status) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
-
-        booking.setStatus(BookingStatus.valueOf(status));
-        Booking updated = bookingRepository.save(booking);
-
-        return mapToDTO(updated);
-    }
+    
 
     @Transactional
     public void deleteBooking(Long id) {
@@ -544,41 +534,7 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.save(booking);
     }
 
-    // xác nhận đơn và gửi email
     @Override
-    public void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setTo(bookingDTO.getEmail());
-            helper.setSubject("Xác nhận đặt chỗ OGCAMPING - Booking #" + bookingDTO.getId());
-            helper.setFrom("no-reply@ogcamping.vn");
-
-            // Thymeleaf context
-            Context context = new Context();
-            context.setVariable("customerName", bookingDTO.getCustomerName());
-            context.setVariable("orderId", bookingDTO.getId());
-            context.setVariable("people", bookingDTO.getNumberOfPeople());
-            context.setVariable("phone", bookingDTO.getPhone());
-            context.setVariable("note", bookingDTO.getNote() != null ? bookingDTO.getNote() : "");
-            context.setVariable("totalPrice", bookingDTO.getTotalPrice());
-            context.setVariable("paymentStatus",
-                    bookingDTO.getPayment() != null ? bookingDTO.getPayment().getStatus() : "PENDING");
-
-            String html = templateEngine.process("booking-confirmation.html", context);
-            helper.setText(html, true);
-
-            mailSender.send(message);
-            System.out.println("✅ Email confirmation sent to " + bookingDTO.getEmail());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Cannot send booking confirmation email: " + e.getMessage());
-        }
-    }
-
-     @Override
     public BookingResponseDTO confirmBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
@@ -590,11 +546,59 @@ public class BookingServiceImpl implements BookingService {
         // 1️⃣ Cập nhật trạng thái
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setEmailSentAt(LocalDateTime.now());
-        bookingRepository.save(booking);
+        Booking updatedBooking = bookingRepository.save(booking);
 
-        // 2️⃣ Gửi email HTML
-        emailService.sendBookingConfirmationEmail(booking);
+        // 2️⃣ Chuyển đổi Booking sang DTO và gửi email
+        BookingResponseDTO bookingDTO = mapToDTO(updatedBooking);
+        emailService.sendBookingConfirmationEmail(bookingDTO);
 
-        return mapToDTO(booking);
+        return bookingDTO;
     }
+
+    // // Trong BookingServiceImpl
+    // @Override
+    // public void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO) {
+    //     try {
+    //         MimeMessage message = mailSender.createMimeMessage();
+    //         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+    //         helper.setTo(bookingDTO.getEmail());
+    //         helper.setSubject("Xác nhận đặt chỗ OGCAMPING - Booking #" + bookingDTO.getId());
+    //         helper.setFrom("no-reply@ogcamping.vn");
+
+    //         // Thymeleaf context
+    //         Context context = new Context();
+    //         context.setVariable("customerName", bookingDTO.getCustomerName());
+    //         context.setVariable("orderId", bookingDTO.getId());
+
+    //         // Thêm các biến còn thiếu
+    //         context.setVariable("checkInDate", bookingDTO.getCheckInDate());
+    //         context.setVariable("checkOutDate", bookingDTO.getCheckOutDate());
+    //         context.setVariable("numberOfPeople", bookingDTO.getNumberOfPeople());
+
+    //         context.setVariable("phone", bookingDTO.getPhone());
+    //         context.setVariable("note", bookingDTO.getNote() != null ? bookingDTO.getNote() : "");
+    //         context.setVariable("totalPrice", bookingDTO.getTotalPrice());
+    //         context.setVariable("paymentStatus",
+    //                 bookingDTO.getPayment() != null ? bookingDTO.getPayment().getStatus() : "PENDING");
+
+    //         // Truyền danh sách items để hiển thị chi tiết (nếu cần)
+    //         context.setVariable("items", bookingDTO.getServices()); // hoặc bookingDTO.getCombos(), v.v.
+
+    //         String html = templateEngine.process("booking-confirmation.html", context);
+    //         helper.setText(html, true);
+
+    //         // Thêm code nhúng logo
+    //         // Lưu ý: Cần đảm bảo file logo tồn tại tại đường dẫn này
+    //         ClassPathResource logo = new ClassPathResource("static/images/ogcamping.jpg");
+    //         helper.addInline("ogLogo", logo, "image/jpeg");
+
+    //         mailSender.send(message);
+    //         System.out.println("✅ Email confirmation sent to " + bookingDTO.getEmail());
+
+    //     } catch (Exception e) {
+    //         e.printStackTrace();
+    //         throw new RuntimeException("Cannot send booking confirmation email: " + e.getMessage());
+    //     }
+    // }
 }

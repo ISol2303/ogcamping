@@ -34,6 +34,6 @@ public interface BookingService {
     Booking confirmCheckIn(Long id);
     Booking confirmCheckOut(Long id);
     BookingResponseDTO mapToDTO(Booking booking);
-    void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO);
+    // void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO);
     BookingResponseDTO confirmBooking(Long id);
 }
