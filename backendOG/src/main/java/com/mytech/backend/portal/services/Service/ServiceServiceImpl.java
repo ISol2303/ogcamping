@@ -11,6 +11,8 @@ import com.mytech.backend.portal.models.Service.ServiceTag;
 import com.mytech.backend.portal.repositories.ItineraryItemRepository;
 import com.mytech.backend.portal.repositories.ServiceRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,13 +26,18 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
-@RequiredArgsConstructor
+
 @Transactional
 public class ServiceServiceImpl implements ServiceService {
-
+    
     private final ServiceRepository serviceRepository;
     private final ItineraryItemRepository itineraryItemRepository;
-
+    @Autowired
+    public ServiceServiceImpl(ServiceRepository serviceRepository,
+                              ItineraryItemRepository itineraryItemRepository) {
+        this.serviceRepository = serviceRepository;
+        this.itineraryItemRepository = itineraryItemRepository;
+    }
     @Override
     public List<ServiceResponseDTO> getAllServices() {
         return serviceRepository.findAll().stream()
