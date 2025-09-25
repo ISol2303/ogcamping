@@ -8,37 +8,24 @@ import com.mytech.backend.portal.repositories.*;
 import com.mytech.backend.portal.services.EmailService;
 import com.mytech.backend.portal.services.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
-    @Autowired
-    private BookingRepository bookingRepository;
 
-    @Autowired
-    private PackageRepository packageRepository;
-
-    @Autowired
-    private GearRepository gearRepository;
-    private final CustomerRepository customerRepo;
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;   // dùng interface
+    private final BookingRepository bookingRepository;
+    private final PackageRepository packageRepository;
+    private final GearRepository gearRepository;
+    private final CustomerRepository customerRepository;
     private final EmailService emailService;
 
     @Override
@@ -47,13 +34,14 @@ public class UserServiceImpl implements UserService {
         User user = User.builder()
                 .name(userDTO.getName())
                 .email(userDTO.getEmail())
-                .password(passwordEncoder.encode(userDTO.getPassword())) // nên encode nếu có security
+                .password(passwordEncoder.encode(userDTO.getPassword())) // encode password
                 .phone(userDTO.getPhone())
                 .role(userDTO.getRole() != null ? User.Role.valueOf(userDTO.getRole()) : User.Role.CUSTOMER)
                 .status(userDTO.getStatus() != null ? User.Status.valueOf(userDTO.getStatus()) : User.Status.ACTIVE)
                 .build();
         user = userRepository.save(user);
-//    Customer 0 Day
+
+        // Customer mặc định cho user mới
         Customer customer = Customer.builder()
                 .name(userDTO.getName())
                 .email(user.getEmail())
@@ -61,7 +49,7 @@ public class UserServiceImpl implements UserService {
                 .address(userDTO.getAddress())
                 .user(user)
                 .build();
-        customerRepo.save(customer);
+        customerRepository.save(customer);
 
         return mapToDTO(user, customer);
     }
@@ -70,7 +58,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Customer customer = customerRepo.findByUser(user).orElse(null);
+        Customer customer = customerRepository.findByUser(user).orElse(null);
         return mapToDTO(user, customer);
     }
 
@@ -78,7 +66,7 @@ public class UserServiceImpl implements UserService {
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
-                .map(u -> mapToDTO(u, customerRepo.findByUser(u).orElse(null)))
+                .map(u -> mapToDTO(u, customerRepository.findByUser(u).orElse(null)))
                 .collect(Collectors.toList());
     }
 
@@ -94,22 +82,20 @@ public class UserServiceImpl implements UserService {
         if (userDTO.getRole() != null) {
             user.setRole(User.Role.valueOf(userDTO.getRole()));
         }
-
         if (userDTO.getStatus() != null) {
             user.setStatus(User.Status.valueOf(userDTO.getStatus()));
         }
 
-
         user = userRepository.save(user);
 
-        // Cập nhật customer
-        Customer customer = customerRepo.findByUser(user).orElse(null);
+        // Update customer
+        Customer customer = customerRepository.findByUser(user).orElse(null);
         if (customer != null) {
             customer.setName(userDTO.getName());
             customer.setEmail(userDTO.getEmail());
             customer.setPhone(userDTO.getPhone());
             customer.setAddress(userDTO.getAddress());
-            customerRepo.save(customer);
+            customerRepository.save(customer);
         }
 
         return mapToDTO(user, customer);
@@ -128,12 +114,11 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email).orElse(null);
     }
 
-
-
     @Override
     public User save(User user) {
         return userRepository.save(user);
     }
+
     @Override
     public UserDTO getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
@@ -143,7 +128,8 @@ public class UserServiceImpl implements UserService {
 
         return mapToDTO(user, customer);
     }
-    // --- mapping User va Customer sang DTO ---
+
+    // --- mapping User & Customer sang DTO ---
     private UserDTO mapToDTO(User user, Customer customer) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
@@ -157,14 +143,13 @@ public class UserServiceImpl implements UserService {
         dto.setCreatedAt(user.getCreatedAt());
         if (customer != null) {
             dto.setAddress(customer.getAddress());
-//            dto.setName(customer.getName());
         }
         return dto;
     }
 
     @Override
     public UserDTO findById(Long id) {
-        return getUserById(id); // hoặc implement riêng
+        return getUserById(id);
     }
 
     @Override
@@ -182,24 +167,24 @@ public class UserServiceImpl implements UserService {
 
         return stats;
     }
-    
+
     public void sendResetCode(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user với email: " + email));
-        
+
         // Sinh OTP (6 số)
         String otp = String.format("%06d", new Random().nextInt(999999));
-        
+
         // Lưu vào DB
         user.setResetCode(otp);
         user.setResetCodeExpiry(LocalDateTime.now().plusMinutes(5));
         userRepository.save(user);
 
-     // Gửi email
+        // Gửi email
         String subject = "Mã OTP đặt lại mật khẩu";
         String body = "Mã OTP của bạn là: " + otp + "\nMã có hiệu lực trong 5 phút.";
         emailService.sendResetPasswordCode(user.getEmail(), subject, body);
-        
+
         System.out.println("Reset code cho " + email + " : " + otp);
     }
 
@@ -217,7 +202,3 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 }
-
-
-	
-	

@@ -278,6 +278,13 @@ public class ReviewServiceImpl implements ReviewService {
                 .reply(review.getReply())
                 .status(review.getStatus())
                 .createdAt(review.getCreatedAt())
+
+                // các field moderation
+                .moderatedById(review.getModeratedById())
+                .moderatedByName(review.getModeratedByName())
+                .moderatedAt(review.getModeratedAt())
+                .moderationReason(review.getModerationReason())
                 .build();
     }
+
 }

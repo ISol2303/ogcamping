@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.mytech.backend.portal.models.Area;
 import com.mytech.backend.portal.models.Category;
@@ -58,7 +59,7 @@ public class DataLoader {
     private final GearRepository gearRepository; // Thêm repository cho Gear
 
     // Mã hóa mật khẩu (nên inject như Bean nếu muốn)
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
     // -----------------------
     // Điểm vào: bean seed

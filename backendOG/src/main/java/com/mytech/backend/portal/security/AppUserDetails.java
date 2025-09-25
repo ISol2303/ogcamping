@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.mytech.backend.portal.models.Customer.Customer;
 import com.mytech.backend.portal.models.User.User;
 
 import java.util.ArrayList;
@@ -81,11 +82,20 @@ public class AppUserDetails implements UserDetails {
     public Long getId() {
         return user.getId();
     }
+    
     public String getFirstName(){
-        return user.getCustomer().getFirstName().toString();
+        if (user == null) return null;
+        Customer customer = user.getCustomer();
+        if (customer == null) return null;
+        String fn = customer.getFirstName();
+        return fn != null ? fn : null;
     }
 
     public String getLastName(){
-        return user.getCustomer().getLastName().toString();
+        if (user == null) return null;
+        Customer customer = user.getCustomer();
+        if (customer == null) return null;
+        String ln = customer.getLastName();
+        return ln != null ? ln : null;
     }
 }

@@ -15,10 +15,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -29,133 +29,121 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 
-
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-	@Autowired
-	private AppUserDetailsService userDetailsService;
-	private final OAuth2SuccessHandler oAuth2SuccessHandler;
-	private final OAuth2FailureHandler oAuth2FailureHandler;
-	  @Bean
-	  CorsConfigurationSource corsConfigurationSource() {
-	    CorsConfiguration configuration = new CorsConfiguration();
-	    configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-	    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-	    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-	    configuration.setAllowCredentials(true);
-	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	    source.registerCorsConfiguration("/**", configuration);
-	    return source;
-	  }
-//	@Bean
-//	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//		http.authorizeHttpRequests((authorite) -> authorite
-//				.requestMatchers("/apis/v1/login", "/apis/test/**").permitAll().anyRequest().permitAll());
-//
-//		http.formLogin((form) -> form.defaultSuccessUrl("/"));
-//
-//		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-//
-//		http.csrf(csrf -> csrf.disable());
-//
-//		return http.build();
-//	}
-@Bean
-@Order(1)
-SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
-	http
-			.securityMatcher("/oauth2/**", "/login/**", "/error")
-			.authorizeHttpRequests(auth -> auth
-					.requestMatchers("/oauth2/**", "/login/**", "/error").permitAll()
-					.anyRequest().authenticated()
-			)
-			.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-			.csrf(csrf -> csrf.ignoringRequestMatchers("/oauth2/**", "/login/**"))
-			.oauth2Login(oauth2 -> oauth2
-					.loginPage("/oauth2/authorization/google")
-					.successHandler(oAuth2SuccessHandler)
-					.failureHandler(oAuth2FailureHandler)
-			);
-	return http.build();
-}
 
-	// 2) Chain cho REST API (JWT stateless)
-	@Bean
-	@Order(2)
-	SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-	    http
-	        .securityMatcher("/apis/**","/public/**","/api/**") // Áp dụng cho tất cả API
-	        .authorizeHttpRequests(auth -> auth
-	        	.requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
-	        	.requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
-	        	.requestMatchers(HttpMethod.GET, "/apis/v1/categories").permitAll()
-	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears").permitAll()
-	        	.requestMatchers(HttpMethod.GET, "/apis/v1/gears/**").permitAll()
-                    .requestMatchers("/public/**").permitAll()
-	        	.requestMatchers(
-	                    "/apis/v1/login",
-	                    "/apis/v1/register",
-	                    "/apis/test/**",
-	                    "/apis/v1/services/**",
-                        "/apis/v1/customers/by-user/**",  // Cho phép lấy customer theo user ID
-                        "/apis/orders/gear/**",  // Cho phép truy cập lịch sử đơn hàng gear
-                        "/apis/gear-orders/**",  // Cho phép truy cập API gear orders mới
-                        "/apis/orders/test-gear/**",  // Cho phép test API kiểm tra số lượng thiết bị
-	                    "/apis/v1/combos/**",
-	                    "/apis/dishes/all",
-	                    "/apis/v1/users/forgot-password",
-                        "/apis/v1/users/reset-password",
-                        "/apis/v1/users/**",
-                        "/apis/v1/bookings/**",
-                        "/apis/v1/admin/shifts/**",
-                        "/apis/v1/shifts/**",
-                        "/apis/v1/customers/**",
-                        "/apis/v1/payments/**",
-                        "/apis/v1/staffs/**",
-                        "/apis/v1/admin/**"
-	                ).permitAll()
-                    .requestMatchers("/apis/v1/payments/callback").permitAll()
-                    .requestMatchers("/apis/v1/payments/callback/mobile").permitAll()
-                    .requestMatchers("/apis/v1/payments/create/mobile").permitAll()
-	            .anyRequest().authenticated()
-	        )
-	        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-	        .csrf(csrf -> csrf.disable())
-	    	.cors(Customizer.withDefaults());
-	
-	    // ✅ add JWT filter
-	    http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-	
-	    return http.build();
-	}
+    @Autowired
+    private AppUserDetailsService userDetailsService;
 
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
-	// 3) Fallback (cho phép trang gốc, tĩnh…)
-	@Bean
-	@Order(3)
-	SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
-		http
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/", "/index.html", "/assets/**", "/mobile-redirect.html", "/payment-redirect.html", "/app-redirect.html").permitAll()
-						.anyRequest().permitAll()
-				)
-				.csrf(csrf -> csrf.disable());
-		return http.build();
-	}
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
+    @Bean
+    @Order(1)
+    SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/oauth2/**", "/login/**", "/error")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/oauth2/**", "/login/**", "/error").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/oauth2/**", "/login/**"))
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2/authorization/google")
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
+                );
+        return http.build();
+    }
 
-	@Bean
+    // 2) Chain cho REST API (JWT stateless)
+    @Bean
+    @Order(2)
+    SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/apis/**", "/public/**", "/api/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/apis/v1/reviews/service/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/apis/v1/reviews/service/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/apis/v1/categories").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/apis/v1/gears").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/apis/v1/gears/**").permitAll()
+                        .requestMatchers("/public/**").permitAll()
+                        .requestMatchers(
+                                "/apis/v1/login",
+                                "/apis/v1/register",
+                                "/apis/test/**",
+                                "/apis/v1/services/**",
+                                "/apis/v1/customers/by-user/**",
+                                "/apis/orders/gear/**",
+                                "/apis/gear-orders/**",
+                                "/apis/orders/test-gear/**",
+                                "/apis/v1/combos/**",
+                                "/apis/dishes/all",
+                                "/apis/v1/users/forgot-password",
+                                "/apis/v1/users/reset-password",
+                                "/apis/v1/users/**",
+                                "/apis/v1/bookings/**",
+                                "/apis/v1/admin/shifts/**",
+                                "/apis/v1/shifts/**",
+                                "/apis/v1/customers/**",
+                                "/apis/v1/payments/**",
+                                "/apis/v1/staffs/**",
+                                "/apis/v1/admin/**"
+                        ).permitAll()
+                        .requestMatchers("/apis/v1/payments/callback").permitAll()
+                        .requestMatchers("/apis/v1/payments/callback/mobile").permitAll()
+                        .requestMatchers("/apis/v1/payments/create/mobile").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable())
+                .cors(Customizer.withDefaults());
+
+        // ✅ add JWT filter
+        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // 3) Fallback (cho phép trang gốc, tĩnh…)
+    @Bean
+    @Order(3)
+    SecurityFilterChain fallbackChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/index.html", "/assets/**",
+                                "/mobile-redirect.html", "/payment-redirect.html", "/app-redirect.html").permitAll()
+                        .anyRequest().permitAll()
+                )
+                .csrf(csrf -> csrf.disable());
+        return http.build();
+    }
+
+    @Bean
     CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
         config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
         config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
         config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
-        config.addAllowedOriginPattern("http://localhost:*"); // Pattern for any port
-        config.addAllowedOriginPattern("http://192.168.*:*"); // Pattern for mobile network
+        config.addAllowedOriginPattern("http://localhost:*");
+        config.addAllowedOriginPattern("http://192.168.*:*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.setAllowCredentials(true);
@@ -165,25 +153,18 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
         return new CorsFilter(source);
     }
 
-	@Bean
-	AuthTokenFilter authenticationJwtTokenFilter() {
-		return new AuthTokenFilter();
-	}
+    @Bean
+    AuthTokenFilter authenticationJwtTokenFilter() {
+        return new AuthTokenFilter();
+    }
 
-	@Bean
-	PasswordEncoder getPasswordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
-	@Bean
-	 ModelMapper modelMapper() {
-	    return new ModelMapper();
-	}
+    @Bean
+    ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
 
-	
-	@Bean
-	AuthenticationManager authenticationManager() {
-		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-		authProvider.setPasswordEncoder(getPasswordEncoder());
-		return new ProviderManager(authProvider);
-	}
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 }
