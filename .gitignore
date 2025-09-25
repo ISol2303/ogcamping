@@ -1,6 +1,5 @@
 /.metadata/
 .env
 *.env
-/backendOG/uploads
 backendOG/src/main/resources/application.properties
 /mobile/linux

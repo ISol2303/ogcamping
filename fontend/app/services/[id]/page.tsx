@@ -125,6 +125,7 @@ export default function ServiceDetailPage() {
         const res = await fetch(`http://localhost:8080/apis/v1/services/${params.id}`)
         const data: Service = await res.json()
         setService(data)
+        
       } catch (err) {
         console.error("Fetch service error:", err)
       }
