@@ -327,6 +327,7 @@ export default function StaffDashboard({ orderId }: Props) {
 
   const itemsPerPage = 5;
   const [selectedCustomerOrder, setSelectedCustomerOrder] = useState<any | null>(null);
+  const [isPrintingInvoice, setIsPrintingInvoice] = useState(false);
 
   // Reviews state
   const [reviews, setReviews] = useState<any[]>([]);
@@ -1126,21 +1127,44 @@ export default function StaffDashboard({ orderId }: Props) {
       if (!token) return;
 
       const res = await axios.get<any[]>(
-        "http://localhost:8080/apis/orders/all-items",
+        "http://localhost:8080/apis/orders/booking/all-dishes",
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const ordersData = res.data; // Đây là mảng orders
+      const ordersData = res.data.map((booking: any) => ({
+        orderId: booking.bookingId,
+        orderCode: `#BK${booking.bookingId}`, // Tạo orderCode từ bookingId
+        customerName: booking.customerName,
+        email: booking.customerEmail,
+        phone: booking.customerPhone,
+        items: booking.items,
+        totalOrderPrice: booking.totalBookingPrice,
+        createdAt: booking.createdAt,
+        status: 'PENDING' as const // Thêm status mặc định với type literal
+      }));
 
-      // Cập nhật state (thay vì push từng order thì set toàn bộ luôn)
       setOrders(ordersData);
 
-      console.log("✅ Danh sách đơn hàng:", ordersData);
+      console.log("✅ Danh sách booking với dishes:", ordersData);
     } catch (err: any) {
       console.error("❌ Lỗi fetchAllOrders:", err);
+      // Fallback về API cũ nếu API mới chưa sẵn sàng
+      try {
+        console.log("🔄 Thử fallback về API cũ...");
+        const fallbackToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+        if (fallbackToken) {
+          const fallbackRes = await axios.get<any[]>(
+            "http://localhost:8080/apis/orders/all-items",
+            { headers: { Authorization: `Bearer ${fallbackToken}` } }
+          );
+          setOrders(fallbackRes.data);
+          console.log("✅ Fallback thành công:", fallbackRes.data);
+        }
+      } catch (fallbackErr) {
+        console.error("❌ Cả 2 API đều lỗi:", fallbackErr);
+      }
     }
   };
-
   useEffect(() => {
     fetchAllOrders();
   }, []);
@@ -1181,12 +1205,13 @@ export default function StaffDashboard({ orderId }: Props) {
 
     stompClient.connect({}, () => {
       console.log("✅ Connected to WS");
-      // Subscribe channel
-      stompClient.subscribe("/topic/order-updates", (message) => {
+      // Subscribe channel cho booking updates
+      stompClient.subscribe("/topic/booking-updates", (message) => {
         const data = JSON.parse(message.body);
         alert(data.message);
-        console.log("📩 WS update:", data);
-        // TODO: gọi API refresh list orders
+        console.log("📩 WS booking update:", data);
+        // Refresh danh sách orders khi có booking mới thêm món
+        fetchAllOrders();
       });
     });
 
@@ -1194,27 +1219,58 @@ export default function StaffDashboard({ orderId }: Props) {
       stompClient.disconnect();
     };
   }, []);
-  const handlePrintDishesInvoice = async (orderId: number) => {
-    if (!orderId) return;
+  const handlePrintDishesInvoice = async (bookingId: number) => {
+    if (!bookingId) return;
 
+    setIsPrintingInvoice(true);
     try {
-      const res = await axios.get(`http://localhost:8080/pdf/bill/dishes/${orderId}`, {
+      // 🔄 Sử dụng API booking mới thay vì OrderBooking
+      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      
+      const res = await axios.get(`http://localhost:8080/pdf/bill/booking/dishes/${bookingId}`, {
         responseType: 'blob', // quan trọng: nhận file dạng blob
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       // Tạo link để tải PDF
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `HoaDon_${orderId}.pdf`);
+      link.setAttribute('download', `HoaDon_Booking_Dishes_${bookingId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
 
-    } catch (err) {
-      console.error("❌ Lỗi khi in hóa đơn:", err);
-      alert("Lỗi khi in hóa đơn! Vui lòng thử lại.");
+      // Thông báo thành công với toast thay vì alert
+      toast({
+        title: "✅ Thành công",
+        description: `Đã tải hóa đơn món ăn booking #BK${bookingId} thành công!`,
+      });
+
+    } catch (err: any) {
+      console.error("❌ Lỗi khi in hóa đơn món ăn:", err);
+      
+      // Xử lý lỗi chi tiết với toast
+      let errorMessage = "Lỗi khi in hóa đơn! Vui lòng thử lại.";
+      
+      if (err.response?.status === 404) {
+        errorMessage = "Không tìm thấy booking hoặc chưa có món ăn nào!";
+      } else if (err.response?.status === 401) {
+        errorMessage = "Bạn không có quyền in hóa đơn!";
+      } else if (err.response?.status === 500) {
+        errorMessage = "Lỗi server khi tạo hóa đơn!";
+      }
+
+      toast({
+        title: "❌ Lỗi",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsPrintingInvoice(false);
     }
   };
 
@@ -1893,11 +1949,41 @@ export default function StaffDashboard({ orderId }: Props) {
             </Card>
           </TabsContent>
 
-
           <TabsContent value="customers">
+            {/* 🍽️ Hiển thị các booking mà khách hàng đã đặt thêm món ăn */}
             <div className="min-h-screen bg-gray-50 p-6 w-full">
+              {/* Header với search */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-gray-900">Booking đặt thêm món</h2>
+                  <Badge variant="secondary" className="text-sm">
+                    {orders.length} booking
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 relative w-64">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="text"
+                      placeholder="Tìm kiếm khách hàng..."
+                      className="pl-10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={fetchAllOrders}
+                    className="flex items-center gap-2"
+                  >
+                    <Bell className="w-4 h-4" />
+                    Làm mới
+                  </Button>
+                </div>
+              </div>
+              
               <div className="flex gap-6">
-
                 {/* Bên trái: danh sách khách hàng */}
                 <div className="w-1/3 bg-white rounded-2xl shadow-lg p-4 overflow-y-auto max-h-[80vh]">
                   {searchedOrders.length === 0 ? (
@@ -1974,7 +2060,9 @@ export default function StaffDashboard({ orderId }: Props) {
                       </CardHeader>
 
                       <CardContent className="p-6 bg-white">
-                        <h3 className="text-lg font-semibold mb-2">Danh sách món ăn</h3>
+                        <h3 className="text-lg font-semibold mb-2">
+                          Danh sách món ăn ({selectedCustomerOrder.items?.length || 0} món)
+                        </h3>
                         <div className="overflow-x-auto border rounded-md max-w-full">
                           <table className="w-full table-auto text-sm min-w-[500px]">
                             <thead className="bg-gray-100 text-gray-700 sticky top-0">
@@ -1987,25 +2075,51 @@ export default function StaffDashboard({ orderId }: Props) {
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedCustomerOrder.items.map((item: OrderItem, index: number) => (
+                              {selectedCustomerOrder.items.map((item: OrderItem, index: number) => {
+                                // Debug: Log cấu trúc item để kiểm tra
+                                if (index === 0) {
+                                  console.log("🔍 Item structure:", item);
+                                }
+                                return (
                                 <tr key={`${item.dishId}-${index}`} className="border-b hover:bg-gray-50 transition-colors">
-                                  <td className="px-4 py-2 font-medium">{item.dishName}</td>
-                                  <td className="px-4 py-2">{item.category}</td>
-                                  <td className="px-4 py-2 text-center">{item.quantity}</td>
-                                  <td className="px-4 py-2 text-right">{item.price.toLocaleString()} đ</td>
-                                  <td className="px-4 py-2 text-right font-semibold text-green-600">{item.totalPrice.toLocaleString()} đ</td>
+                                  <td className="px-4 py-2 font-medium">{item.dishName || 'N/A'}</td>
+                                  <td className="px-4 py-2">{item.category || 'N/A'}</td>
+                                  <td className="px-4 py-2 text-center">{item.quantity || 0}</td>
+                                  <td className="px-4 py-2 text-right">{(item.price || 0).toLocaleString()} đ</td>
+                                  <td className="px-4 py-2 text-right font-semibold text-green-600">{(item.totalPrice || 0).toLocaleString()} đ</td>
                                 </tr>
-                              ))}
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
-                        <div className="flex justify-end mt-4">
-                          <button
+                        <div className="flex justify-end mt-4 gap-2">
+                          <Button
                             onClick={() => handlePrintDishesInvoice(selectedCustomerOrder.orderId)}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            size="sm"
+                            disabled={isPrintingInvoice}
                           >
-                            In hóa đơn
-                          </button>
+                            {isPrintingInvoice ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Đang tạo...
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-4 h-4 mr-2" />
+                                In hóa đơn
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedCustomerOrder(null)}
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Đóng
+                          </Button>
                         </div>
 
                       </CardContent>
@@ -2019,92 +2133,7 @@ export default function StaffDashboard({ orderId }: Props) {
           </TabsContent>
 
 
-          <TabsContent value="reports">
-            <div className="min-h-screen bg-gray-50 p-6 w-full">
-              {/* Tiêu đề */}
-              <h2 className="text-3xl font-bold mb-8 text-gray-800">
-                📊 Báo cáo doanh thu
-              </h2>
-
-              {/* Cards tổng quan */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-5 rounded-2xl shadow-lg text-white">
-                  <p className="text-sm opacity-80">Tổng doanh thu</p>
-                  <p className="text-2xl font-extrabold">
-                    {total.toLocaleString("vi-VN")} đ
-                  </p>
-                </div>
-                <div className="bg-gradient-to-r from-green-500 to-green-600 p-5 rounded-2xl shadow-lg text-white">
-                  <p className="text-sm opacity-80">Tháng cao nhất</p>
-                  <p className="text-2xl font-extrabold">Tháng {maxMonth.month}</p>
-                </div>
-                <div className="bg-gradient-to-r from-orange-400 to-orange-500 p-5 rounded-2xl shadow-lg text-white">
-                  <p className="text-sm opacity-80">Trung bình / tháng</p>
-                  <p className="text-2xl font-extrabold">
-                    {average.toLocaleString("vi-VN")} đ
-                  </p>
-                </div>
-              </div>
-
-              {/* Biểu đồ */}
-              <div className="bg-white p-6 rounded-xl shadow-md border mb-8">
-                <p className="text-lg font-semibold mb-4 text-gray-700">
-                  Biểu đồ doanh thu
-                </p>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={revenues}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" tickFormatter={(m) => `Th${m}`} />
-                      <YAxis
-                        tickFormatter={(v) =>
-                          v.toLocaleString("vi-VN", { maximumFractionDigits: 0 })
-                        }
-                      />
-                      <Tooltip
-                        formatter={(value: number) =>
-                          `${value.toLocaleString("vi-VN")} đ`
-                        }
-                        labelFormatter={(label) => `Tháng ${label}`}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#2563eb"
-                        strokeWidth={3}
-                        dot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Bảng chi tiết */}
-              <div className="overflow-x-auto bg-white border rounded-xl shadow-md">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 text-gray-700">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Tháng</th>
-                      <th className="px-4 py-3 text-right font-semibold">
-                        Doanh thu (VNĐ)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {revenues.map((r) => (
-                      <tr key={r.month} className="hover:bg-gray-50 transition">
-                        <td className="px-4 py-2">Tháng {r.month}</td>
-                        <td className="px-4 py-2 text-right">
-                          {r.value.toLocaleString("vi-VN")}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </TabsContent>
-
+          
           <TabsContent value="reviews" className="space-y-6">
             <Card>
               <CardHeader>

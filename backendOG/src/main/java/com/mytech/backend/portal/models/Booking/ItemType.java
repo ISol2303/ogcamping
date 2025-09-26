@@ -1,5 +1,5 @@
 package com.mytech.backend.portal.models.Booking;
 
 public enum ItemType {
-    SERVICE, COMBO, EQUIPMENT
+    SERVICE, COMBO, EQUIPMENT, DISH
 }

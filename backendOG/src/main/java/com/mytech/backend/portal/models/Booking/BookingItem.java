@@ -3,6 +3,7 @@ package com.mytech.backend.portal.models.Booking;
 import com.mytech.backend.portal.models.Combo.Combo;
 import com.mytech.backend.portal.models.Equipment.Equipment;
 import com.mytech.backend.portal.models.Service.Service;
+import com.mytech.backend.portal.models.Dish;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,6 +36,10 @@ public class BookingItem {
     @ManyToOne
     @JoinColumn(name = "equipment_id")
     private Equipment equipment;
+
+    @ManyToOne
+    @JoinColumn(name = "dish_id")
+    private Dish dish;
 
     private Integer quantity;
     private Double price;

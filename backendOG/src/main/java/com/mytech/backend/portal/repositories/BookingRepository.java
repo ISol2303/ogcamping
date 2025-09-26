@@ -58,4 +58,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // 🔹 Tìm các booking chưa gửi email
     List<Booking> findByEmailSentAtIsNull();
+
+    // 🔹 Lấy booking với customer (cho PDF generation)
+    @Query("SELECT b FROM Booking b JOIN FETCH b.customer WHERE b.id = :bookingId")
+    Optional<Booking> findByIdWithCustomer(@Param("bookingId") Long bookingId);
 }

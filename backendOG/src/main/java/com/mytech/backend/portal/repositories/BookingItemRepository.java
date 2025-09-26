@@ -3,12 +3,12 @@ package com.mytech.backend.portal.repositories;
 import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingItem;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
+import com.mytech.backend.portal.models.Booking.ItemType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-
 public interface BookingItemRepository extends JpaRepository<BookingItem, Long> {
 
     @Query("SELECT COUNT(bi) FROM BookingItem bi " +
@@ -63,4 +63,11 @@ public interface BookingItemRepository extends JpaRepository<BookingItem, Long> 
             "JOIN FETCH bi.service " +
             "WHERE bi.service.id = :serviceId")
     List<BookingItem> findByServiceId(@Param("serviceId") Long serviceId);
+
+    // Method để lấy BookingItem theo booking và type (cho PDF dishes)
+    @Query("SELECT bi FROM BookingItem bi " +
+            "JOIN FETCH bi.dish " +
+            "WHERE bi.booking = :booking AND bi.type = :type")
+    List<BookingItem> findByBookingAndType(@Param("booking") Booking booking, 
+                                          @Param("type") ItemType type);
 }

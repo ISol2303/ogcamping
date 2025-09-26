@@ -104,7 +104,7 @@ public class SecurityConfig {
                                 "/apis/v1/customers/**",
                                 "/apis/v1/payments/**",
                                 "/apis/v1/staffs/**",
-                                "/apis/v1/admin/**","/apis/orders/**"
+                                "/apis/v1/admin/**","/apis/orders/**","/pdf/bill/booking/dishes/**","/pdf/**"
                         ).permitAll()
                         .requestMatchers("/apis/v1/payments/callback").permitAll()
                         .requestMatchers("/apis/v1/payments/callback/mobile").permitAll()

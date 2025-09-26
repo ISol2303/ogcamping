@@ -2,6 +2,7 @@ package com.mytech.backend.portal.apis;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,10 +42,15 @@ import com.mytech.backend.portal.models.OrderBooking;
 import com.mytech.backend.portal.models.OrderBookingItem;
 import com.mytech.backend.portal.models.OrderItem;
 import com.mytech.backend.portal.models.User.User;
+import com.mytech.backend.portal.models.Booking.Booking;
+import com.mytech.backend.portal.models.Booking.BookingItem;
+import com.mytech.backend.portal.models.Booking.ItemType;
 import com.mytech.backend.portal.repositories.DishRepository;
 import com.mytech.backend.portal.repositories.OrderBookingRepository;
 import com.mytech.backend.portal.repositories.OrderBookingItemRepository;
 import com.mytech.backend.portal.repositories.OrderItemRepository;
+import com.mytech.backend.portal.repositories.BookingRepository;
+import com.mytech.backend.portal.repositories.BookingItemRepository;
 import com.mytech.backend.portal.repositories.GearRepository;
 import com.mytech.backend.portal.models.Gear;
 import com.mytech.backend.portal.services.EmailService;
@@ -60,6 +66,8 @@ public class OrderBookingController {
     private final DishRepository dishRepository;
     private final GearRepository gearRepository;
     private final EmailService emailService;
+    private final BookingRepository bookingRepository;
+    private final BookingItemRepository bookingItemRepository;
     private final SecureRandom random = new SecureRandom();
 
 
@@ -69,7 +77,9 @@ public class OrderBookingController {
             SimpMessagingTemplate messagingTemplate,
             DishRepository dishRepository,
             GearRepository gearRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            BookingRepository bookingRepository,
+            BookingItemRepository bookingItemRepository) {
     	this.orderBookingRepository = orderBookingRepository;
     	this.orderItemRepository = orderItemRepository;
     	this.orderBookingItemRepository = orderBookingItemRepository;
@@ -77,6 +87,8 @@ public class OrderBookingController {
     	this.dishRepository = dishRepository;
     	this.gearRepository = gearRepository;
     	this.emailService = emailService;
+    	this.bookingRepository = bookingRepository;
+    	this.bookingItemRepository = bookingItemRepository;
     }
 
     // =====================
@@ -557,13 +569,13 @@ public class OrderBookingController {
 
   
 
-    @PostMapping("/{orderId}/add-dishes")
-    public ResponseEntity<?> addDishesToOrder(
-            @PathVariable("orderId") Long orderId,
+    @PostMapping("/{bookingId}/add-dishes")
+    public ResponseEntity<?> addDishesToBooking(
+            @PathVariable("bookingId") Long bookingId,
             @RequestBody List<AddDishRequestDTO> dishesRequest) {
         try {
-            OrderBooking order = orderBookingRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
 
             for (AddDishRequestDTO dto : dishesRequest) {
                 Dish dish = dishRepository.findById(dto.getDishId())
@@ -578,24 +590,25 @@ public class OrderBookingController {
                 dish.setQuantity(dish.getQuantity() - dto.getQuantity());
                 dishRepository.save(dish);
 
-                // Tạo OrderItem
-                OrderItem item = new OrderItem();
-                item.setOrder(order);
-                item.setDish(dish);
-                item.setQuantity(dto.getQuantity());
-                item.setUnitPrice(dish.getPrice());
-                item.setTotalPrice(dish.getPrice() * dto.getQuantity());
+                // Tạo BookingItem cho dish
+                BookingItem item = BookingItem.builder()
+                        .booking(booking)
+                        .type(ItemType.DISH)
+                        .dish(dish)
+                        .quantity(dto.getQuantity())
+                        .price(dish.getPrice() * dto.getQuantity())
+                        .build();
 
-                orderItemRepository.save(item);
+                bookingItemRepository.save(item);
             }
 
             // ✅ Gửi WebSocket cho staff
             Map<String, Object> message = new HashMap<>();
-            message.put("orderId", order.getId());
-            message.put("email", order.getEmail());
-            message.put("message", "Có đơn hàng đặt thêm món từ " + order.getEmail());
+            message.put("bookingId", booking.getId());
+            message.put("customerEmail", booking.getCustomer().getUser().getEmail());
+            message.put("message", "Có booking đặt thêm món từ " + booking.getCustomer().getUser().getEmail());
 
-            messagingTemplate.convertAndSend("/topic/order-updates", message);
+            messagingTemplate.convertAndSend("/topic/booking-updates", message);
 
             return ResponseEntity.ok("Thêm món thành công");
         } catch (Exception e) {
@@ -613,6 +626,41 @@ public class OrderBookingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Order not found");
         }
         return ResponseEntity.ok(orderOpt.get());
+    }
+
+    // =====================
+    // 🔹 API GET BOOKING DETAILS WITH DISHES
+    // =====================
+    @GetMapping("/booking/{bookingId}/details")
+    public ResponseEntity<?> getBookingDetails(@PathVariable("bookingId") Long bookingId) {
+        try {
+            Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking không tồn tại");
+            }
+
+            Booking booking = bookingOpt.get();
+            
+            // Lấy tất cả items của booking này (bao gồm cả dishes)
+            List<BookingItem> items = booking.getItems();
+            
+            // Tạo response với thông tin chi tiết
+            Map<String, Object> response = new HashMap<>();
+            response.put("booking", booking);
+            response.put("items", items);
+            
+            // Tách riêng dishes để dễ xử lý
+            List<BookingItem> dishes = items.stream()
+                    .filter(item -> item.getType() == ItemType.DISH)
+                    .toList();
+            response.put("dishes", dishes);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi lấy chi tiết booking: " + e.getMessage());
+        }
     }
 
 
@@ -703,6 +751,59 @@ public class OrderBookingController {
 //
 //        return ResponseEntity.ok(allOrdersResponse);
 //    }
+
+    // =====================
+    // 🔹 API GET ALL BOOKING DISHES (staff)
+    // =====================
+    @GetMapping("/booking/all-dishes")
+    public ResponseEntity<?> getAllBookingDishes() {
+        try {
+            List<Booking> bookings = bookingRepository.findAll();
+            List<Map<String, Object>> allBookingsResponse = new ArrayList<>();
+
+            for (Booking booking : bookings) {
+                // Lấy chỉ các items là DISH
+                List<BookingItem> dishItems = booking.getItems().stream()
+                        .filter(item -> item.getType() == ItemType.DISH)
+                        .toList();
+
+                if (dishItems.isEmpty()) continue; // Bỏ qua booking không có dish
+
+                List<Map<String, Object>> itemsResponse = new ArrayList<>();
+                double totalBookingPrice = 0;
+
+                for (BookingItem item : dishItems) {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("dishId", item.getDish().getId());
+                    itemMap.put("dishName", item.getDish().getName());
+                    itemMap.put("category", item.getDish().getCategory());
+                    itemMap.put("quantity", item.getQuantity());
+                    itemMap.put("unitPrice", item.getDish().getPrice());
+                    itemMap.put("totalPrice", item.getPrice());
+
+                    totalBookingPrice += item.getPrice();
+                    itemsResponse.add(itemMap);
+                }
+
+                Map<String, Object> bookingMap = new HashMap<>();
+                bookingMap.put("bookingId", booking.getId());
+                bookingMap.put("customerName", booking.getCustomer().getUser().getName());
+                bookingMap.put("customerEmail", booking.getCustomer().getUser().getEmail());
+                bookingMap.put("customerPhone", booking.getCustomer().getUser().getPhone());
+                bookingMap.put("items", itemsResponse);
+                bookingMap.put("totalBookingPrice", totalBookingPrice);
+                bookingMap.put("createdAt", booking.getCreatedAt());
+
+                allBookingsResponse.add(bookingMap);
+            }
+
+            return ResponseEntity.ok(allBookingsResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi lấy danh sách dishes: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/all-dishes")
     public ResponseEntity<?> getAllOrderItems() {
