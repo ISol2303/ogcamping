@@ -41,15 +41,12 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
     try {
       final servicesProvider = context.read<ServicesProvider>();
       final equipment = servicesProvider.getEquipmentById(widget.equipmentId);
-      
+
       if (equipment != null) {
         setState(() {
           _equipment = equipment;
           _isLoading = false;
         });
-        
-        // Load reviews
-        await servicesProvider.loadReviews(widget.equipmentId, 'equipment');
       } else {
         setState(() {
           _error = 'Không tìm thấy thiết bị';
@@ -174,7 +171,10 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       gradient: LinearGradient(
                         colors: [
                           Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.8),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -212,7 +212,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
               ),
             ],
           ),
-          
+
           // Content
           SliverToBoxAdapter(
             child: Padding(
@@ -224,7 +224,8 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(16),
@@ -239,13 +240,16 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _equipment!.isAvailable ? Colors.green : Colors.red,
+                          color: _equipment!.isAvailable
+                              ? Colors.green
+                              : Colors.red,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          _equipment!.isAvailable 
+                          _equipment!.isAvailable
                               ? 'Còn ${_equipment!.availableQuantity} cái'
                               : 'Hết hàng',
                           style: const TextStyle(
@@ -256,9 +260,9 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Rating and Reviews
                   Row(
                     children: [
@@ -266,22 +270,26 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       const SizedBox(width: 4),
                       Text(
                         _equipment!.rating.toString(),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '(${_equipment!.reviewCount} đánh giá)',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                            ),
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Brand
                   Row(
                     children: [
@@ -296,9 +304,9 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Price and Quantity
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -308,16 +316,25 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                         children: [
                           Text(
                             '${_equipment!.pricePerDay.toStringAsFixed(0)}đ',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                           Text(
                             'mỗi ngày',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.6),
+                                ),
                           ),
                         ],
                       ),
@@ -327,37 +344,38 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Description
                   Text(
                     'Mô tả',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _equipment!.description,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Specifications
                   Text(
                     'Thông số kỹ thuật',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        children: _equipment!.specifications.entries.map((entry) {
+                        children:
+                            _equipment!.specifications.entries.map((entry) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
@@ -367,7 +385,8 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                                   width: 120,
                                   child: Text(
                                     '${entry.key}:',
-                                    style: const TextStyle(fontWeight: FontWeight.w500),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500),
                                   ),
                                 ),
                                 Expanded(
@@ -380,66 +399,76 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Quantity Selector
                   if (_equipment!.isAvailable) ...[
                     Text(
                       'Số lượng',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         IconButton(
-                          onPressed: _quantity > 1 ? () {
-                            setState(() {
-                              _quantity--;
-                            });
-                          } : null,
+                          onPressed: _quantity > 1
+                              ? () {
+                                  setState(() {
+                                    _quantity--;
+                                  });
+                                }
+                              : null,
                           icon: const Icon(Icons.remove),
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primaryContainer,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Text(
                           _quantity.toString(),
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         const SizedBox(width: 16),
                         IconButton(
-                          onPressed: _quantity < _equipment!.availableQuantity ? () {
-                            setState(() {
-                              _quantity++;
-                            });
-                          } : null,
+                          onPressed: _quantity < _equipment!.availableQuantity
+                              ? () {
+                                  setState(() {
+                                    _quantity++;
+                                  });
+                                }
+                              : null,
                           icon: const Icon(Icons.add),
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primaryContainer,
                           ),
                         ),
                         const Spacer(),
                         Text(
                           'Tổng: ${(_equipment!.pricePerDay * _quantity).toStringAsFixed(0)}đ/ngày',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // Reviews Section
                   _buildReviewsSection(),
-                  
+
                   const SizedBox(height: 100), // Space for bottom button
                 ],
               ),
@@ -470,15 +499,18 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                     Text(
                       '${(_equipment!.pricePerDay * _quantity).toStringAsFixed(0)}đ',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     Text(
                       'mỗi ngày (x$_quantity)',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                      ),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
                     ),
                   ],
                 ),
@@ -489,7 +521,8 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _equipment!.isAvailable ? _addToCart : null,
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: Text(_equipment!.isAvailable ? 'Thêm vào giỏ' : 'Hết hàng'),
+                  label: Text(
+                      _equipment!.isAvailable ? 'Thêm vào giỏ' : 'Hết hàng'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -506,7 +539,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
     return Consumer<ServicesProvider>(
       builder: (context, servicesProvider, child) {
         final reviews = servicesProvider.getReviewsForItem(widget.equipmentId);
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -516,8 +549,8 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                 Text(
                   'Đánh giá (${reviews.length})',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 if (reviews.isNotEmpty)
                   TextButton(
@@ -528,64 +561,6 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                   ),
               ],
             ),
-            
-            if (reviews.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text('Chưa có đánh giá nào'),
-              )
-            else
-              ...reviews.take(3).map((review) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              child: Text(
-                                review.userName.substring(0, 1).toUpperCase(),
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    review.userName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Row(
-                                    children: List.generate(5, (index) {
-                                      return Icon(
-                                        index < review.rating ? Icons.star : Icons.star_border,
-                                        size: 16,
-                                        color: Colors.amber,
-                                      );
-                                    }),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(review.comment),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
           ],
         );
       },

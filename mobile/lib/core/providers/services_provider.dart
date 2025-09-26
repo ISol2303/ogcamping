@@ -29,7 +29,8 @@ class ServicesProvider extends ChangeNotifier {
   String? _combosError;
 
   // Reviews
-  final Map<String, List<Review>> _reviews = {};
+  final Map<String, List<Review>> _reviews =
+      {}; // key = itemId (serviceId) as String
   bool _reviewsLoading = false;
   String? _reviewsError;
 
@@ -42,43 +43,48 @@ class ServicesProvider extends ChangeNotifier {
   List<CampingService> get services {
     return _filteredServices.isEmpty ? _services : _filteredServices;
   }
-  
-  List<Equipment> get equipment => _filteredEquipment.isEmpty ? _equipment : _filteredEquipment;
-  
+
+  List<Equipment> get equipment =>
+      _filteredEquipment.isEmpty ? _equipment : _filteredEquipment;
+
   List<ComboPackage> get combos {
     return _filteredCombos.isEmpty ? _combos : _filteredCombos;
   }
-  
+
   bool get servicesLoading => _servicesLoading;
   bool get equipmentLoading => _equipmentLoading;
   bool get combosLoading => _combosLoading;
   bool get reviewsLoading => _reviewsLoading;
-  
+
   String? get servicesError => _servicesError;
   String? get equipmentError => _equipmentError;
   String? get combosError => _combosError;
   String? get reviewsError => _reviewsError;
-  
+
   String get searchQuery => _searchQuery;
   ServiceType? get selectedServiceType => _selectedServiceType;
-  EquipmentCategory? get selectedEquipmentCategory => _selectedEquipmentCategory;
+  EquipmentCategory? get selectedEquipmentCategory =>
+      _selectedEquipmentCategory;
 
   // For home screen - show last 2 combos
   List<ComboPackage> get popularCombos {
     final sortedCombos = List<ComboPackage>.from(_combos);
-    sortedCombos.sort((a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
+    sortedCombos.sort(
+        (a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
     return sortedCombos.take(2).toList();
   }
-  
+
   // For home screen - show last 2 services
   List<CampingService> get availableServices {
-    final sortedServices = List<CampingService>.from(_services.where((service) => service.isAvailable));
-    sortedServices.sort((a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
+    final sortedServices = List<CampingService>.from(
+        _services.where((service) => service.isAvailable));
+    sortedServices.sort(
+        (a, b) => b.id.compareTo(a.id)); // Sort by ID descending (newest first)
     return sortedServices.take(2).toList();
   }
-  
-  
-  List<Equipment> get availableEquipment => _equipment.where((eq) => eq.isAvailable).toList();
+
+  List<Equipment> get availableEquipment =>
+      _equipment.where((eq) => eq.isAvailable).toList();
 
   // Load data methods
   Future<void> loadServices() async {
@@ -90,7 +96,8 @@ class ServicesProvider extends ChangeNotifier {
       print('ServicesProvider: Loading services...');
       _services = await _servicesRepository.getCampingServices();
       print('ServicesProvider: Loaded ${_services.length} services');
-      print('ServicesProvider: Services IDs: ${_services.map((s) => s.id).toList()}');
+      print(
+          'ServicesProvider: Services IDs: ${_services.map((s) => s.id).toList()}');
       _applyServicesFilter();
       _servicesLoading = false;
       notifyListeners();
@@ -128,7 +135,8 @@ class ServicesProvider extends ChangeNotifier {
       print('ServicesProvider: Loading combos...');
       _combos = await _servicesRepository.getComboPackages();
       print('ServicesProvider: Loaded ${_combos.length} combos');
-      print('ServicesProvider: Combos IDs: ${_combos.map((c) => c.id).toList()}');
+      print(
+          'ServicesProvider: Combos IDs: ${_combos.map((c) => c.id).toList()}');
       _applyCombosFilter();
       _combosLoading = false;
       notifyListeners();
@@ -140,14 +148,18 @@ class ServicesProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadReviews(String itemId, String itemType) async {
+  /// Tải reviews từ backend. Lưu ý: thay đổi param thành int serviceId.
+  /// Cần cập nhật ServicesRepository.getReviews(int serviceId) => Future<List<Review>>
+  Future<void> loadReviews(int serviceId) async {
     _reviewsLoading = true;
     _reviewsError = null;
     notifyListeners();
 
     try {
-      final reviews = await _servicesRepository.getReviews(itemId, itemType);
-      _reviews[itemId] = reviews;
+      final reviews = await _servicesRepository.getReviews(serviceId);
+      // sắp xếp theo createdAt (mới nhất trước)
+      reviews.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _reviews[serviceId.toString()] = reviews;
       _reviewsLoading = false;
       notifyListeners();
     } catch (e) {
@@ -157,18 +169,38 @@ class ServicesProvider extends ChangeNotifier {
     }
   }
 
-  // Get specific items
-  CampingService? getServiceById(String id) {
+  /// (tùy chọn) tính trung bình rating cho service
+  double averageRatingForService(int serviceId) {
+    final list = getReviewsForService(serviceId);
+    if (list.isEmpty) return 0.0;
+    final sum = list.fold<double>(0.0, (prev, r) => prev + r.rating);
+    return sum / list.length;
+  }
+
+  /// Nếu bạn cần xóa cache reviews cho 1 service (ví dụ refresh)
+  void clearReviewsForService(int serviceId) {
+    _reviews.remove(serviceId.toString());
+    notifyListeners();
+  }
+
+  /// Giữ nguyên nhưng làm robust: nhận dynamic id
+  CampingService? getServiceById(dynamic id) {
     try {
-      return _services.firstWhere((service) => service.id == id);
+      final intId = id is String
+          ? int.tryParse(id) ?? -999999
+          : (id is int ? id : int.tryParse(id.toString()) ?? -999999);
+      return _services.firstWhere((service) => service.id == intId);
     } catch (e) {
       return null;
     }
   }
 
-  Equipment? getEquipmentById(String id) {
+  Equipment? getEquipmentById(dynamic id) {
     try {
-      return _equipment.firstWhere((eq) => eq.id == id);
+      final intId = id is String
+          ? int.tryParse(id) ?? -999999
+          : (id is int ? id : int.tryParse(id.toString()) ?? -999999);
+      return _equipment.firstWhere((eq) => eq.id == intId);
     } catch (e) {
       return null;
     }
@@ -176,7 +208,6 @@ class ServicesProvider extends ChangeNotifier {
 
   ComboPackage? getComboById(String id) {
     try {
-      // Convert String id to int for comparison
       final intId = int.parse(id);
       return _combos.firstWhere((combo) => combo.id == intId);
     } catch (e) {
@@ -188,21 +219,23 @@ class ServicesProvider extends ChangeNotifier {
   Future<ComboPackage?> getComboByIdFromApi(String id) async {
     try {
       print('ServicesProvider: Loading combo by ID from API: $id');
-      
+
       // First check if combo exists in local list
       final localCombo = getComboById(id);
       if (localCombo != null) {
-        print('ServicesProvider: Found combo in local list: ${localCombo.name}');
+        print(
+            'ServicesProvider: Found combo in local list: ${localCombo.name}');
         return localCombo;
       }
-      
+
       // If not found locally, load all combos from API
       await loadCombos();
-      
+
       // Try to find combo again after loading
       final combo = getComboById(id);
       if (combo != null) {
-        print('ServicesProvider: Successfully loaded combo from API: ${combo.name}');
+        print(
+            'ServicesProvider: Successfully loaded combo from API: ${combo.name}');
         return combo;
       } else {
         print('ServicesProvider: Combo with ID $id not found in API response');
@@ -228,11 +261,14 @@ class ServicesProvider extends ChangeNotifier {
   }
 
   // Load service availability
-  Future<List<ServiceAvailability>> getServiceAvailability(String serviceId) async {
+  Future<List<ServiceAvailability>> getServiceAvailability(
+      String serviceId) async {
     try {
       print('ServicesProvider: Loading availability for service: $serviceId');
-      final availability = await _servicesRepository.getServiceAvailability(serviceId);
-      print('ServicesProvider: Successfully loaded ${availability.length} availability slots');
+      final availability =
+          await _servicesRepository.getServiceAvailability(serviceId);
+      print(
+          'ServicesProvider: Successfully loaded ${availability.length} availability slots');
       return availability;
     } catch (e) {
       print('ServicesProvider: Error loading availability: $e');
@@ -240,8 +276,17 @@ class ServicesProvider extends ChangeNotifier {
     }
   }
 
-  List<Review> getReviewsForItem(String itemId) {
-    return _reviews[itemId] ?? [];
+  /// Trả về danh sách review cho item (nhận cả int hoặc String)
+  List<Review> getReviewsForItem(dynamic itemId) {
+    final key = (itemId == null)
+        ? ''
+        : (itemId is int ? itemId.toString() : itemId.toString());
+    return _reviews[key] ?? [];
+  }
+
+  /// Trả về danh sách review cho serviceId (nếu không có trả [] )
+  List<Review> getReviewsForService(int serviceId) {
+    return _reviews[serviceId.toString()] ?? [];
   }
 
   // Search and filter methods
@@ -284,10 +329,13 @@ class ServicesProvider extends ChangeNotifier {
     _filteredServices = _services.where((service) {
       bool matchesSearch = _searchQuery.isEmpty ||
           service.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          service.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          service.description
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
           service.location.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      bool matchesType = _selectedServiceType == null || service.type == _selectedServiceType;
+      bool matchesType =
+          _selectedServiceType == null || service.type == _selectedServiceType;
 
       return matchesSearch && matchesType;
     }).toList();
@@ -297,10 +345,12 @@ class ServicesProvider extends ChangeNotifier {
     _filteredEquipment = _equipment.where((equipment) {
       bool matchesSearch = _searchQuery.isEmpty ||
           equipment.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          equipment.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          equipment.description
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
           equipment.brand.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      bool matchesCategory = _selectedEquipmentCategory == null || 
+      bool matchesCategory = _selectedEquipmentCategory == null ||
           equipment.category == _selectedEquipmentCategory;
 
       return matchesSearch && matchesCategory;
