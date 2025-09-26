@@ -237,8 +237,8 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("note", bookingDTO.getNote() != null ? bookingDTO.getNote() : "Không có");
             context.setVariable("totalPrice", totalPrice);
 
-            // Render file booking_infomation.html trong resources/templates
-            String htmlContent = templateEngine.process("booking_infomation", context);
+            // Render file booking_confirmation.html trong resources/templates
+            String htmlContent = templateEngine.process("booking-confirmation", context);
             helper.setText(htmlContent, true);
 
             // Gắn logo inline
