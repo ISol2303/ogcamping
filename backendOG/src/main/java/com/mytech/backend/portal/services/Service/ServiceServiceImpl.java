@@ -77,7 +77,7 @@ public class ServiceServiceImpl implements ServiceService {
 
         if (imageFile != null && !imageFile.isEmpty()) {
             String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
-            Path uploadPath = Paths.get("D:/ogcamping/backendOG/uploads/services");
+            Path uploadPath = Paths.get("D:/Duan/ogcamping/backendOG/uploads/services");
             if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
             Path filePath = uploadPath.resolve(fileName);
             imageFile.transferTo(filePath.toFile());
@@ -90,7 +90,7 @@ public class ServiceServiceImpl implements ServiceService {
             for (MultipartFile file : extraImages) {
                 if (!file.isEmpty()) {
                     String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                    Path uploadPath = Paths.get("D:/ogcamping/backendOG/uploads/services");
+                    Path uploadPath = Paths.get("D:/Duan/ogcamping/backendOG/uploads/services");
                     if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
                     Path filePath = uploadPath.resolve(fileName);
                     file.transferTo(filePath.toFile());
@@ -158,7 +158,7 @@ public class ServiceServiceImpl implements ServiceService {
         if (imageFile != null && !imageFile.isEmpty()) {
             // Upload ảnh chính mới
             String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
-            Path uploadPath = Paths.get("D:/ogcamping/backendOG/uploads/services");
+            Path uploadPath = Paths.get("D:/Duan/ogcamping/backendOG/uploads/services");
             if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
 
             Path filePath = uploadPath.resolve(fileName);
@@ -179,7 +179,7 @@ public class ServiceServiceImpl implements ServiceService {
             for (MultipartFile file : extraImages) {
                 if (!file.isEmpty()) {
                     String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                    Path uploadPath = Paths.get("D:/ogcamping/backendOG/uploads/services");
+                    Path uploadPath = Paths.get("D:/Duan/ogcamping/backendOG/uploads/services");
                     if (!Files.exists(uploadPath)) Files.createDirectories(uploadPath);
 
                     Path filePath = uploadPath.resolve(fileName);

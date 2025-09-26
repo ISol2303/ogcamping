@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PackageFormData, Gear, GearSelection, Category, AreaData as Area } from '@/app/api/package';
-import { fetchGears, fetchCategories, fetchAreas, createService, fetchUser } from '@/app/api/admin';
+import { fetchCategories, fetchAreas, createService, fetchUser } from '@/app/api/admin';
 import PackageInfoForm from './components/package-info-form';
 import PackageConfirmation from './components/package-confirmation';
 import { StepIndicator } from './components/step-indicator';
@@ -48,19 +48,17 @@ export default function NewPackagePage() {
     allowExtraPeople: false,
     extraFeePerPerson: 0,
     maxExtraPeople: 0,
-
     highlights: [],      // ⚠️ phải là mảng
     included: [],        // ⚠️ phải là mảng
     itinerary: [],       // ⚠️ phải là mảng các object
   });
 
-  const [images, setImages] = useState<File[]>([]);
-  const [extraImages, setExtraImages] = useState<string[]>([]);
+  const [mainImage, setMainImage] = useState<File | null>(null);
+  const [extraImages, setExtraImages] = useState<File[]>([]);
   const [gearSelections, setGearSelections] = useState<GearSelection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
-
   // Fetch user ID to get the token and validate user
   useEffect(() => {
     const fetchUserData = async () => {
@@ -100,8 +98,7 @@ export default function NewPackagePage() {
       }
 
       try {
-        const [gearsData, categoriesData, areasData] = await Promise.all([
-          fetchGears(token),
+        const [categoriesData, areasData] = await Promise.all([
           fetchCategories(token),
           fetchAreas(token),
         ]);
@@ -187,8 +184,8 @@ export default function NewPackagePage() {
       }
     }
     // ✅ Validate ít nhất 1 ảnh
-    if (!images || images.length === 0) {
-      return 'Vui lòng chọn ít nhất 1 ảnh minh họa.';
+    if (!mainImage) {
+      return 'Vui lòng chọn ít nhất 1 ảnh chính.';
     }
 
     return null;
@@ -219,6 +216,36 @@ export default function NewPackagePage() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
+  // Convert PackageFormData to ServiceRequest
+  const convertToServiceRequest = (data: PackageFormData) => {
+    return {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      location: data.location,
+      minDays: data.minDays,
+      maxDays: data.maxDays,
+      minCapacity: data.minCapacity,
+      maxCapacity: data.maxCapacity,
+      defaultSlotsPerDay: data.defaultSlotsPerDay || 1,
+      duration: data.duration,
+      capacity: data.capacity,
+      tag: data.tag || null,
+      highlights: data.highlights || [],
+      included: data.included || [],
+      itinerary: (data.itinerary || []).map(item => ({
+        day: Number(item.day) || 1,
+        description: Array.isArray(item.activities) ? item.activities.join(', ') : (item.activities || '')
+      })),
+      // Optional fields từ backend DTO
+      isExperience: data.isExperience || false,
+      allowExtraPeople: data.allowExtraPeople || false,
+      extraFeePerPerson: data.extraFeePerPerson || 0,
+      maxExtraPeople: data.maxExtraPeople || 0,
+      active: true
+    };
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -230,7 +257,21 @@ export default function NewPackagePage() {
     try {
       setIsLoading(true);
       setError(null);
-      await createService(token, formData, images, gearSelections);
+      const serviceRequest = convertToServiceRequest(formData);
+      
+      // Debug log để kiểm tra dữ liệu
+      console.log('Service Request:', serviceRequest);
+      console.log('Main Image:', mainImage);
+      console.log('Extra Images:', extraImages);
+      
+      // Validation: Kiểm tra mainImage
+      if (!mainImage) {
+        console.warn('⚠️ Cảnh báo: mainImage là null, backend sẽ nhận imageFile = null');
+      } else {
+        console.log('✅ mainImage có giá trị:', mainImage.name, mainImage.size, 'bytes');
+      }
+      
+      await createService(token, serviceRequest, mainImage, extraImages);
       router.push('/admin/services');
     } catch (err: any) {
       const status = err.status || 500;
@@ -276,52 +317,60 @@ export default function NewPackagePage() {
             {/* Step Content */}
             {currentStep === 1 && (
               <PackageInfoForm
-                formData={formData}
-                setFormData={setFormData}
-                images={images}
-                setImages={setImages}
+                {...({
+                  formData,
+                  setFormData,
+                  images: [mainImage].filter(Boolean) as File[],
+                  setImages: (files: File[]) => {
+                    console.log('Setting mainImage:', files[0]);
+                    setMainImage(files[0] || null);
+                  }
+                } as any)}
               />
             )}
             {currentStep === 2 && (
               <PackageConfirmation
-                formData={formData}
-                images={images}
+                {...({
+                  formData,
+                  images: [mainImage].filter(Boolean) as File[]
+                } as any)}
               />
             )}
 
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
-              <Button variant="destructive" onClick={handleCancel} disabled={isLoading}>
+              <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
                 Huỷ
               </Button>
-              {currentStep > 1 && (
-                <Button variant="outline" onClick={handleBack} disabled={isLoading}>
-                  Quay lại
-                </Button>
-              )}
-              {currentStep < 2 && (
-                <Button onClick={handleNext} disabled={isLoading}>
-                  Tiếp theo
-                </Button>
-              )}
-              {currentStep === 2 && (
-                <Button onClick={handleSubmit} disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Đang tạo...
-                    </>
-                  ) : (
-                    'Tạo gói dịch vụ'
-                  )}
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {currentStep > 1 && (
+                  <Button variant="outline" onClick={handleBack} disabled={isLoading}>
+                    Quay lại
+                  </Button>
+                )}
+                {currentStep < 2 && (
+                  <Button onClick={handleNext} disabled={isLoading}>
+                    Tiếp theo
+                  </Button>
+                )}
+                {currentStep === 2 && (
+                  <Button onClick={handleSubmit} disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang tạo...
+                      </>
+                    ) : (
+                      'Tạo gói dịch vụ'
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 }

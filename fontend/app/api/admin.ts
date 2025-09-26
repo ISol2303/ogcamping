@@ -59,7 +59,6 @@ interface ServiceResponse {
   tag: ServiceTag | null;
   averageRating: number;
   totalReviews: number;
-  imageUrl: string;
   highlights: string[];
   included: string[];
   itinerary: ItineraryDTO[];
@@ -74,15 +73,20 @@ interface ServiceRequest {
   maxDays: number;
   minCapacity: number;
   maxCapacity: number;
-  availableSlots: number;
+  defaultSlotsPerDay: number;
   duration: string;
   capacity: string;
-  tag: ServiceTag | null;
+  tag: string | null;
   highlights: string[];
   included: string[];
   itinerary: ItineraryDTO[];
+  // Optional fields from backend DTO
+  isExperience?: boolean;
+  allowExtraPeople?: boolean;
+  extraFeePerPerson?: number;
+  maxExtraPeople?: number;
+  active?: boolean;
 }
-
 
 interface Customer {
   _id: string;
@@ -582,39 +586,94 @@ export const fetchServices = async (token: string): Promise<ServiceResponse[]> =
 export const createService = async (
   token: string,
   serviceData: ServiceRequest,
-  imageFile: File | null
+  imageFile: File | null,
+  extraImages: File[] = []
 ): Promise<ServiceResponse> => {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     const formData = new FormData();
     formData.append('service', JSON.stringify(serviceData));
+    
+    // Debug log
+    console.log('🚀 Creating service with FormData:');
+    console.log('- service:', JSON.stringify(serviceData));
+    console.log('- imageFile:', imageFile ? `${imageFile.name} (${imageFile.size} bytes)` : 'null');
+    console.log('- extraImages:', extraImages.length, 'files');
+    
     if (imageFile) {
-      formData.append('image', imageFile);
+      formData.append('imageFile', imageFile);
+      console.log('✅ Added imageFile to FormData:', imageFile.name);
+    } else {
+      console.log('⚠️ No imageFile provided - backend will receive null');
     }
+    
+    // Add extra images
+    if (extraImages && extraImages.length > 0) {
+      extraImages.forEach((file, index) => {
+        formData.append('extraImages', file);
+        console.log(`✅ Added extraImages[${index}]:`, file.name);
+      });
+    }
+    
+    // Log FormData summary
+    console.log('📦 FormData summary:');
+    formData.forEach((value, key) => {
+      if (value instanceof File) {
+        console.log(`- ${key}: File(${value.name}, ${value.size} bytes)`);
+      } else {
+        console.log(`- ${key}: ${typeof value}`);
+      }
+    });
 
-    const response = await axios.post(`${API_URL}/apis/v1/admin/services`, formData, {
+    console.log('📡 Sending POST request to:', `${API_URL}/apis/v1/services`);
+    const response = await axios.post(`${API_URL}/apis/v1/services`, formData, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 10000,
+      timeout: 30000, // Tăng timeout cho file upload
     });
+    
+    console.log('✅ Service created successfully:', response.data);
+    
+    // Kiểm tra image URLs trong response
+    if (response.data.imageUrl) {
+      console.log('📸 Main image URL:', response.data.imageUrl);
+    }
+    if (response.data.extraImages && response.data.extraImages.length > 0) {
+      console.log('🖼️ Extra images:', response.data.extraImages);
+    }
+    
     return response.data;
   } catch (error: any) {
     const status = error.response?.status || 500;
     const data = error.response?.data || {};
     let message = data.error || data.message || error.message || 'Failed to create service';
 
+    console.error('❌ Error creating service:', {
+      status,
+      message: error.message,
+      data,
+      responseData: error.response?.data,
+      stack: error.stack
+    });
+
     if (status === 401) {
       message = 'Xác thực thất bại. Vui lòng đăng nhập lại.';
     } else if (status === 403) {
       message = 'Bạn không có quyền truy cập. Vui lòng kiểm tra vai trò.';
     } else if (status === 400) {
-      message = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+      message = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin và file ảnh.';
+    } else if (status === 413) {
+      message = 'File ảnh quá lớn. Vui lòng chọn file nhỏ hơn 10MB.';
+    } else if (status === 415) {
+      message = 'Định dạng file không được hỗ trợ. Vui lòng chọn file JPG, PNG hoặc GIF.';
     } else if (error.code === 'ERR_NETWORK') {
       message = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+    } else if (error.code === 'ECONNABORTED') {
+      message = 'Upload timeout. File quá lớn hoặc mạng chậm.';
     } else if (status === 500) {
-      message = 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.';
+      message = 'Lỗi máy chủ nội bộ. Có thể do lỗi lưu file ảnh hoặc cấu hình static resources.';
     }
 
     console.error('Error creating service:', {
