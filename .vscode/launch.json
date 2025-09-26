@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-BackendOgApplication<backendOG>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.mytech.backend.portal.BackendOgApplication",
+            "projectName": "backendOG",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

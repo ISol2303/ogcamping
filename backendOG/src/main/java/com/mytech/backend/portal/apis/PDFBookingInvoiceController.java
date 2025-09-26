@@ -3,6 +3,8 @@ package com.mytech.backend.portal.apis;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -20,6 +22,8 @@ import com.mytech.backend.portal.dto.Booking.BookingItemResponseDTO;
 import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
 import com.mytech.backend.portal.services.Booking.BookingService;
 
+import jakarta.persistence.criteria.CriteriaBuilder.In;
+
 @RestController
 @RequestMapping("/pdf/bill")
 public class PDFBookingInvoiceController {
@@ -28,6 +32,83 @@ public class PDFBookingInvoiceController {
 
     public PDFBookingInvoiceController(BookingService bookingService) {
         this.bookingService = bookingService;
+    }
+
+    private String formatBookingDate(LocalDateTime date) {
+        if (date == null)
+            return "-";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return date.format(formatter);
+    }
+
+    private LocalDateTime getCheckInDate(BookingResponseDTO booking) {
+        if (booking.getCheckInDate() != null && booking.getCheckOutDate() != null) {
+            return booking.getCheckInDate();
+        }
+        if (booking.getServices() != null) {
+            for (BookingItemResponseDTO s : booking.getServices()) {
+                if (s.getCheckInDate() != null && s.getCheckOutDate() != null) {
+                    return s.getCheckInDate();
+                }
+            }
+        }
+        if (booking.getCombos() != null) {
+            for (BookingItemResponseDTO c : booking.getCombos()) {
+                if (c.getCheckInDate() != null && c.getCheckOutDate() != null) {
+                    return c.getCheckInDate();
+                }
+            }
+        }
+        return null;
+    }
+
+    private LocalDateTime getCheckOutDate(BookingResponseDTO booking) {
+        if (booking.getCheckInDate() != null && booking.getCheckOutDate() != null) {
+            return booking.getCheckOutDate();
+        }
+        if (booking.getServices() != null) {
+            for (BookingItemResponseDTO s : booking.getServices()) {
+                if (s.getCheckInDate() != null && s.getCheckOutDate() != null) {
+                    return s.getCheckOutDate();
+                }
+            }
+        }
+        if (booking.getCombos() != null) {
+            for (BookingItemResponseDTO c : booking.getCombos()) {
+                if (c.getCheckInDate() != null && c.getCheckOutDate() != null) {
+                    return c.getCheckOutDate();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Long getNumberOfPeople(BookingResponseDTO booking) {
+        if (booking.getNumberOfPeople() != null) {
+            return booking.getNumberOfPeople().longValue(); // ép kiểu Integer → Long
+        }
+        if (booking.getServices() != null) {
+            for (BookingItemResponseDTO s : booking.getServices()) {
+                if (s.getNumberOfPeople() != null) {
+                    return s.getNumberOfPeople();
+                }
+            }
+        }
+        if (booking.getCombos() != null) {
+            for (BookingItemResponseDTO c : booking.getCombos()) {
+                if (c.getNumberOfPeople() != null) {
+                    return c.getNumberOfPeople();
+                }
+            }
+        }
+        if (booking.getEquipments() != null) {
+            for (BookingItemResponseDTO e : booking.getEquipments()) {
+                if (e.getNumberOfPeople() != null) {
+                    return e.getNumberOfPeople();
+                }
+            }
+        }
+        return null;
     }
 
     @GetMapping("/{id}/invoice")
@@ -95,15 +176,16 @@ public class PDFBookingInvoiceController {
                     .append(booking.getAddress() != null ? booking.getAddress() : "-").append("</p>")
                     .append("</div>");
 
-            // Booking info
+            // Booking info (sử dụng helper logic ưu tiên Booking → Service → Combo)
             html.append("<div class='booking-info'>")
                     .append("<h3>Thông tin đặt phòng</h3>")
                     .append("<p><strong>Check-in:</strong> ")
-                    .append(booking.getCheckInDate() != null ? booking.getCheckInDate() : "-").append("</p>")
+                    .append(formatBookingDate(getCheckInDate(booking))).append("</p>")
                     .append("<p><strong>Check-out:</strong> ")
-                    .append(booking.getCheckOutDate() != null ? booking.getCheckOutDate() : "-").append("</p>")
+                    .append(formatBookingDate(getCheckOutDate(booking))).append("</p>")
                     .append("<p><strong>Số người:</strong> ")
-                    .append(booking.getNumberOfPeople() != null ? booking.getNumberOfPeople() : "-").append("</p>")
+                    .append(getNumberOfPeople(booking) != null ? getNumberOfPeople(booking) : "-")
+                    .append("</p>")
                     .append("</div>");
 
             // Table items

@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 
+import com.mytech.backend.portal.dto.Booking.BookingItemResponseDTO;
 import com.mytech.backend.portal.dto.Booking.BookingResponseDTO;
 import com.mytech.backend.portal.models.OrderBooking;
 import com.mytech.backend.portal.models.Booking.Booking;
@@ -192,15 +193,56 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO) {
         try {
-            // Format ngày và tiền
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            String checkInDate = bookingDTO.getCheckInDate() != null
-                    ? bookingDTO.getCheckInDate().format(formatter)
-                    : "-";
-            String checkOutDate = bookingDTO.getCheckOutDate() != null
-                    ? bookingDTO.getCheckOutDate().format(formatter)
-                    : "-";
-            Integer numberOfPeople = bookingDTO.getNumberOfPeople() != null ? bookingDTO.getNumberOfPeople() : 0;
+            // Formatter cho ngày giờ
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            String checkInDate = "-";
+            String checkOutDate = "-";
+            Integer numberOfPeople = 0;
+
+            // Lấy Check-in / Check-out theo ưu tiên Booking -> Service -> Combo
+            if (bookingDTO.getCheckInDate() != null && bookingDTO.getCheckOutDate() != null) {
+                checkInDate = bookingDTO.getCheckInDate().format(dateTimeFormatter);
+                checkOutDate = bookingDTO.getCheckOutDate().format(dateTimeFormatter);
+            } else if (bookingDTO.getServices() != null && !bookingDTO.getServices().isEmpty()) {
+                for (BookingItemResponseDTO s : bookingDTO.getServices()) {
+                    if (s.getCheckInDate() != null && s.getCheckOutDate() != null) {
+                        checkInDate = s.getCheckInDate().format(dateTimeFormatter);
+                        checkOutDate = s.getCheckOutDate().format(dateTimeFormatter);
+                        break;
+                    }
+                }
+            } else if (bookingDTO.getCombos() != null && !bookingDTO.getCombos().isEmpty()) {
+                for (BookingItemResponseDTO c : bookingDTO.getCombos()) {
+                    if (c.getCheckInDate() != null && c.getCheckOutDate() != null) {
+                        checkInDate = c.getCheckInDate().format(dateTimeFormatter);
+                        checkOutDate = c.getCheckOutDate().format(dateTimeFormatter);
+                        break;
+                    }
+                }
+            }
+
+            // Lấy số người theo ưu tiên Booking -> Service -> Combo
+            // Lấy số người theo ưu tiên Booking -> Service -> Combo
+            
+            if (bookingDTO.getNumberOfPeople() != null) {
+                numberOfPeople = bookingDTO.getNumberOfPeople().intValue(); // <- Chuyển Long -> Integer
+            } else if (bookingDTO.getServices() != null) {
+                for (BookingItemResponseDTO s : bookingDTO.getServices()) {
+                    if (s.getNumberOfPeople() != null) {
+                        numberOfPeople = s.getNumberOfPeople().intValue(); // <- Chuyển Long -> Integer
+                        break;
+                    }
+                }
+            } else if (bookingDTO.getCombos() != null) {
+                for (BookingItemResponseDTO c : bookingDTO.getCombos()) {
+                    if (c.getNumberOfPeople() != null) {
+                        numberOfPeople = c.getNumberOfPeople().intValue(); // <- Chuyển Long -> Integer
+                        break;
+                    }
+                }
+            }
+
+            // Format tiền VNĐ
             NumberFormat currencyVN = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
             String totalPrice = bookingDTO.getTotalPrice() != null
                     ? currencyVN.format(bookingDTO.getTotalPrice())
@@ -237,7 +279,7 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("note", bookingDTO.getNote() != null ? bookingDTO.getNote() : "Không có");
             context.setVariable("totalPrice", totalPrice);
 
-            // Render file booking_confirmation.html trong resources/templates
+            // Render file Thymeleaf booking-confirmation.html
             String htmlContent = templateEngine.process("booking-confirmation", context);
             helper.setText(htmlContent, true);
 

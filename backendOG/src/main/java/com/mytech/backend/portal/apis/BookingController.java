@@ -47,6 +47,7 @@ public class BookingController {
         List<BookingResponseDTO> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
+
     @PostMapping
     public ResponseEntity<BookingResponseDTO> placeBooking(
             @RequestParam(name = "customerId") Long customerId,
@@ -186,31 +187,38 @@ public class BookingController {
         return ResponseEntity.ok(list);
     }
 
-    // xác nhận đươn hàng và gửi email
-    @PutMapping("/{id}/confirm")
-    @Transactional
-    public ResponseEntity<?> confirmBooking(@PathVariable("id") Long id) {
-        try {
-            // Lấy booking hiện tại
-            BookingResponseDTO booking = bookingService.getBooking(id);
+    @PutMapping("/{id}/send-confirmation-email")
+public ResponseEntity<?> sendBookingConfirmationEmail(@PathVariable("id") Long id) {
+    try {
+        // Lấy booking cơ bản (chỉ cần email, emailSentAt)
+        BookingResponseDTO booking = bookingService.getBooking(id);
 
-            if (booking.getStatus() != BookingStatus.PENDING) {
-                return ResponseEntity.badRequest()
-                        .body(Collections.singletonMap("error", "Chỉ có thể xác nhận đơn ở trạng thái PENDING"));
-            }
-
-            // Cập nhật trạng thái sang CONFIRMED
-            BookingResponseDTO updatedBooking = bookingService.updateBookingStatus(id, BookingStatus.CONFIRMED);
-
-            // Gửi email xác nhận
-            emailService.sendBookingConfirmationEmail(updatedBooking);
-
-            return ResponseEntity.ok(updatedBooking);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(Collections.singletonMap("error", "Lỗi khi xác nhận booking: " + e.getMessage()));
+        if (booking == null) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "Booking không tồn tại"));
         }
+
+        // Nếu email đã gửi thì trả thông báo
+        if (booking.getEmailSentAt() != null) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", "Email đã được gửi trước đó"));
+        }
+
+        // Gửi email xác nhận
+        emailService.sendBookingConfirmationEmail(booking);
+
+        // Cập nhật emailSentAt và trả về DTO tối giản
+        BookingResponseDTO updatedBooking = bookingService.updateEmailSentAt(id, LocalDateTime.now());
+
+        return ResponseEntity.ok(updatedBooking);
+
+    } catch (Exception e) {
+        return ResponseEntity.status(500)
+                .body(Collections.singletonMap("error", "Lỗi khi gửi email xác nhận: " + e.getMessage()));
     }
+}
+
+
+    
 
 }

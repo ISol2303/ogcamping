@@ -10,6 +10,7 @@ import com.mytech.backend.portal.models.Booking.Booking;
 import com.mytech.backend.portal.models.Booking.BookingStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BookingService {
@@ -36,4 +37,5 @@ public interface BookingService {
     BookingResponseDTO mapToDTO(Booking booking);
     // void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO);
     BookingResponseDTO confirmBooking(Long id);
+    BookingResponseDTO updateEmailSentAt(Long bookingId, LocalDateTime emailSentAt);
 }

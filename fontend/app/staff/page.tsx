@@ -189,6 +189,7 @@ interface Booking {
   services: BookingItem[];
   combos: BookingItem[];
   equipments: BookingItem[];
+  emailSentAt?: string | null; 
 }
 
 interface PaymentDTO {
@@ -275,7 +276,7 @@ export default function StaffDashboard({ orderId }: Props) {
   const [equipmentChecks, setEquipmentChecks] = useState<EquipmentCheck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchOrders, setSearchOrders] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [ordersForDishes, setOrdersForDishes] = useState<Order[]>([]); // dùng để list order
   const [orderItemsMap, setOrderItemsMap] = useState<Record<string, any[]>>({}); // orderId -> items[]
@@ -338,6 +339,8 @@ export default function StaffDashboard({ orderId }: Props) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<{ [key: number]: boolean }>({});
+
 
 
 
@@ -453,6 +456,7 @@ export default function StaffDashboard({ orderId }: Props) {
           services: b.services || [],
           combos: b.combos || [],
           equipments: b.equipments || [],
+          emailSentAt: b.emailSentAt || null, // giữ giá trị thực
         }));
 
 
@@ -465,6 +469,19 @@ export default function StaffDashboard({ orderId }: Props) {
 
     fetchBookings();
   }, [router]);
+
+  useEffect(() => {
+    const search = searchInput.toLowerCase(); // searchInput là input từ người dùng
+    setFilteredBookings(
+      bookings.filter((booking) =>
+        booking.id.toString().toLowerCase().includes(search) ||
+        booking.customerName.toLowerCase().includes(search) ||
+        booking.email.toLowerCase().includes(search)
+      )
+    );
+  }, [bookings, searchInput]); // chạy lại khi bookings hoặc searchInput thay đổi
+
+
 
   //list order
   const handleViewBooking = (booking: Booking) => {
@@ -489,39 +506,54 @@ export default function StaffDashboard({ orderId }: Props) {
 
 
 
-  const handleConfirmBooking = async (booking: Booking) => {
+  // Handler gửi email
+  const handleSendConfirmationEmail = async (booking: Booking) => {
     if (!booking?.id) return;
 
     try {
-      setLoading(true);
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      // Chỉ set loading cho booking này
+      setSendingEmail(prev => ({ ...prev, [booking.id]: true }));
+
+      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const res = await axios.put(
-        `http://localhost:8080/apis/v1/bookings/${booking.id}/confirm`,
+        `http://localhost:8080/apis/v1/bookings/${booking.id}/send-confirmation-email`,
         {},
         config
       );
 
-      console.log('Backend response after confirm:', res.data);
+      const updatedBooking = res.data as Booking;
 
-      toast({ title: `Đã xác nhận booking #${booking.id}`, variant: 'success' });
-
-      // Update state
-      setBookings((prev) =>
-        prev.map((b) => (b.id === booking.id ? { ...b, ...res.data } : b))
-      );
-      setSelectedBooking((prev) => (prev?.id === booking.id ? { ...prev, ...res.data } : prev));
-    } catch (err: any) {
-      console.error('Lỗi xác nhận booking:', err?.response?.data ?? err.message);
       toast({
-        title: err?.response?.data?.error ?? 'Lỗi xác nhận booking',
-        variant: 'destructive',
+        title: `Email xác nhận đã được gửi cho booking #${booking.id}`,
+        variant: "success",
+      });
+
+      // Cập nhật state bookings
+      setBookings(prev =>
+        prev.map(b => (b.id === updatedBooking.id ? { ...b, emailSentAt: updatedBooking.emailSentAt } : b))
+      );
+
+    } catch (err: any) {
+      toast({
+        title: err?.response?.data?.error ?? "Lỗi khi gửi email",
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      // Chỉ tắt loading cho booking này
+      setSendingEmail(prev => ({ ...prev, [booking.id]: false }));
     }
   };
+
+
+
+
+
+
+
+
+
 
   //xác nhận all đơn hàng 
   // Xác nhận tất cả đơn hàng đang PENDING
@@ -935,13 +967,8 @@ export default function StaffDashboard({ orderId }: Props) {
   //   }
   // };
 
-  const filteredOrders = pendingOrders.filter((order) => {
-    const matchesStatus = filterStatus === "ALL" || order.status === filterStatus;
-    const matchesSearch =
-      order.customerName.toLowerCase().includes(searchOrders.toLowerCase()) ||
-      order.id.toLowerCase().includes(searchOrders.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+
+
 
   //add thêm món 
   // const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -1352,12 +1379,6 @@ export default function StaffDashboard({ orderId }: Props) {
                     <CardTitle>Đơn hàng cần xử lý</CardTitle>
                     <CardDescription>Danh sách đơn hàng đang chờ xử lý</CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="w-4 h-4 mr-2" />
-                      Lọc
-                    </Button>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1365,26 +1386,13 @@ export default function StaffDashboard({ orderId }: Props) {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
-                      placeholder="Tìm kiếm đơn hàng..."
-                      className="pl-10"
-                      value={searchOrders}
-                      onChange={(e) => setSearchOrders(e.target.value)}
+                      placeholder="Tìm kiếm theo ID, tên hoặc email..."
+                      className="pl-10 mb-4"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
                     />
                   </div>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Trạng thái" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Tất cả</SelectItem>
-                      <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                      <SelectItem value="CONFIRMED">Đã xác nhận</SelectItem>
-                      <SelectItem value="CANCELLED">Hủy</SelectItem>
-
-                    </SelectContent>
-                  </Select>
                 </div>
-
                 <div className="overflow-y-auto max-h-[500px] border rounded-md">
                   <Table>
                     <TableHeader>
@@ -1405,66 +1413,42 @@ export default function StaffDashboard({ orderId }: Props) {
                     <TableBody>
                       {filteredBookings.map((booking: Booking) => (
                         <TableRow key={booking.id}>
-                          {/* ID */}
                           <TableCell className="font-medium">{booking.id}</TableCell>
-
-                          {/* Mã booking
-                          <TableCell className="font-medium">{booking.bookingCode || "-"}</TableCell> */}
-
-                          {/* Email */}
                           <TableCell className="font-medium">{booking.email || "-"}</TableCell>
-
-                          {/* Tên KH */}
                           <TableCell className="font-medium">{booking.customerName || "-"}</TableCell>
-
-                          {/* Phone */}
                           <TableCell className="font-medium">{booking.phone || "-"}</TableCell>
-
-                          {/* Address */}
                           <TableCell className="font-medium">{booking.address || "-"}</TableCell>
-
-                          {/* Giá đơn */}
                           <TableCell className="font-medium text-green-600">
-                            {booking.totalPrice
-                              ? booking.totalPrice.toLocaleString() + " đ"
-                              : "-"}
+                            {booking.totalPrice ? booking.totalPrice.toLocaleString() + " đ" : "-"}
                           </TableCell>
-
-                          {/* Ngày Check in */}
-                          <TableCell>
-                            {formatBookingDate(getBookingDates(booking).checkInDate)}
-                          </TableCell>
-
-                          {/* Ngày Check out */}
-                          <TableCell>
-                            {formatBookingDate(getBookingDates(booking).checkOutDate)}
-                          </TableCell>
-
-                          {/* Trạng thái */}
+                          <TableCell>{formatBookingDate(getBookingDates(booking).checkInDate)}</TableCell>
+                          <TableCell>{formatBookingDate(getBookingDates(booking).checkOutDate)}</TableCell>
                           <TableCell className="min-w-[180px] text-center align-middle">
                             {getStatusBadge(booking.status)}
                           </TableCell>
-
-                          {/* Actions */}
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewBooking(booking)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleViewBooking(booking)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
 
                               <Button
                                 variant="ghost"
-                                className="min-w-[110px] text-center align-middle"
                                 size="sm"
-                                disabled={booking.status === "CONFIRMED"}
-                                onClick={() => handleConfirmBooking(booking)}
+                                className={`min-w-[140px] flex items-center justify-center gap-2 ${booking.emailSentAt || sendingEmail[booking.id] ? "opacity-50 cursor-not-allowed" : ""
+                                  }`}
+                                disabled={!!booking.emailSentAt || !!sendingEmail[booking.id]}
+                                onClick={() => handleSendConfirmationEmail(booking)}
                               >
-                                ✅ Xác nhận
+                                <Mail className="w-4 h-4" />
+                                {booking.emailSentAt
+                                  ? "Đã gửi email"
+                                  : sendingEmail[booking.id]
+                                    ? "Đang gửi..."
+                                    : "Gửi email"}
                               </Button>
+
+
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1477,40 +1461,7 @@ export default function StaffDashboard({ orderId }: Props) {
 
 
             {/* Quick Actions */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Xử lý nhanh</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full justify-start" onClick={handleConfirmAllOrders}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Xác nhận tất cả đơn hàng
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleSendEmailAll}
-                    disabled={sendingAllEmail}
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    {sendingAllEmail ? "Đang gửi email..." : "Gửi email tất cả"}
-                  </Button>
-
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ghi chú nhanh</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea placeholder="Ghi chú về đơn hàng, khách hàng..." rows={4} />
-                  <Button className="w-full mt-3">Lưu ghi chú</Button>
-                </CardContent>
-              </Card>
-            </div>
+            <div className="grid md:grid-cols-2 gap-6"></div>
             {selectedBooking && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
                 <div className="bg-white p-6 rounded-2xl shadow-xl w-[750px] max-h-[90vh] overflow-y-auto">
@@ -1519,7 +1470,7 @@ export default function StaffDashboard({ orderId }: Props) {
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800">🧾 Hóa đơn đặt tour</h2>
                     <p className="text-sm text-gray-500 mt-1">
-                      Mã đơn hàng: <span className="font-semibold">#{selectedBooking.bookingCode}</span>
+                      Mã đơn hàng: <span className="font-semibold">#{selectedBooking.id}</span>
                     </p>
                   </div>
 
@@ -1540,12 +1491,10 @@ export default function StaffDashboard({ orderId }: Props) {
                         <p className="text-gray-800">{value}</p>
                       </div>
                     ))}
-                    {selectedBooking.note && (
-                      <div className="grid grid-cols-2 p-3">
-                        <p className="font-semibold text-gray-600">Ghi chú</p>
-                        <p className="text-gray-800">{selectedBooking.note}</p>
-                      </div>
-                    )}
+                    <div className="grid grid-cols-2 p-3">
+                      <p className="font-semibold text-gray-600">Ghi chú</p>
+                      <p className="text-gray-800">{selectedBooking.note}</p>
+                    </div>
                   </div>
 
                   {/* Order Details */}
@@ -1612,16 +1561,6 @@ export default function StaffDashboard({ orderId }: Props) {
                 </div>
               </div>
             )}
-
-
-
-
-
-
-
-
-
-
           </TabsContent>
 
           <TabsContent value="dish">

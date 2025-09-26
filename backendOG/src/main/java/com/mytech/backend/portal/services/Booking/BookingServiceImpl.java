@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
 @Transactional
@@ -92,10 +91,12 @@ public class BookingServiceImpl implements BookingService {
                 }
                 if (people > service.getMaxCapacity()) {
                     if (!Boolean.TRUE.equals(service.getAllowExtraPeople())) {
-                        throw new RuntimeException("Number of people exceeds maximum for service: " + service.getName());
+                        throw new RuntimeException(
+                                "Number of people exceeds maximum for service: " + service.getName());
                     }
                     if (people > service.getMaxCapacity() + service.getMaxExtraPeople()) {
-                        throw new RuntimeException("Number of people exceeds maximum with extra for service: " + service.getName());
+                        throw new RuntimeException(
+                                "Number of people exceeds maximum with extra for service: " + service.getName());
                     }
                 }
 
@@ -119,17 +120,16 @@ public class BookingServiceImpl implements BookingService {
                     current = current.plusDays(1);
                 }
 
-
                 double base = service.getPrice() != null ? service.getPrice() : 0.0;
                 int capacity = service.getMaxCapacity() != null ? service.getMaxCapacity() : 0;
                 int maxExtra = service.getMaxExtraPeople() != null ? service.getMaxExtraPeople() : 0;
-                double extraFeePerPerson = service.getExtraFeePerPerson() != null ? service.getExtraFeePerPerson() : 0.0;
+                double extraFeePerPerson = service.getExtraFeePerPerson() != null ? service.getExtraFeePerPerson()
+                        : 0.0;
 
                 int extraPeople = Math.max(0, people - capacity);
                 int chargeableExtra = Math.min(extraPeople, maxExtra);
 
                 double price = base + chargeableExtra * extraFeePerPerson;
-
 
                 // Tạo BookingItem
                 BookingItem item = BookingItem.builder()
@@ -173,7 +173,6 @@ public class BookingServiceImpl implements BookingService {
                 bookingItems.add(item);
             }
         }
-
 
         // 5. Xử lý equipment
         if (req.getEquipmentIds() != null) {
@@ -237,11 +236,12 @@ public class BookingServiceImpl implements BookingService {
         for (BookingItem item : booking.getItems()) {
             if (item.getType() == ItemType.SERVICE && item.getService() != null) {
                 Service service = item.getService();
-                LocalDateTime current = booking.getCheckInDate();   // LocalDateTime
-                LocalDateTime end = booking.getCheckOutDate();      // LocalDateTime
+                LocalDateTime current = booking.getCheckInDate(); // LocalDateTime
+                LocalDateTime end = booking.getCheckOutDate(); // LocalDateTime
 
                 while (!current.isAfter(end.minusDays(1))) {
-                    final LocalDate dateToCheck = current.toLocalDate(); // convert về LocalDate để query availability theo ngày
+                    final LocalDate dateToCheck = current.toLocalDate(); // convert về LocalDate để query availability
+                                                                         // theo ngày
 
                     ServiceAvailability availability = serviceAvailabilityRepository
                             .findByServiceIdAndDate(service.getId(), dateToCheck)
@@ -258,11 +258,8 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-
         return mapToDTO(booking);
     }
-
-
 
     @Override
     @Transactional
@@ -298,30 +295,28 @@ public class BookingServiceImpl implements BookingService {
     public long getConfirmedBookingsForCombo(Long comboId) {
         return bookingItemRepository.countByComboAndBookingStatus(
                 comboId,
-                BookingStatus.CONFIRMED
-        );
+                BookingStatus.CONFIRMED);
     }
+
     @Override
     public long getRevenueByCombo(Long comboId) {
         return bookingItemRepository.getTotalRevenueByComboAndStatus(
-                comboId, BookingStatus.CONFIRMED
-        );
+                comboId, BookingStatus.CONFIRMED);
     }
 
     @Override
     public long getMonthlyRevenueByCombo(Long comboId) {
         return bookingItemRepository.getMonthlyRevenueByComboAndStatus(
-                comboId, BookingStatus.CONFIRMED
-        );
+                comboId, BookingStatus.CONFIRMED);
     }
+
     public BigDecimal getTotalSavings(Long comboId) {
         Combo combo = comboRepository.findById(comboId)
                 .orElseThrow(() -> new RuntimeException("Combo not found"));
 
         long confirmedCount = bookingItemRepository.countByComboIdAndBookingStatus(
                 comboId,
-                BookingStatus.CONFIRMED
-        );
+                BookingStatus.CONFIRMED);
 
         if (combo.getOriginalPrice() == null || combo.getPrice() == null) {
             return BigDecimal.ZERO;
@@ -333,6 +328,7 @@ public class BookingServiceImpl implements BookingService {
 
         return savingPerBooking.multiply(BigDecimal.valueOf(confirmedCount));
     }
+
     public long getTotalConfirmedBookingsFromAllCombos() {
         return bookingItemRepository.countAllConfirmedComboBookings();
     }
@@ -346,8 +342,7 @@ public class BookingServiceImpl implements BookingService {
                         .serviceId(i.getService().getId())
                         .bookingId(i.getBooking().getId())
                         .numberOfPeople(
-                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
-                        )
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L)
                         .name(i.getService().getName())
                         .type(ItemType.SERVICE)
                         .checkInDate(i.getCheckInDate())
@@ -366,8 +361,7 @@ public class BookingServiceImpl implements BookingService {
                         .bookingId(booking.getId())
                         .type(ItemType.COMBO)
                         .numberOfPeople(
-                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
-                        )
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L)
                         .checkInDate(i.getCheckInDate())
                         .checkOutDate(i.getCheckOutDate())
                         .name(i.getCombo().getName())
@@ -376,7 +370,6 @@ public class BookingServiceImpl implements BookingService {
                         .total(i.getPrice() * i.getQuantity())
                         .build())
                 .toList();
-
 
         List<BookingItemResponseDTO> equipments = booking.getItems().stream()
                 .filter(i -> i.getType() == ItemType.EQUIPMENT && i.getEquipment() != null)
@@ -407,18 +400,15 @@ public class BookingServiceImpl implements BookingService {
                 .numberOfPeople(booking.getNumberOfPeople())
                 .status(booking.getStatus())
                 .staff(booking.getAssignedStaff() != null
-                                ? new AssignedStaffResponse(
+                        ? new AssignedStaffResponse(
                                 booking.getAssignedStaff().getId(),
                                 booking.getAssignedStaff().getName(),
-                                booking.getAssignedStaff().getRole().name()
-                        )
-                                : null
-                )
+                                booking.getAssignedStaff().getRole().name())
+                        : null)
                 .totalPrice(
                         booking.getTotalPrice() != null
                                 ? booking.getTotalPrice().doubleValue()
-                                : 0.0
-                )
+                                : 0.0)
                 .payment(booking.getPayment() != null ? PaymentResponseDTO.builder()
                         .id(booking.getPayment().getId())
                         .method(booking.getPayment().getMethod())
@@ -448,8 +438,7 @@ public class BookingServiceImpl implements BookingService {
                                     bi.getQuantity(),
                                     bi.getPrice(),
                                     bi.getCheckInDate(),
-                                    bi.getCheckOutDate()
-                            ))
+                                    bi.getCheckOutDate()))
                             .toList();
 
                     // Trả về DTO
@@ -460,12 +449,10 @@ public class BookingServiceImpl implements BookingService {
                             booking.getCheckOutDate(),
                             booking.getNumberOfPeople(),
                             booking.getStatus().name(),
-                            itemDTOs
-                    );
+                            itemDTOs);
                 })
                 .toList();
     }
-
 
     public List<BookingResponseDTO> getAllBookings() {
         return bookingRepository.findAll().stream()
@@ -491,20 +478,23 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.deleteById(id);
     }
+
     public BookingStatsDTO getStatsByService(Long serviceId) {
         Long totalBookings = bookingItemRepository.countByServiceId(serviceId);
         Long revenue = bookingItemRepository.sumRevenueByServiceId(serviceId);
 
-        // TODO: bạn có thể bổ sung logic lấy monthlyBookings, monthlyRevenue, rating, completionRate
+        // TODO: bạn có thể bổ sung logic lấy monthlyBookings, monthlyRevenue, rating,
+        // completionRate
         return new BookingStatsDTO(
                 totalBookings,
                 0L, // monthlyBookings
                 revenue != null ? revenue : 0L,
                 0L, // monthlyRevenue
                 0.0, // averageRating
-                0.0  // completionRate
+                0.0 // completionRate
         );
     }
+
     // ===== Update methods =====
     @Override
     public BookingResponseDTO updateBookingStatus(Long bookingId, BookingStatus status) {
@@ -514,7 +504,6 @@ public class BookingServiceImpl implements BookingService {
         return mapToDTO(bookingRepository.save(booking));
     }
 
-
     @Override
     public BookingResponseDTO updateInternalNotes(Long bookingId, String internalNotes) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -522,6 +511,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setInternalNotes(internalNotes);
         return mapToDTO(bookingRepository.save(booking));
     }
+
     public Booking confirmCheckIn(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -541,7 +531,6 @@ public class BookingServiceImpl implements BookingService {
 
         return bookingRepository.save(booking);
     }
-
 
     @Override
     public BookingResponseDTO confirmBooking(Long id) {
@@ -564,50 +553,23 @@ public class BookingServiceImpl implements BookingService {
         return bookingDTO;
     }
 
-    // // Trong BookingServiceImpl
-    // @Override
-    // public void sendBookingConfirmationEmail(BookingResponseDTO bookingDTO) {
-    //     try {
-    //         MimeMessage message = mailSender.createMimeMessage();
-    //         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+    @Override
+    @Transactional
+    public BookingResponseDTO updateEmailSentAt(Long bookingId, LocalDateTime emailSentAt) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking không tồn tại"));
 
-    //         helper.setTo(bookingDTO.getEmail());
-    //         helper.setSubject("Xác nhận đặt chỗ OGCAMPING - Booking #" + bookingDTO.getId());
-    //         helper.setFrom("no-reply@ogcamping.vn");
+        // Cập nhật thời điểm gửi email
+        booking.setEmailSentAt(emailSentAt);
+        bookingRepository.save(booking);
 
-    //         // Thymeleaf context
-    //         Context context = new Context();
-    //         context.setVariable("customerName", bookingDTO.getCustomerName());
-    //         context.setVariable("orderId", bookingDTO.getId());
+        // Chỉ build DTO tối giản với bookingId và emailSentAt
+        return BookingResponseDTO.builder()
+                .id(booking.getId())
+                .emailSentAt(booking.getEmailSentAt())
+                .build();
+    }
 
-    //         // Thêm các biến còn thiếu
-    //         context.setVariable("checkInDate", bookingDTO.getCheckInDate());
-    //         context.setVariable("checkOutDate", bookingDTO.getCheckOutDate());
-    //         context.setVariable("numberOfPeople", bookingDTO.getNumberOfPeople());
+   
 
-    //         context.setVariable("phone", bookingDTO.getPhone());
-    //         context.setVariable("note", bookingDTO.getNote() != null ? bookingDTO.getNote() : "");
-    //         context.setVariable("totalPrice", bookingDTO.getTotalPrice());
-    //         context.setVariable("paymentStatus",
-    //                 bookingDTO.getPayment() != null ? bookingDTO.getPayment().getStatus() : "PENDING");
-
-    //         // Truyền danh sách items để hiển thị chi tiết (nếu cần)
-    //         context.setVariable("items", bookingDTO.getServices()); // hoặc bookingDTO.getCombos(), v.v.
-
-    //         String html = templateEngine.process("booking-confirmation.html", context);
-    //         helper.setText(html, true);
-
-    //         // Thêm code nhúng logo
-    //         // Lưu ý: Cần đảm bảo file logo tồn tại tại đường dẫn này
-    //         ClassPathResource logo = new ClassPathResource("static/images/ogcamping.jpg");
-    //         helper.addInline("ogLogo", logo, "image/jpeg");
-
-    //         mailSender.send(message);
-    //         System.out.println("✅ Email confirmation sent to " + bookingDTO.getEmail());
-
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //         throw new RuntimeException("Cannot send booking confirmation email: " + e.getMessage());
-    //     }
-    // }
 }
