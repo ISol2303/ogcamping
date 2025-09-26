@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/components/ui/use-toast";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -334,6 +335,7 @@ export default function StaffDashboard({ orderId }: Props) {
   const [selectedReview, setSelectedReview] = useState<any | null>(null); // để show modal xem chi tiết
   const [replyText, setReplyText] = useState('');
   const [processingIds, setProcessingIds] = useState<number[]>([]); // ids đang xử lý (loading)
+  const [reason, setReason] = useState("");
   const { toast } = useToast()
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
@@ -2276,30 +2278,8 @@ export default function StaffDashboard({ orderId }: Props) {
                               </TableCell>
                               <TableCell>{new Date(r.createdAt).toLocaleString("vi-VN")}</TableCell>
                               <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={processingIds.includes(r.id) || r.status === 'APPROVED'}
-                                    onClick={() => handleUpdateStatus(r.id, 'APPROVED')}
-                                  >
-                                    ✅
-                                  </Button>
-
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={processingIds.includes(r.id) || r.status === 'REJECTED'}
-                                    onClick={() => {
-                                      const reason = prompt("Lý do từ chối review (tùy chọn):", "") || "";
-                                      if (confirm("Xác nhận từ chối review này?")) {
-                                        handleUpdateStatus(r.id, 'REJECTED', reason);
-                                      }
-                                    }}
-                                  >
-                                    ❌
-                                  </Button>
-
+                                {r.status !== 'PENDING' ? (
+                                  // Nếu không phải PENDING -> chỉ hiện nút xem chi tiết
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -2307,10 +2287,69 @@ export default function StaffDashboard({ orderId }: Props) {
                                       setSelectedReview(r);
                                       setReplyText(r.reply || '');
                                     }}
+                                    disabled={processingIds.includes(r.id)}
                                   >
-                                    <MessageCircle className="w-4 h-4" />
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Chi tiết
                                   </Button>
-                                </div>
+                                ) : (
+                                  // Nếu PENDING -> giữ các nút approve / reject / reply như trước
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={processingIds.includes(r.id) || r.status === 'APPROVED'}
+                                      onClick={() => handleUpdateStatus(r.id, 'APPROVED')}
+                                    >
+                                      ✅
+                                    </Button>
+
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          disabled={processingIds.includes(r.id) || r.status === "REJECTED"}
+                                        >
+                                          ❌
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Xác nhận từ chối review?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Bạn có chắc chắn muốn từ chối review này?  
+                                            <Input
+                                              className="mt-3"
+                                              placeholder="Lý do từ chối (tùy chọn)"
+                                              value={reason}
+                                              onChange={(e) => setReason(e.target.value)}
+                                            />
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleUpdateStatus(r.id, "REJECTED", reason)}
+                                          >
+                                            Xác nhận
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setSelectedReview(r);
+                                        setReplyText(r.reply || '');
+                                      }}
+                                    >
+                                      <MessageCircle className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))
@@ -2324,7 +2363,16 @@ export default function StaffDashboard({ orderId }: Props) {
             {/* Modal xem chi tiết review + reply */}
             {selectedReview && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-start z-50 pt-20 px-4">
-                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+                <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto relative">
+                  {/* Close X góc phải */}
+                  <button
+                    aria-label="Close"
+                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 rounded-full p-1"
+                    onClick={() => setSelectedReview(null)}
+                  >
+                    ✖
+                  </button>
+
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-bold">Review #{selectedReview.id}</h3>
@@ -2347,7 +2395,12 @@ export default function StaffDashboard({ orderId }: Props) {
                         <p className="font-semibold mb-2">Ảnh</p>
                         <div className="flex gap-2 overflow-x-auto">
                           {selectedReview.images.map((img: string, idx: number) => (
-                            <img key={idx} src={`http://localhost:8080${img}`} alt={`img-${idx}`} className="w-32 h-24 object-cover rounded-md border" />
+                            <img
+                              key={idx}
+                              src={`http://localhost:8080${img}`}
+                              alt={`img-${idx}`}
+                              className="w-32 h-24 object-cover rounded-md border"
+                            />
                           ))}
                         </div>
                       </div>
@@ -2358,7 +2411,12 @@ export default function StaffDashboard({ orderId }: Props) {
                         <p className="font-semibold mb-2">Video</p>
                         <div className="flex gap-2 overflow-x-auto">
                           {selectedReview.videos.map((v: string, idx: number) => (
-                            <video key={idx} src={`http://localhost:8080${v}`} controls className="w-48 h-32 rounded-md border" />
+                            <video
+                              key={idx}
+                              src={`http://localhost:8080${v}`}
+                              controls
+                              className="w-48 h-32 rounded-md border"
+                            />
                           ))}
                         </div>
                       </div>
@@ -2366,17 +2424,42 @@ export default function StaffDashboard({ orderId }: Props) {
 
                     <div>
                       <p className="font-semibold">Phản hồi hiện tại</p>
-                      <div className="p-3 bg-gray-50 rounded">{selectedReview.reply || <span className="text-gray-400">Chưa có phản hồi</span>}</div>
-                    </div>
-
-                    <div>
-                      <p className="font-semibold mb-2">Viết phản hồi</p>
-                      <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="outline" onClick={() => { setReplyText(''); setSelectedReview(null); }}>Hủy</Button>
-                        <Button onClick={() => handleReply(selectedReview.id)} disabled={processingIds.includes(selectedReview.id)}>Gửi phản hồi</Button>
+                      <div className="p-3 bg-gray-50 rounded">
+                        {selectedReview.reply || <span className="text-gray-400">Chưa có phản hồi</span>}
                       </div>
                     </div>
+
+                    {/* Nếu từng bị từ chối: show moderationReason */}
+                    {selectedReview.status === 'REJECTED' && (
+                      <div>
+                        <p className="font-semibold">Lý do từ chối</p>
+                        <div className="p-3 bg-red-50 text-red-700 rounded">
+                          {selectedReview.moderationReason || <span className="text-gray-400">Không có lý do</span>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Chỉ cho edit/ gửi phản hồi khi đang PENDING */}
+                    {selectedReview.status === 'PENDING' ? (
+                      <div>
+                        <p className="font-semibold mb-2">Viết phản hồi</p>
+                        <Textarea value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={4} />
+                        <div className="flex justify-end gap-2 mt-2">
+                          <Button variant="outline" onClick={() => { setReplyText(''); setSelectedReview(null); }}>Hủy</Button>
+                          <Button onClick={() => handleReply(selectedReview.id)} disabled={processingIds.includes(selectedReview.id)}>Gửi phản hồi</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Nếu không phải PENDING thì hiển thị 1 note nhỏ (read-only)
+                      <div className="text-sm text-gray-500">
+                        <p>Trạng thái: <span className="font-medium">
+                          {selectedReview.status === 'PENDING' && 'Chờ duyệt'}
+                          {selectedReview.status === 'APPROVED' && 'Đã duyệt'}
+                          {selectedReview.status === 'REJECTED' && 'Từ chối'}
+                          {selectedReview.status === 'HIDDEN' && 'Ẩn'}
+                        </span></p>     
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
