@@ -13,6 +13,7 @@ import '../models/booking_response.dart';
 class ApiService {
   // Backend URL - uses centralized configuration
   static String get baseUrl => AppConfig.baseUrl;
+  String? token;
 
   static const Duration requestTimeout =
       Duration(seconds: 60); // Increase timeout
@@ -333,25 +334,29 @@ class ApiService {
   }
 
   // Reviews APIs
-  Future<List<Map<String, dynamic>>> getReviews(
-      String itemId, String itemType) async {
-    await _simulateDelay();
+  Future<dynamic> getReviewsByServiceId(int serviceId) async {
+    final url = Uri.parse('$baseUrl/reviews/service/$serviceId');
 
-    return [
-      {
-        'id': 'review_1',
-        'userId': 'user_2',
-        'userName': 'Trần Thị B',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'itemId': itemId,
-        'itemType': itemType,
-        'rating': 5.0,
-        'comment': 'Dịch vụ tuyệt vời! Sẽ quay lại lần sau.',
-        'images': [],
-        'createdAt':
-            DateTime.now().subtract(Duration(days: 5)).toIso8601String(),
-      }
-    ];
+    final res = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print('GET $url');
+    print('Headers: ${{
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token'
+    }}');
+    print('Status: ${res.statusCode}');
+    print('Body: ${res.body}');
+
+    if (res.statusCode == 200) {
+      return json.decode(res.body);
+    } else {
+      throw Exception('Failed to fetch reviews: ${res.statusCode}');
+    }
   }
 
   // User APIs

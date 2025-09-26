@@ -43,17 +43,14 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
     try {
       final servicesProvider = context.read<ServicesProvider>();
       final combo = await servicesProvider.getComboByIdFromApi(widget.comboId);
-      
+
       if (combo != null) {
         setState(() {
           _combo = combo;
           // Set initial numberOfPeople to minPeople
-          _numberOfPeople = combo.minPeople ?? 1;
+          _numberOfPeople = combo.minPeople ?? 1; 
           _isLoading = false;
         });
-
-        // Load reviews
-        await servicesProvider.loadReviews(widget.comboId, 'combo');
       } else {
         setState(() {
           _error = 'Không tìm thấy combo';
@@ -79,12 +76,11 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
     );
 
     final checkOutDate = _selectedDate!.add(Duration(days: _combo!.maxDays));
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Đã thêm ${_combo!.name} (${_formatDate(_selectedDate!)}-${_formatDate(checkOutDate)}) - $_numberOfPeople người vào giỏ hàng'
-        ),
+            'Đã thêm ${_combo!.name} (${_formatDate(_selectedDate!)}-${_formatDate(checkOutDate)}) - $_numberOfPeople người vào giỏ hàng'),
         action: SnackBarAction(
           label: 'Xem giỏ hàng',
           onPressed: () => context.pushNamed(AppRoutes.cart),
@@ -521,10 +517,10 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
 
                   // Date Selection Section
                   _buildDateSelectionSection(),
-                  
+
                   const SizedBox(height: 24),
 
-                  // People Selection Section  
+                  // People Selection Section
                   _buildPeopleSelectionSection(),
 
                   const SizedBox(height: 24),
@@ -582,7 +578,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _selectedDate != null ? _addToCart : null,
                   icon: const Icon(Icons.add_shopping_cart),
-                  label: Text(_selectedDate != null ? 'Thêm vào giỏ' : 'Chọn ngày'),
+                  label: Text(
+                      _selectedDate != null ? 'Thêm vào giỏ' : 'Chọn ngày'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -685,7 +682,9 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                                   .colorScheme
                                   .primaryContainer,
                               child: Text(
-                                review.userName.substring(0, 1).toUpperCase(),
+                                review.customerName
+                                    .substring(0, 1)
+                                    .toUpperCase(),
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -700,7 +699,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    review.userName,
+                                    review.customerName,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold),
                                   ),
@@ -721,7 +720,7 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(review.comment),
+                        Text(review.content),
                       ],
                     ),
                   ),
@@ -751,7 +750,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               onTap: () async {
                 final DateTime? picked = await showDatePicker(
                   context: context,
-                  initialDate: _selectedDate ?? DateTime.now().add(const Duration(days: 1)),
+                  initialDate: _selectedDate ??
+                      DateTime.now().add(const Duration(days: 1)),
                   firstDate: DateTime.now(),
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
@@ -765,7 +765,8 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  border:
+                      Border.all(color: Theme.of(context).colorScheme.outline),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -862,20 +863,24 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
                       icon: const Icon(Icons.remove_circle_outline),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        border: Border.all(
+                            color: Theme.of(context).colorScheme.outline),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '$_numberOfPeople',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                     ),
                     IconButton(
-                      onPressed: _combo != null && _numberOfPeople < (_combo!.maxPeople ?? 20)
+                      onPressed: _combo != null &&
+                              _numberOfPeople < (_combo!.maxPeople ?? 20)
                           ? () {
                               setState(() {
                                 _numberOfPeople++;
@@ -893,7 +898,10 @@ class _ComboDetailScreenState extends State<ComboDetailScreen> {
               Text(
                 'Tối thiểu: ${_combo!.minPeople ?? 1} người, Tối đa: ${_combo!.maxPeople ?? 20} người',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
                     ),
               ),
             ],

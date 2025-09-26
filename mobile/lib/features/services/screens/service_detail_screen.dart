@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:og_camping_private/shared/widgets/review_video_player.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/providers/services_provider.dart';
@@ -35,6 +36,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
   void initState() {
     super.initState();
     _loadService();
+    // nếu bạn có instance provider qua Provider.of(context, listen: false)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final servicesProvider =
+          Provider.of<ServicesProvider>(context, listen: false);
+      servicesProvider
+          .loadReviews(int.parse(widget.serviceId)); // đảm bảo truyền int
+    });
   }
 
   Future<void> _loadService() async {
@@ -59,7 +67,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
         });
 
         // Load reviews and availability
-        await servicesProvider.loadReviews(widget.serviceId, 'service');
+        await servicesProvider.loadReviews(int.parse(widget.serviceId));
         await _loadAvailability();
       } else {
         setState(() {
@@ -85,7 +93,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     if (_numberOfPeople < minCapacity) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Số người tối thiểu cho ${_service!.name} là $minCapacity người'),
+          content: Text(
+              'Số người tối thiểu cho ${_service!.name} là $minCapacity người'),
           backgroundColor: Colors.red,
         ),
       );
@@ -95,7 +104,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     if (_numberOfPeople > maxCapacity) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Số người vượt quá sức chứa tối đa ($maxCapacity người) cho ${_service!.name}'),
+          content: Text(
+              'Số người vượt quá sức chứa tối đa ($maxCapacity người) cho ${_service!.name}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -104,7 +114,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
 
     final bookingProvider = context.read<BookingProvider>();
     bookingProvider.addServiceToCart(
-      _service!, 
+      _service!,
       selectedDate: _selectedDate!.date,
       numberOfPeople: _numberOfPeople,
     );
@@ -540,7 +550,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
   Widget _buildReviewsSection() {
     return Consumer<ServicesProvider>(
       builder: (context, servicesProvider, child) {
-        final reviews = servicesProvider.getReviewsForItem(widget.serviceId);
+        final reviews = servicesProvider
+            .getReviewsForItem(widget.serviceId); // nhận cả int/string
+        final isLoading = servicesProvider.reviewsLoading;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,19 +569,25 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 if (reviews.isNotEmpty)
                   TextButton(
                     onPressed: () {
-                      // Show all reviews
+                      // Show all reviews (ví dụ navigate đến trang review)
                     },
                     child: const Text('Xem tất cả'),
                   ),
               ],
             ),
-            if (reviews.isEmpty)
+            if (isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (reviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text('Chưa có đánh giá nào'),
               )
             else
               ...reviews.take(3).map((review) {
+                final filledStars = review.rating.round(); // integer số sao
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Padding(
@@ -585,7 +603,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   .colorScheme
                                   .primaryContainer,
                               child: Text(
-                                review.userName.substring(0, 1).toUpperCase(),
+                                (review.customerName.isNotEmpty
+                                    ? review.customerName
+                                        .substring(0, 1)
+                                        .toUpperCase()
+                                    : '?'),
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -600,14 +622,14 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    review.userName,
+                                    review.customerName,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold),
                                   ),
                                   Row(
                                     children: List.generate(5, (index) {
                                       return Icon(
-                                        index < review.rating
+                                        index < filledStars
                                             ? Icons.star
                                             : Icons.star_border,
                                         size: 16,
@@ -621,7 +643,90 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(review.comment),
+                        Text(review.content),
+                        // (tùy chọn) hiển thị ảnh nếu có
+                        if (review.images.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 72,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: review
+                                  .getFullImageUrls()
+                                  .map((url) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          child: Image.network(
+                                            url,
+                                            width: 96,
+                                            height: 72,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (ctx, err, st) =>
+                                                Container(
+                                              width: 96,
+                                              height: 72,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                  Icons.broken_image),
+                                            ),
+                                          ),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
+                        ],
+                        // Hiển thị video (nếu có)
+                        if (review.videos.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 120,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: review.getFullVideoUrls().map((url) {
+                                debugPrint("Video URL: $url");
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: ReviewVideoPlayer(url: url),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+
+                        // Hiển thị reply (nếu có)
+                        if (review.reply != null &&
+                            review.reply!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.reply,
+                                    size: 16, color: Colors.green),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    review.reply!,
+                                    style: const TextStyle(
+                                        fontStyle: FontStyle.italic),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -850,9 +955,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       ),
                     );
                   }).toList(),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // People Selector
                   Text(
                     'Số người tham gia:',
@@ -861,14 +966,20 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.3),
                       ),
                     ),
                     child: Column(
@@ -884,7 +995,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             Row(
                               children: [
                                 IconButton(
-                                  onPressed: _numberOfPeople > (_service?.minCapacity ?? 1)
+                                  onPressed: _numberOfPeople >
+                                          (_service?.minCapacity ?? 1)
                                       ? () {
                                           setState(() {
                                             _numberOfPeople--;
@@ -894,14 +1006,21 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   icon: const Icon(Icons.remove),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     _numberOfPeople.toString(),
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
@@ -920,16 +1039,19 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             ),
                           ],
                         ),
-                        
                         const SizedBox(height: 8),
-                        
                         Text(
                           _getPeopleCapacityText(),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: _numberOfPeople > (_service?.maxCapacity ?? 0)
-                                    ? Theme.of(context).colorScheme.error
-                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _numberOfPeople >
+                                            (_service?.maxCapacity ?? 0)
+                                        ? Theme.of(context).colorScheme.error
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.7),
+                                  ),
                         ),
                       ],
                     ),
@@ -944,21 +1066,22 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
 
   bool _canAddMorePeople() {
     if (_service == null) return false;
-    
+
     final maxCapacity = _service!.maxCapacity;
-    
+
     // Chỉ cho phép tối đa maxCapacity (không bao gồm extra people)
     return _numberOfPeople < maxCapacity;
   }
 
   String _getPeopleCapacityText() {
     if (_service == null) return '';
-    
+
     final minCapacity = _service!.minCapacity ?? 1;
     final maxCapacity = _service!.maxCapacity ?? 0;
-    
-    String baseText = 'Tối thiểu: $minCapacity người, Tối đa: $maxCapacity người';
-    
+
+    String baseText =
+        'Tối thiểu: $minCapacity người, Tối đa: $maxCapacity người';
+
     // Add validation messages
     if (_numberOfPeople < minCapacity) {
       return '$baseText\n⚠️ Số người dưới mức tối thiểu!';
@@ -968,7 +1091,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
       return baseText;
     }
   }
-
 
   String _getDurationText(CampingService service) {
     if (service.maxDays == 0) {
