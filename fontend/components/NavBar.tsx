@@ -75,6 +75,18 @@ export default function Navbar() {
     router.push("/cartBooking")
   }
 
+  //BLOGS
+  const handleBlogsNavigation = () => {
+    if (user?.role === "ADMIN") {
+      router.push("/admin/blogs");
+    } else if (user?.role === "STAFF") {
+      router.push("/staff/blogs");
+    } else if (user?.role === "CUSTOMER") {
+      router.push("/blogs");
+    } else {
+      router.push("/blogs"); // GUEST cũng về trang blogs chung
+    }
+  };
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center">
@@ -161,7 +173,17 @@ export default function Navbar() {
             </div>
           </div>
 
-          <Link href="/blogs" className={`${linkClass('/blogs')} transition transform hover:-translate-y-0.5`}>Blog</Link>
+          <Link
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              handleBlogsNavigation()
+            }}
+            className="text-gray-800 hover:text-green-600 transition-all duration-300 font-medium relative group cursor-pointer"
+          >
+            BLOG
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-600 transition-all duration-300 group-hover:w-full"></span>
+          </Link>
         </nav>
 
         {/* Right: User actions aligned right */}
@@ -173,7 +195,7 @@ export default function Navbar() {
             )}
           </button>
           <button onClick={handleGoToCartBooking} className="relative p-2 rounded hover:bg-gray-100 transition">
-            <BookmarkPlus  className="h-5 w-5 text-gray-800" />
+            <BookmarkPlus className="h-5 w-5 text-gray-800" />
             {cartCount > 0 && (
               <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600">{cartCount}</Badge>
             )}
