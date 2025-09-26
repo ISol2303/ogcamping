@@ -132,6 +132,11 @@ public class OrderBookingController {
                     orderItem.setItemId(((Number) item.get("itemId")).longValue());
                     orderItem.setQuantity(((Number) item.get("quantity")).intValue());
                     
+                    // Lấy rentalDays nếu có (cho equipment/gear)
+                    if (item.get("rentalDays") != null) {
+                        orderItem.setRentalDays(((Number) item.get("rentalDays")).intValue());
+                    }
+                    
                     // Lấy giá từ request, nếu không có thì lấy từ database
                     Double unitPrice = ((Number) item.get("unitPrice")).doubleValue();
                     Double totalPrice = ((Number) item.get("totalPrice")).doubleValue();

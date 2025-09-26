@@ -218,6 +218,32 @@ public class GearController {
         gearService.deleteGear(id);
         return ResponseEntity.noContent().build();
     }
+    
+    @PostMapping("/update-status")
+    public ResponseEntity<String> updateAllGearStatus() {
+        try {
+            gearService.updateGearStatusBasedOnAvailable();
+            return ResponseEntity.ok("All gear statuses updated successfully based on available quantity");
+        } catch (Exception e) {
+            System.err.println("Error updating gear statuses: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Error updating gear statuses: " + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/{id}/update-quantity")
+    public ResponseEntity<GearDTO> updateGearQuantity(
+            @PathVariable("id") Long gearId,
+            @RequestParam("quantityChange") Integer quantityChange) {
+        try {
+            GearDTO updatedGear = gearService.updateGearAvailableQuantity(gearId, quantityChange);
+            return ResponseEntity.ok(updatedGear);
+        } catch (Exception e) {
+            System.err.println("Error updating gear quantity: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
     // -------------------
     // Hàm phụ trợ lưu ảnh

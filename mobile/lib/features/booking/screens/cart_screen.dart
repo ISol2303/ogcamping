@@ -247,6 +247,15 @@ class _CartScreenState extends State<CartScreen> {
                         selectedDate: item.details['selectedDate'],
                       );
                     },
+                    onRentalDaysChanged: item.type == BookingType.EQUIPMENT
+                        ? (rentalDays) {
+                            bookingProvider.updateCartItemRentalDays(
+                              item.id,
+                              item.type,
+                              rentalDays,
+                            );
+                          }
+                        : null,
                     onRemove: () {
                       bookingProvider.removeFromCart(
                         item.id,
@@ -384,7 +393,7 @@ class _CartScreenState extends State<CartScreen> {
                           children: [
                             const Text('Tạm tính:'),
                             Text(
-                                '${bookingProvider.totalWithDuration.toStringAsFixed(0)}đ'),
+                                '${_calculateGrandTotal(bookingProvider.cartItems).toStringAsFixed(0)}đ'),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -502,11 +511,13 @@ class _CartScreenState extends State<CartScreen> {
 class _CartItemCard extends StatelessWidget {
   final CartItem item;
   final Function(int) onQuantityChanged;
+  final Function(int)? onRentalDaysChanged;
   final VoidCallback onRemove;
 
   const _CartItemCard({
     required this.item,
     required this.onQuantityChanged,
+    this.onRentalDaysChanged,
     required this.onRemove,
   });
 
@@ -640,13 +651,24 @@ class _CartItemCard extends StatelessWidget {
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
+                    )
+                  // Show rental days for equipment
+                  else if (item.type == BookingType.EQUIPMENT && item.details['rentalDays'] != null)
+                    Text(
+                      'Thuê ${item.details['rentalDays']} ngày',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   const SizedBox(height: 4),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${item.price.toStringAsFixed(0)}đ × ${item.quantity}',
+                        item.type == BookingType.EQUIPMENT && item.details['rentalDays'] != null
+                            ? '${item.price.toStringAsFixed(0)}đ × ${item.quantity} × ${item.details['rentalDays']} ngày'
+                            : '${item.price.toStringAsFixed(0)}đ × ${item.quantity}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
@@ -683,6 +705,7 @@ class _CartItemCard extends StatelessWidget {
             // Quantity Controls
             Column(
               children: [
+                // Quantity controls
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -708,6 +731,46 @@ class _CartItemCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                
+                // Rental days controls for equipment
+                if (item.type == BookingType.EQUIPMENT && onRentalDaysChanged != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: (item.details['rentalDays'] ?? 1) > 1
+                            ? () {
+                                onRentalDaysChanged!((item.details['rentalDays'] ?? 1) - 1);
+                              }
+                            : null,
+                        icon: const Icon(Icons.remove),
+                        iconSize: 16,
+                      ),
+                      Text(
+                        '${item.details['rentalDays'] ?? 1}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          onRentalDaysChanged!((item.details['rentalDays'] ?? 1) + 1);
+                        },
+                        icon: const Icon(Icons.add),
+                        iconSize: 16,
+                      ),
+                    ],
+                  ),
+                ],
+                
                 TextButton(
                   onPressed: onRemove,
                   child: const Text('Xóa'),

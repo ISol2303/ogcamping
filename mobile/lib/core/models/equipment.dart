@@ -1,19 +1,18 @@
 enum EquipmentCategory { tent, cooking, lighting, sleeping, furniture, other }
 
-enum EquipmentStatus { available, rented, maintenance }
+enum EquipmentStatus { available, outOfStock }
 
 class Equipment {
   final String id;
   final String name;
   final String description;
-  final List<String> images;
+  final String imageUrl;
   final double pricePerDay;
-  final EquipmentCategory category;
-  final EquipmentStatus status;
-  final int quantity;
-  final int availableQuantity;
-  final String brand;
-  final Map<String, dynamic> specifications;
+  final String category;
+  final String status;
+  final int available;
+  final int quantityInStock;
+  final String area;
   final double rating;
   final int reviewCount;
   final DateTime createdAt;
@@ -22,14 +21,13 @@ class Equipment {
     required this.id,
     required this.name,
     required this.description,
-    required this.images,
+    required this.imageUrl,
     required this.pricePerDay,
     required this.category,
     required this.status,
-    required this.quantity,
-    required this.availableQuantity,
-    required this.brand,
-    required this.specifications,
+    required this.available,
+    required this.quantityInStock,
+    required this.area,
     required this.rating,
     required this.reviewCount,
     required this.createdAt,
@@ -37,24 +35,19 @@ class Equipment {
 
   factory Equipment.fromJson(Map<String, dynamic> json) {
     return Equipment(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      images: List<String>.from(json['images']),
-      pricePerDay: json['pricePerDay'].toDouble(),
-      category: EquipmentCategory.values.firstWhere(
-        (e) => e.toString().split('.').last == json['category'],
-      ),
-      status: EquipmentStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
-      ),
-      quantity: json['quantity'],
-      availableQuantity: json['availableQuantity'],
-      brand: json['brand'],
-      specifications: Map<String, dynamic>.from(json['specifications']),
-      rating: json['rating'].toDouble(),
-      reviewCount: json['reviewCount'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['id']?.toString() ?? '0',
+      name: (json['name']?.toString() ?? 'Thiết bị không tên').trim(),
+      description: json['description']?.toString() ?? '',
+      imageUrl: json['image']?.toString() ?? '',
+      pricePerDay: (json['pricePerDay'] ?? 0).toDouble(),
+      category: json['category']?.toString() ?? 'Khác',
+      status: json['status']?.toString() ?? 'AVAILABLE',
+      available: json['available'] ?? 0,
+      quantityInStock: json['quantityInStock'] ?? 0,
+      area: json['area']?.toString() ?? 'Khu vực chung',
+      rating: (json['rating'] ?? 4.5).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 
@@ -63,19 +56,18 @@ class Equipment {
       'id': id,
       'name': name,
       'description': description,
-      'images': images,
+      'image': imageUrl,
       'pricePerDay': pricePerDay,
-      'category': category.toString().split('.').last,
-      'status': status.toString().split('.').last,
-      'quantity': quantity,
-      'availableQuantity': availableQuantity,
-      'brand': brand,
-      'specifications': specifications,
+      'category': category,
+      'status': status,
+      'available': available,
+      'quantityInStock': quantityInStock,
+      'area': area,
       'rating': rating,
       'reviewCount': reviewCount,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  bool get isAvailable => status == EquipmentStatus.available && availableQuantity > 0;
+  bool get isAvailable => status == 'AVAILABLE' && available > 0;
 }

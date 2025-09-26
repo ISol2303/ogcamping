@@ -22,6 +22,7 @@ public class SignInResponse implements Serializable {
     private Long id;
     private String fullname;
     private String email;
+    private String phone;
     private Role role = Role.CUSTOMER;
 
     private String token;

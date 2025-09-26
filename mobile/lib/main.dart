@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Core
 import 'core/navigation/app_router.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/services_provider.dart';
+import 'core/providers/equipment_provider.dart';
 import 'core/providers/booking_provider.dart';
 import 'core/providers/chat_provider.dart';
 import 'core/providers/theme_provider.dart';
@@ -24,9 +26,16 @@ final _bookingRepository = BookingRepository(_apiService);
 final _chatRepository = ChatRepository(_apiService);
 final _router = AppRouter.createRouter();
 
-void main() {
+void main() async {
   // Disable debug checks in debug mode to prevent hot reload issues
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Warning: Could not load .env file: $e');
+  }
   runApp(const OGCampingApp());
 }
 
@@ -74,9 +83,14 @@ class _OGCampingAppState extends State<OGCampingApp> {
         ChangeNotifierProvider(
             create: (_) => ServicesProvider(_servicesRepository)),
 
+        // Equipment Provider
+        ChangeNotifierProvider(create: (_) => EquipmentProvider()),
+
         // Booking Provider
-        ChangeNotifierProvider(
-            create: (_) => BookingProvider(_bookingRepository)),
+        ChangeNotifierProxyProvider<AuthProvider, BookingProvider>(
+            create: (context) => BookingProvider(_bookingRepository, context.read<AuthProvider>()),
+            update: (_, authProvider, previous) => 
+                previous ?? BookingProvider(_bookingRepository, authProvider)),
 
         // Chat Provider
         ChangeNotifierProvider(create: (_) => ChatProvider(_chatRepository)),

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.mytech.backend.portal.dto.ApiResponse;
 import com.mytech.backend.portal.dto.CategoryDTO;
+import com.mytech.backend.portal.exceptions.ResourceNotFoundException;
+import com.mytech.backend.portal.exceptions.ResourceAlreadyExistsException;
 import com.mytech.backend.portal.services.CategoryService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,17 +44,33 @@ public class CategoryController {
                     .body(ApiResponse.error(404, "Category not found: " + e.getMessage()));
         }
     }
+    
+    @GetMapping("/{id}/product-count")
+    public ResponseEntity<ApiResponse<Long>> getProductCountByCategoryId(@PathVariable Long id) {
+        try {
+            CategoryDTO category = categoryService.findById(id);
+            long productCount = categoryService.getProductCountByCategoryName(category.getName());
+            return ResponseEntity.ok(ApiResponse.success(productCount));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, "Category not found: " + e.getMessage()));
+        }
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CategoryDTO>> createCategory(@RequestBody CategoryDTO categoryDTO) {
         try {
             CategoryDTO createdCategory = categoryService.create(categoryDTO);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(createdCategory));
+            ApiResponse<CategoryDTO> response = ApiResponse.success(createdCategory);
+            response.setMessage("✅ Tạo danh mục thành công!");
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (ResourceAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(409, "❌ " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(400, "Failed to create category: " + e.getMessage()));
+                    .body(ApiResponse.error(400, "❌ Lỗi khi tạo danh mục: " + e.getMessage()));
         }
     }
 
@@ -63,10 +81,18 @@ public class CategoryController {
             @RequestBody CategoryDTO categoryDTO) {
         try {
             CategoryDTO updatedCategory = categoryService.update(id, categoryDTO);
-            return ResponseEntity.ok(ApiResponse.success(updatedCategory));
+            ApiResponse<CategoryDTO> response = ApiResponse.success(updatedCategory);
+            response.setMessage("✅ Cập nhật danh mục thành công!");
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, "❌ Không tìm thấy danh mục với ID: " + id));
+        } catch (ResourceAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(409, "❌ " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(400, "Failed to update category: " + e.getMessage()));
+                    .body(ApiResponse.error(400, "❌ Lỗi khi cập nhật danh mục: " + e.getMessage()));
         }
     }
 
@@ -75,10 +101,18 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {
         try {
             categoryService.delete(id);
-            return ResponseEntity.ok(ApiResponse.success(null));
-        } catch (Exception e) {
+            ApiResponse<Void> response = ApiResponse.success(null);
+            response.setMessage("✅ Xóa danh mục thành công!");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(409, e.getMessage()));
+        } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(404, "Failed to delete category: " + e.getMessage()));
+                    .body(ApiResponse.error(404, "❌ Không tìm thấy danh mục với ID: " + id));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "❌ Lỗi hệ thống khi xóa danh mục: " + e.getMessage()));
         }
     }
 }

@@ -44,6 +44,7 @@ import {
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react"
 
 interface Category {
   id: number
@@ -66,6 +67,13 @@ export default function AdminCategoriesPage() {
     description: ""
   })
   const [submitting, setSubmitting] = useState(false)
+  const [notificationModal, setNotificationModal] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -118,19 +126,38 @@ export default function AdminCategoriesPage() {
       console.log("Response ok:", response.ok) // Debug log
       
       if (data.status === 200 || data.status === 201) {
-        alert("Tạo danh mục thành công")
-        setIsCreateDialogOpen(false)
-        setFormData({ name: "", description: "" })
-        fetchCategories()
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: data.message || "Tạo danh mục thành công",
+          onConfirm: () => {
+            setIsCreateDialogOpen(false)
+            setFormData({ name: "", description: "" })
+            fetchCategories()
+          }
+        })
       } else {
-        // Hiển thị lỗi chi tiết từ backend bằng alert
+        // Hiển thị lỗi chi tiết từ backend
         const errorMessage = data.message || data.error || "Lỗi khi tạo danh mục"
-        alert("Lỗi: " + errorMessage)
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: errorMessage,
+          onConfirm: () => {}
+        })
         console.error("Category creation error:", data)
       }
     } catch (error) {
       console.error("Error creating category:", error)
-      alert("Lỗi kết nối khi tạo danh mục")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     } finally {
       setSubmitting(false)
     }
@@ -160,20 +187,39 @@ export default function AdminCategoriesPage() {
       console.log("Update category response:", data) // Debug log
       
       if (data.status === 200) {
-        alert("Cập nhật danh mục thành công")
-        setIsEditDialogOpen(false)
-        setEditingCategory(null)
-        setFormData({ name: "", description: "" })
-        fetchCategories()
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: data.message || "Cập nhật danh mục thành công",
+          onConfirm: () => {
+            setIsEditDialogOpen(false)
+            setEditingCategory(null)
+            setFormData({ name: "", description: "" })
+            fetchCategories()
+          }
+        })
       } else {
-        // Hiển thị lỗi chi tiết từ backend bằng alert
+        // Hiển thị lỗi chi tiết từ backend
         const errorMessage = data.message || data.error || "Lỗi khi cập nhật danh mục"
-        alert("Lỗi: " + errorMessage)
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: errorMessage,
+          onConfirm: () => {}
+        })
         console.error("Category update error:", data)
       }
     } catch (error) {
       console.error("Error updating category:", error)
-      alert("Lỗi kết nối khi cập nhật danh mục")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     } finally {
       setSubmitting(false)
     }
@@ -190,16 +236,53 @@ export default function AdminCategoriesPage() {
       })
 
       const data = await response.json()
+      console.log("Delete category response:", data) // Debug log
       
       if (data.status === 200) {
-        toast.success("Xóa danh mục thành công")
-        fetchCategories()
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: "Xóa danh mục thành công",
+          onConfirm: () => {
+            fetchCategories()
+          }
+        })
+      } else if (data.status === 409) {
+        // Hiển thị thông báo lỗi chi tiết khi không thể xóa vì có sản phẩm
+        setNotificationModal({
+          isOpen: true,
+          type: 'warning',
+          title: 'Không thể xóa!',
+          message: data.message || "Không thể xóa danh mục có sản phẩm",
+          onConfirm: () => {}
+        })
+      } else if (data.status === 404) {
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Không tìm thấy!',
+          message: "Danh mục không tồn tại",
+          onConfirm: () => {}
+        })
       } else {
-        toast.error(data.message || "Lỗi khi xóa danh mục")
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: data.message || "Lỗi khi xóa danh mục",
+          onConfirm: () => {}
+        })
       }
     } catch (error) {
       console.error("Error deleting category:", error)
-      toast.error("Lỗi khi xóa danh mục")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     }
   }
 
@@ -375,9 +458,13 @@ export default function AdminCategoriesPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                                <AlertDialogTitle>Xác nhận xóa danh mục</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Bạn có chắc chắn muốn xóa danh mục "{category.name}"? 
+                                  <br /><br />
+                                  <strong className="text-red-600">⚠️ Lưu ý:</strong> Nếu danh mục này đang có sản phẩm, 
+                                  bạn sẽ không thể xóa được. Hãy di chuyển hoặc xóa tất cả sản phẩm trong danh mục này trước.
+                                  <br /><br />
                                   Hành động này không thể hoàn tác.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -387,7 +474,7 @@ export default function AdminCategoriesPage() {
                                   onClick={() => handleDelete(category.id)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
-                                  Xóa
+                                  Xóa danh mục
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -437,6 +524,54 @@ export default function AdminCategoriesPage() {
             <Button onClick={handleUpdate} disabled={submitting}>
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Cập nhật
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notification Modal */}
+      <Dialog open={notificationModal.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setNotificationModal(prev => ({ ...prev, isOpen: false }))
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              {notificationModal.type === 'success' && (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              )}
+              {notificationModal.type === 'error' && (
+                <XCircle className="h-6 w-6 text-red-600" />
+              )}
+              {notificationModal.type === 'warning' && (
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              )}
+              {notificationModal.type === 'info' && (
+                <Info className="h-6 w-6 text-blue-600" />
+              )}
+              <DialogTitle className="text-lg font-semibold">
+                {notificationModal.title}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">{notificationModal.message}</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                notificationModal.onConfirm()
+                setNotificationModal(prev => ({ ...prev, isOpen: false }))
+              }}
+              className={`w-full ${
+                notificationModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                notificationModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                notificationModal.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

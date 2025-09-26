@@ -111,8 +111,13 @@ export default function Navbar() {
               <span className="text-gray-800 font-medium">
                 {user.name || user.email}
               </span>
-              <button onClick={handleGoToCart} className="p-2 rounded hover:bg-gray-100">
+              <button onClick={handleGoToCart} className="relative p-2 rounded hover:bg-gray-100">
                 <ShoppingCart className="h-5 w-5 text-gray-800" />
+                {cartCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600 text-white">
+                    {cartCount}
+                  </Badge>
+                )}
               </button>
               {/* Dropdown */}
               <DropdownMenu>
@@ -136,6 +141,14 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              <button onClick={handleGoToCart} className="relative p-2 rounded hover:bg-gray-100">
+                <ShoppingCart className="h-5 w-5 text-gray-800" />
+                {cartCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-red-500 hover:bg-red-600 text-white">
+                    {cartCount}
+                  </Badge>
+                )}
+              </button>
               <Button variant="outline" asChild>
                 <Link href="/login">Đăng nhập</Link>
               </Button>

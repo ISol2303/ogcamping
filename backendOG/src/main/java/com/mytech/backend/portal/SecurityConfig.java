@@ -102,8 +102,9 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
 	                    "/apis/v1/services/**",
             "/apis/v1/customers/by-user/**",  // Cho phép lấy customer theo user ID
             "/apis/orders/gear/**",  // Cho phép truy cập lịch sử đơn hàng gear
+            "/apis/v1/orders/gear/**",  // Cho phép truy cập API gear orders từ mobile
             "/apis/gear-orders/**",  // Cho phép truy cập API gear orders mới
-            "/apis/orders/test-gear/**"  // Cho phép test API kiểm tra số lượng thiết bị
+            "/apis/orders/test-gear/**",  // Cho phép test API kiểm tra số lượng thiết bị
 	                    "/apis/v1/combos/**",
 	                    "/apis/dishes/all",
 	                    "/apis/v1/users/forgot-password",
@@ -151,7 +152,7 @@ SecurityFilterChain oauth2Chain(HttpSecurity http) throws Exception {
         config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
         config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
         config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
-        config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
+        config.addAllowedOrigin("http://192.168.1.13:*"); // Mobile device IP
         config.addAllowedOriginPattern("http://localhost:*"); // Pattern for any port
         config.addAllowedOriginPattern("http://192.168.*:*"); // Pattern for mobile network
         config.addAllowedHeader("*");

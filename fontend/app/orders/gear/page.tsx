@@ -16,6 +16,7 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  rentalDays?: number;
   productName?: string;
   productImage?: string;
   productDescription?: string;
@@ -191,18 +192,33 @@ export default function GearOrderHistory() {
                 
                 <Separator className="my-4" />
                 
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-gray-600">
-                    {order.items?.length || 0} sản phẩm
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => fetchOrderDetails(order.id)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Xem chi tiết
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-gray-600">
+                      {order.items?.length || 0} sản phẩm
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => fetchOrderDetails(order.id)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Xem chi tiết
+                    </Button>
+                  </div>
+                  
+                  {/* Hiển thị thông tin thuê nếu có */}
+                  {order.items?.some(item => item.rentalDays && item.rentalDays > 0) && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <CalendarDays className="w-4 h-4" />
+                      <span>
+                        Thuê {order.items
+                          .filter(item => item.rentalDays && item.rentalDays > 0)
+                          .map(item => `${item.quantity} thiết bị x ${item.rentalDays} ngày`)
+                          .join(', ')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -265,9 +281,18 @@ export default function GearOrderHistory() {
                           {item.productDescription && (
                             <p className="text-sm text-gray-600 mb-1">{item.productDescription}</p>
                           )}
-                          <p className="text-sm text-gray-600">
-                            Số lượng: {item.quantity}
-                          </p>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p>Số lượng: {item.quantity}</p>
+                            {item.rentalDays && item.rentalDays > 0 && (
+                              <p className="flex items-center gap-1">
+                                <CalendarDays className="w-4 h-4 text-blue-500" />
+                                Thuê {item.rentalDays} ngày
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500">
+                              {formatPrice(item.unitPrice)}/ngày
+                            </p>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">{formatPrice(item.totalPrice)}</p>

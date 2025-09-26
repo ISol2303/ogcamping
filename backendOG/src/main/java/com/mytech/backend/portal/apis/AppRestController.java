@@ -52,6 +52,7 @@ public class AppRestController {
             signInResponse.setId(user.getId());
             signInResponse.setEmail(user.getEmail());
             signInResponse.setFullname(user.getName());
+            signInResponse.setPhone(user.getPhone());
             signInResponse.setRole(user.getRole());
             signInResponse.setTokenType("Bearer");
             signInResponse.setToken(token);

@@ -6,6 +6,7 @@ import '../models/equipment.dart';
 import '../models/combo_package.dart';
 import '../repositories/booking_repository.dart';
 import '../services/api_service.dart';
+import 'auth_provider.dart';
 
 class CartItem {
   final String id;
@@ -32,7 +33,12 @@ class CartItem {
     this.numberOfPeople = 1,
   });
 
-  double get totalPrice => price * quantity;
+  double get totalPrice {
+    if (type == BookingType.EQUIPMENT && details['rentalDays'] != null) {
+      return price * quantity * (details['rentalDays'] as int);
+    }
+    return price * quantity;
+  }
   
   bool get needsBookingInfo => type == BookingType.SERVICE || type == BookingType.COMBO;
   bool get hasCompleteBookingInfo => !needsBookingInfo || 
@@ -42,8 +48,9 @@ class CartItem {
 class BookingProvider extends ChangeNotifier {
   final BookingRepository _bookingRepository;
   final ApiService _apiService = ApiService();
+  final AuthProvider _authProvider;
 
-  BookingProvider(this._bookingRepository);
+  BookingProvider(this._bookingRepository, this._authProvider);
 
   // Cart items
   List<CartItem> _cartItems = [];
@@ -178,8 +185,9 @@ class BookingProvider extends ChangeNotifier {
       quantity: quantity,
       details: {
         'name': equipment.name,
-        'brand': equipment.brand,
-        'category': equipment.category.toString().split('.').last,
+        'area': equipment.area,
+        'category': equipment.category,
+        'rentalDays': 1, // Mặc định 1 ngày
       },
     );
 
@@ -246,6 +254,14 @@ class BookingProvider extends ChangeNotifier {
       } else {
         _cartItems[index].quantity = quantity;
       }
+      notifyListeners();
+    }
+  }
+
+  void updateCartItemRentalDays(String id, BookingType type, int rentalDays) {
+    final index = _cartItems.indexWhere((item) => item.id == id && item.type == type);
+    if (index >= 0) {
+      _cartItems[index].details['rentalDays'] = rentalDays;
       notifyListeners();
     }
   }
@@ -320,6 +336,121 @@ class BookingProvider extends ChangeNotifier {
   }
 
   // Booking methods
+  Future<bool> createBookingWithUserData(String customerId, {
+    String? customerName,
+    String? customerEmail, 
+    String? customerPhone,
+    String? notes
+  }) async {
+    if (_cartItems.isEmpty) {
+      _bookingError = 'Cart is empty';
+      notifyListeners();
+      return false;
+    }
+
+    // Auto-set check-in and check-out dates from cart items if not already set
+    if (_checkInDate == null || _checkOutDate == null) {
+      print('Auto-setting dates from cart items...');
+      
+      // Get dates from first cart item that has dates
+      for (final item in _cartItems) {
+        print('Checking item: ${item.name}');
+        print('- checkInDate: ${item.checkInDate}');
+        print('- checkOutDate: ${item.checkOutDate}');
+        print('- selectedDate: ${item.details['selectedDate']}');
+        
+        if (item.checkInDate != null && item.checkOutDate != null) {
+          _checkInDate = item.checkInDate;
+          _checkOutDate = item.checkOutDate;
+          print('Set dates from item checkIn/checkOut dates');
+          break;
+        }
+        // For services, use selectedDate as both check-in and check-out
+        if (item.details['selectedDate'] != null) {
+          try {
+            final selectedDate = DateTime.parse(item.details['selectedDate']);
+            _checkInDate = selectedDate;
+            _checkOutDate = selectedDate;
+            print('Set dates from selectedDate: $selectedDate');
+            break;
+          } catch (e) {
+            print('Error parsing selectedDate: $e');
+          }
+        }
+      }
+      
+      // If still no dates found, use today as default
+      if (_checkInDate == null || _checkOutDate == null) {
+        final today = DateTime.now();
+        _checkInDate = today;
+        _checkOutDate = today;
+        print('Using today as default dates: $today');
+      }
+    }
+
+    // Calculate total amount including extra fees (no tax)
+    final totalAmount = _cartItems.fold(0.0, (total, item) {
+      final itemTotal = item.totalPrice;
+      // Add extra fee for services
+      if (item.type == BookingType.SERVICE) {
+        final maxCapacity = item.details['maxCapacity'] ?? 0;
+        final extraFeePerPerson = item.details['extraFeePerPerson'] ?? 0.0;
+        if (item.numberOfPeople > maxCapacity) {
+          final extraPeople = item.numberOfPeople - maxCapacity;
+          return total + itemTotal + (extraPeople * extraFeePerPerson);
+        }
+      }
+      return total + itemTotal;
+    });
+
+    print('BookingProvider.createBookingWithUserData - Debug Info:');
+    print('- Cart items count: ${_cartItems.length}');
+    print('- Check-in date: $_checkInDate');
+    print('- Check-out date: $_checkOutDate');
+    print('- Participants: $_participants');
+    print('- Total amount: $totalAmount');
+    print('- Customer data:');
+    print('  - customerName: $customerName');
+    print('  - customerEmail: $customerEmail');
+    print('  - customerPhone: $customerPhone');
+
+    _isBooking = true;
+    _bookingError = null;
+    notifyListeners();
+
+    try {
+      // Pass CartItems directly to repository with customer info
+      final booking = await _bookingRepository.createBooking(
+        customerId: customerId,
+        items: _cartItems, // Pass CartItems directly
+        checkInDate: _checkInDate!,
+        checkOutDate: _checkOutDate!,
+        participants: _participants,
+        totalAmount: totalAmount,
+        notes: notes,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+      );
+
+      _bookings.add(booking);
+      // For equipment orders, don't set booking ID to skip payment
+      if (!booking.id.startsWith('equipment_')) {
+        _lastBookingId = int.tryParse(booking.id); // Save the booking ID for payment processing
+      }
+      clearCart();
+      _isBooking = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('BookingProvider.createBookingWithUserData error: $e');
+      _bookingError = e.toString();
+      _isBooking = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> createBooking(String customerId, {String? notes}) async {
     if (_cartItems.isEmpty) {
       _bookingError = 'Cart is empty';
@@ -394,7 +525,15 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Pass CartItems directly to repository
+      // Debug user data
+      print('BookingProvider - User data:');
+      print('- isAuthenticated: ${_authProvider.isAuthenticated}');
+      print('- user: ${_authProvider.user}');
+      print('- user.name: ${_authProvider.user?.name}');
+      print('- user.email: ${_authProvider.user?.email}');
+      print('- user.phone: ${_authProvider.user?.phone}');
+      
+      // Pass CartItems directly to repository with customer info
       final booking = await _bookingRepository.createBooking(
         customerId: customerId,
         items: _cartItems, // Pass CartItems directly
@@ -403,10 +542,16 @@ class BookingProvider extends ChangeNotifier {
         participants: _participants,
         totalAmount: totalAmount,
         notes: notes,
+        customerName: _authProvider.user?.name,
+        customerEmail: _authProvider.user?.email,
+        customerPhone: _authProvider.user?.phone,
       );
 
       _bookings.add(booking);
-      _lastBookingId = int.tryParse(booking.id); // Save the booking ID for payment processing
+      // For equipment orders, don't set booking ID to skip payment
+      if (!booking.id.startsWith('equipment_')) {
+        _lastBookingId = int.tryParse(booking.id); // Save the booking ID for payment processing
+      }
       clearCart();
       _checkInDate = null;
       _checkOutDate = null;
@@ -443,6 +588,42 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       print('Error loading user bookings: $e');
+      _bookingsError = e.toString();
+      _bookingsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadEquipmentOrders(String userId) async {
+    _bookingsLoading = true;
+    _bookingsError = null;
+    notifyListeners();
+
+    try {
+      print('Loading equipment orders for userId: $userId');
+      
+      // Call equipment orders API like web
+      final equipmentOrders = await _apiService.getEquipmentOrders(userId);
+      print('Received ${equipmentOrders.length} equipment orders');
+      print('Equipment orders data: $equipmentOrders');
+      
+      // Convert equipment orders to Booking format for display
+      final convertedBookings = <Booking>[];
+      for (final order in equipmentOrders) {
+        final booking = await _convertEquipmentOrderToBooking(order);
+        convertedBookings.add(booking);
+      }
+      
+      // Sort by creation date (newest first)
+      convertedBookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      _bookings = convertedBookings;
+      print('Converted to ${_bookings.length} bookings, sorted by date');
+      
+      _bookingsLoading = false;
+      notifyListeners();
+    } catch (e) {
+      print('Error loading equipment orders: $e');
       _bookingsError = e.toString();
       _bookingsLoading = false;
       notifyListeners();
@@ -495,8 +676,11 @@ class BookingProvider extends ChangeNotifier {
     }
   }
   
-  BookingStatus _parseBookingStatus(String status) {
-    switch (status.toUpperCase()) {
+  BookingStatus _parseBookingStatus(dynamic status) {
+    if (status == null) return BookingStatus.pending;
+    
+    final statusStr = status.toString().toUpperCase();
+    switch (statusStr) {
       case 'PENDING':
         return BookingStatus.pending;
       case 'CONFIRMED':
@@ -533,6 +717,95 @@ class BookingProvider extends ChangeNotifier {
   void clearBookingError() {
     _bookingError = null;
     notifyListeners();
+  }
+
+  // Convert Equipment Order to Booking model
+  Future<Booking> _convertEquipmentOrderToBooking(Map<String, dynamic> order) async {
+    final items = <BookingItem>[];
+    
+    // Convert order items to BookingItems
+    if (order['items'] != null) {
+      for (final item in order['items']) {
+        // Get equipment info from itemId
+        final equipmentInfo = await _getEquipmentInfo(item['itemId']);
+        
+        items.add(BookingItem(
+          id: item['itemId']?.toString() ?? '',
+          type: BookingType.EQUIPMENT,
+          quantity: item['quantity'] ?? 1,
+          price: (item['unitPrice'] ?? 0).toDouble(),
+          details: {
+            'name': item['productName'] ?? equipmentInfo['name'] ?? 'Thiết bị #${item['itemId']}',
+            'rentalDays': item['rentalDays'] ?? 1,
+            'productImage': item['productImage'] ?? equipmentInfo['imageUrl'],
+            'productDescription': item['productDescription'] ?? equipmentInfo['description'],
+            'area': equipmentInfo['area'],
+            'category': equipmentInfo['category'],
+          },
+        ));
+      }
+    }
+
+    return Booking(
+      id: order['id']?.toString() ?? '',
+      userId: order['customerId']?.toString() ?? '',
+      items: items,
+      checkInDate: DateTime.now(), // Equipment orders don't have check-in/out dates
+      checkOutDate: DateTime.now(),
+      participants: 1,
+      totalAmount: (order['totalPrice'] ?? 0).toDouble(),
+      status: _parseBookingStatus(order['status']),
+      notes: order['note'],
+      createdAt: DateTime.tryParse(order['createdOn'] ?? order['orderDate'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  // Get equipment info by ID from API
+  Future<Map<String, dynamic>> _getEquipmentInfo(int? itemId) async {
+    if (itemId == null) {
+      return {
+        'name': 'Thiết bị không xác định',
+        'description': 'Thiết bị camping',
+        'imageUrl': null,
+        'area': 'Khu vực A',
+        'category': 'Thiết bị',
+      };
+    }
+
+    try {
+      // Fetch equipment details from API
+      final response = await _apiService.getEquipmentById(itemId);
+      print('Equipment API response for ID $itemId: $response');
+      
+      // Check if response is empty or null
+      if (response.isEmpty || response['name'] == null) {
+        print('Equipment ID $itemId not found in database');
+        return {
+          'name': 'Thiết bị #$itemId (Không tồn tại)',
+          'description': 'Thiết bị này không còn tồn tại trong hệ thống',
+          'imageUrl': null,
+          'area': 'Không xác định',
+          'category': 'Thiết bị đã xóa',
+        };
+      }
+      
+      return {
+        'name': response['name'] ?? 'Thiết bị #$itemId',
+        'description': response['description'] ?? 'Thiết bị camping',
+        'imageUrl': response['image'] ?? response['imageUrl'], // API uses 'image' not 'imageUrl'
+        'area': response['area'] ?? 'Khu vực A',
+        'category': response['category'] ?? 'Thiết bị',
+      };
+    } catch (e) {
+      print('Error fetching equipment info for ID $itemId: $e');
+      return {
+        'name': 'Thiết bị #$itemId (Lỗi tải)',
+        'description': 'Không thể tải thông tin thiết bị',
+        'imageUrl': null,
+        'area': 'Không xác định',
+        'category': 'Thiết bị',
+      };
+    }
   }
 
   // Load customer bookings using real API

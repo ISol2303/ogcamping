@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { 
   Search, 
   Filter, 
@@ -25,7 +27,9 @@ import {
   MapPin,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle,
+  Info
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -67,6 +71,17 @@ export default function StorePage() {
   const [sortBy, setSortBy] = useState("popular")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [loading, setLoading] = useState(true)
+  const [selectedGear, setSelectedGear] = useState<Gear | null>(null)
+  const [rentalDays, setRentalDays] = useState(1)
+  const [quantity, setQuantity] = useState(1)
+  const [showRentalModal, setShowRentalModal] = useState(false)
+  const [notificationModal, setNotificationModal] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
   const router = useRouter()
   const { addToCart } = useCart()
 
@@ -209,27 +224,45 @@ export default function StorePage() {
   }, [gears, searchTerm, selectedCategory, selectedArea, sortBy])
 
   const handleAddToCart = (gear: Gear) => {
+    setSelectedGear(gear)
+    setRentalDays(1)
+    setQuantity(1)
+    setShowRentalModal(true)
+  }
+
+  const handleConfirmRental = () => {
+    if (!selectedGear) return
+
     const cartItem = {
-      id: `equipment-${gear.id}`, // Remove Date.now() to allow proper duplicate detection
+      id: `equipment-${selectedGear.id}-${Date.now()}`,
       type: "EQUIPMENT" as const,
       item: {
-        id: gear.id,
-        name: gear.name,
-        description: gear.description,
-        price: gear.pricePerDay,
-        imageUrl: gear.imageUrl,
-        category: gear.category,
-        area: gear.area,
-        available: gear.available,
-        quantityInStock: gear.quantityInStock
+        id: selectedGear.id,
+        name: selectedGear.name,
+        description: selectedGear.description,
+        price: selectedGear.pricePerDay,
+        imageUrl: selectedGear.imageUrl,
+        category: selectedGear.category,
+        area: selectedGear.area,
+        available: selectedGear.available,
+        quantityInStock: selectedGear.quantityInStock
       },
-      quantity: 1,
-      rentalDays: 1,
-      totalPrice: gear.pricePerDay
+      quantity: quantity,
+      rentalDays: rentalDays,
+      totalPrice: selectedGear.pricePerDay * quantity * rentalDays
     }
 
     addToCart(cartItem)
-    alert(`Đã thêm ${gear.name} vào giỏ hàng!`)
+    setNotificationModal({
+      isOpen: true,
+      type: 'success',
+      title: 'Thành công!',
+      message: `Đã thêm ${selectedGear.name} vào giỏ hàng!`,
+      onConfirm: () => {
+        setShowRentalModal(false)
+        setSelectedGear(null)
+      }
+    })
   }
 
   const handleViewDetails = (gear: Gear) => {
@@ -508,6 +541,184 @@ export default function StorePage() {
           </div>
         )}
       </div>
+
+      {/* Rental Modal */}
+      <Dialog open={showRentalModal} onOpenChange={setShowRentalModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Chọn thông tin thuê</DialogTitle>
+            <DialogDescription>
+              Vui lòng chọn số lượng và số ngày thuê cho {selectedGear?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedGear && (
+            <div className="space-y-6">
+              {/* Gear Info */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                {selectedGear.imageUrl ? (
+                  <img
+                    src={selectedGear.imageUrl.startsWith('http') ? selectedGear.imageUrl : `http://localhost:8080${selectedGear.imageUrl}`}
+                    alt={selectedGear.name}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <Package className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{selectedGear.name}</h3>
+                  <p className="text-sm text-gray-600">{selectedGear.category}</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {selectedGear.pricePerDay.toLocaleString('vi-VN')}đ/ngày
+                  </p>
+                </div>
+              </div>
+
+              {/* Quantity and Days Selection */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="quantity">Số lượng</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 text-center"
+                      min="1"
+                      max={selectedGear.available}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(Math.min(selectedGear.available, quantity + 1))}
+                      disabled={quantity >= selectedGear.available}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tối đa: {selectedGear.available} sản phẩm
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="rentalDays">Số ngày thuê</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRentalDays(Math.max(1, rentalDays - 1))}
+                      disabled={rentalDays <= 1}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      id="rentalDays"
+                      type="number"
+                      value={rentalDays}
+                      onChange={(e) => setRentalDays(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 text-center"
+                      min="1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRentalDays(rentalDays + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tối thiểu: 1 ngày
+                  </p>
+                </div>
+              </div>
+
+              {/* Total Price */}
+              <div className="bg-green-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold">Tổng cộng:</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    {(selectedGear.pricePerDay * quantity * rentalDays).toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {quantity} thiết bị × {rentalDays} ngày × {selectedGear.pricePerDay.toLocaleString('vi-VN')}đ/ngày
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRentalModal(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleConfirmRental} className="bg-green-600 hover:bg-green-700">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Thêm vào giỏ hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notification Modal */}
+      <Dialog open={notificationModal.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setNotificationModal(prev => ({ ...prev, isOpen: false }))
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              {notificationModal.type === 'success' && (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              )}
+              {notificationModal.type === 'error' && (
+                <XCircle className="h-6 w-6 text-red-600" />
+              )}
+              {notificationModal.type === 'warning' && (
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              )}
+              {notificationModal.type === 'info' && (
+                <Info className="h-6 w-6 text-blue-600" />
+              )}
+              <DialogTitle className="text-lg font-semibold">
+                {notificationModal.title}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">{notificationModal.message}</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                notificationModal.onConfirm()
+                setNotificationModal(prev => ({ ...prev, isOpen: false }))
+              }}
+              className={`w-full ${
+                notificationModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                notificationModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                notificationModal.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

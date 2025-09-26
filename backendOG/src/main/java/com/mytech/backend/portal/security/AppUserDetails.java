@@ -81,10 +81,10 @@ public class AppUserDetails implements UserDetails {
         return user.getId();
     }
     public String getFirstName(){
-        return user.getCustomer().getFirstName().toString();
+        return user.getCustomer() != null ? user.getCustomer().getFirstName() : "";
     }
 
     public String getLastName(){
-        return user.getCustomer().getLastName().toString();
+        return user.getCustomer() != null ? user.getCustomer().getLastName() : "";
     }
 }

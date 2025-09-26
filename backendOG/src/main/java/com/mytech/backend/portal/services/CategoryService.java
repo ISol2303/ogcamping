@@ -11,4 +11,5 @@ public interface CategoryService {
     CategoryDTO update(Long id, CategoryDTO categoryDTO);
     void delete(Long id);
     boolean existsByName(String name);
+    long getProductCountByCategoryName(String categoryName);
 }

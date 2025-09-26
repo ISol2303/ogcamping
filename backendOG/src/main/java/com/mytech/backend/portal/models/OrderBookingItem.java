@@ -38,6 +38,9 @@ public class OrderBookingItem extends AbstractEntity{
     @Column(name = "total_price", nullable = false)
     private Double totalPrice;
 
+    @Column(name = "rental_days")
+    private Integer rentalDays;
+
 	public Long getId() {
 		return id;
 	}
@@ -92,6 +95,14 @@ public class OrderBookingItem extends AbstractEntity{
 
 	public void setTotalPrice(Double totalPrice) {
 		this.totalPrice = totalPrice;
+	}
+
+	public Integer getRentalDays() {
+		return rentalDays;
+	}
+
+	public void setRentalDays(Integer rentalDays) {
+		this.rentalDays = rentalDays;
 	}
     
 }

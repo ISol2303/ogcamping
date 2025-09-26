@@ -234,7 +234,7 @@ export default function CheckoutPage() {
       
       console.log('Request headers:', headers);
       
-      let booking;
+      let bookingResult;
       
       // Nếu chỉ có equipment (gear) thì tạo OrderBooking
       if (equipment.length > 0 && services.length === 0) {
@@ -263,7 +263,8 @@ export default function CheckoutPage() {
               itemId: item.gearId,
               quantity: item.quantity,
               unitPrice: unitPrice,
-              totalPrice: totalPrice
+              totalPrice: totalPrice,
+              rentalDays: item.rentalDays || 1
             };
           })
         };
@@ -276,8 +277,8 @@ export default function CheckoutPage() {
           { headers }
         );
         
-        booking = orderRes.data;
-        localStorage.setItem("infoBookingItem", JSON.stringify(booking));
+        bookingResult = orderRes.data;
+        localStorage.setItem("infoBookingItem", JSON.stringify(bookingResult));
         
         // Xóa giỏ hàng sau khi tạo order thành công
         localStorage.removeItem("cart");
@@ -292,21 +293,12 @@ export default function CheckoutPage() {
           { headers }
         );
         
-        booking = res.data;
-        localStorage.setItem("infoBookingItem", JSON.stringify(booking));
+        bookingResult = res.data;
+        localStorage.setItem("infoBookingItem", JSON.stringify(bookingResult));
         
         // Xóa giỏ hàng sau khi tạo booking thành công
         localStorage.removeItem("cart");
       }
-      // B1: Tạo booking
- //     const res = await axios.post(
-  //      `http://localhost:8080/apis/v1/bookings?customerId=${user.id}`,
- //       bookingRequest
-//      );
-
-      const booking = res.data;
-      localStorage.setItem("infoBookingItem", JSON.stringify(booking));
-      localStorage.removeItem("cart")
       // B2: Thanh toán
       if (paymentMethod === "vnpay") {
         const paymentRes = await axios.post(

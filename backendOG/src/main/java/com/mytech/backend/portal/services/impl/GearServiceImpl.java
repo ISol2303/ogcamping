@@ -47,6 +47,9 @@ public class GearServiceImpl implements GearService {
             gear.setCreatedOn(now);
             gear.setUpdatedOn(now);
             
+            // Tự động cập nhật status dựa trên available quantity
+            updateGearStatusBasedOnAvailable(gear);
+            
             System.out.println("Created gear: " + gear);
             
             Gear savedGear = gearRepository.save(gear);
@@ -108,6 +111,9 @@ public class GearServiceImpl implements GearService {
             // Set updatedOn timestamp
             existingGear.setUpdatedOn(LocalDateTime.now());
             
+            // Tự động cập nhật status dựa trên available quantity
+            updateGearStatusBasedOnAvailable(existingGear);
+            
             System.out.println("Updated gear: " + existingGear);
             
             Gear savedGear = gearRepository.save(existingGear);
@@ -142,5 +148,74 @@ public class GearServiceImpl implements GearService {
 		return gearRepository.searchGears(name, category, area, status).stream()
 				.map(gear -> modelMapper.map(gear, GearDTO.class))
 				.collect(Collectors.toList());
+	}
+	
+	/**
+	 * Tự động cập nhật status của gear dựa trên available quantity
+	 */
+	private void updateGearStatusBasedOnAvailable(Gear gear) {
+		if (gear.getAvailable() == null || gear.getAvailable() <= 0) {
+			gear.setStatus(GearStatus.OUT_OF_STOCK);
+			System.out.println("Updated gear " + gear.getId() + " status to OUT_OF_STOCK (available: " + gear.getAvailable() + ")");
+		} else {
+			gear.setStatus(GearStatus.AVAILABLE);
+			System.out.println("Updated gear " + gear.getId() + " status to AVAILABLE (available: " + gear.getAvailable() + ")");
+		}
+	}
+	
+	@Override
+	public void updateGearStatusBasedOnAvailable() {
+		System.out.println("Updating all gear statuses based on available quantity...");
+		List<Gear> allGears = gearRepository.findAll();
+		boolean hasChanges = false;
+		
+		for (Gear gear : allGears) {
+			GearStatus oldStatus = gear.getStatus();
+			updateGearStatusBasedOnAvailable(gear);
+			
+			if (!oldStatus.equals(gear.getStatus())) {
+				hasChanges = true;
+				gear.setUpdatedOn(LocalDateTime.now());
+			}
+		}
+		
+		if (hasChanges) {
+			gearRepository.saveAll(allGears);
+			System.out.println("Updated " + allGears.size() + " gear statuses");
+		} else {
+			System.out.println("No gear status updates needed");
+		}
+	}
+	
+	@Override
+	public GearDTO updateGearAvailableQuantity(Long gearId, Integer quantityChange) {
+		try {
+			System.out.println("Updating gear " + gearId + " available quantity by " + quantityChange);
+			
+			Gear gear = gearRepository.findById(gearId)
+					.orElseThrow(() -> new RuntimeException("Gear not found with id: " + gearId));
+			
+			// Cập nhật available quantity
+			Integer newAvailable = gear.getAvailable() + quantityChange;
+			
+			// Đảm bảo không âm và không vượt quá quantityInStock
+			newAvailable = Math.max(0, newAvailable);
+			newAvailable = Math.min(newAvailable, gear.getQuantityInStock());
+			
+			gear.setAvailable(newAvailable);
+			gear.setUpdatedOn(LocalDateTime.now());
+			
+			// Tự động cập nhật status dựa trên available quantity
+			updateGearStatusBasedOnAvailable(gear);
+			
+			Gear savedGear = gearRepository.save(gear);
+			System.out.println("Updated gear " + gearId + " available quantity to " + newAvailable + ", status: " + savedGear.getStatus());
+			
+			return modelMapper.map(savedGear, GearDTO.class);
+		} catch (Exception e) {
+			System.err.println("Error updating gear available quantity: " + e.getMessage());
+			e.printStackTrace();
+			throw e;
+		}
 	}
 }

@@ -128,11 +128,23 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
 
     try {
       // Step 1: Create booking first
+      // Debug auth data
+      print('BookingConfirmation - Auth data:');
+      print('- isAuthenticated: ${authProvider.isAuthenticated}');
+      print('- user: ${authProvider.user}');
+      print('- customer: ${authProvider.customer}');
+      
       // Use customer ID instead of user ID
       final customerId = authProvider.customer?.id.toString() ??
           authProvider.user!.id.toString();
-      final success = await bookingProvider.createBooking(
+      print('Using customerId: $customerId');
+      
+      // Pass user data directly to avoid provider dependency issues
+      final success = await bookingProvider.createBookingWithUserData(
         customerId,
+        customerName: authProvider.user?.name,
+        customerEmail: authProvider.user?.email,
+        customerPhone: authProvider.user?.phone,
         notes: _notesController.text.trim(),
       );
 
@@ -150,7 +162,21 @@ class _BookingConfirmationScreenState extends State<BookingConfirmationScreen> {
       }
 
       // Step 2: Handle payment based on selected method
-      await _handlePayment(bookingProvider.lastBookingId);
+      // Skip payment for equipment orders as they are already paid
+      if (bookingProvider.lastBookingId != null) {
+        await _handlePayment(bookingProvider.lastBookingId);
+      } else {
+        // For equipment orders, just show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Đặt thiết bị thành công! Vui lòng thanh toán tại quầy.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/home');
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

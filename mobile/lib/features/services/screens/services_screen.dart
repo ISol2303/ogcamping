@@ -192,7 +192,7 @@ class _ServiceCard extends StatelessWidget {
                   // Service Image
                   if (service.imageUrl.isNotEmpty)
                     Image.network(
-                      'http://192.168.56.1:8080${service.imageUrl}',
+                      'http://192.168.1.13:8080${service.imageUrl}',
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,

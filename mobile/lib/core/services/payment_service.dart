@@ -6,7 +6,7 @@ import '../models/payment.dart';
 import 'in_app_browser_service.dart';
 
 class PaymentService {
-  static const String baseUrl = 'http://192.168.56.1:8080/apis/v1/payments';
+  static const String baseUrl = 'http://192.168.1.13:8080/apis/v1/payments';
 
   Future<PaymentResponseDTO> createPayment(PaymentRequestDTO request) async {
     try {

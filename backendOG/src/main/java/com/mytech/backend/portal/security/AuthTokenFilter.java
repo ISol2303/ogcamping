@@ -65,7 +65,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 if (rolesObj instanceof String) {
                     roles = List.of((String) rolesObj);
                 } else if (rolesObj instanceof List) {
-                    roles = (List<String>) rolesObj;
+                    @SuppressWarnings("unchecked")
+                    List<String> tempRoles = (List<String>) rolesObj;
+                    roles = tempRoles;
                 } else {
                     roles = List.of(); // fallback
                 }

@@ -196,8 +196,17 @@ class AuthProvider extends ChangeNotifier {
         final userData = response['user'];
         final token = response['token'];
         
+        print('LoginWithEmail - User data from API:');
+        print('- userData: $userData');
+        print('- token: $token');
+        
         _user = User.fromJson(userData);
         _token = token;
+        
+        print('LoginWithEmail - Parsed user:');
+        print('- user.name: ${_user?.name}');
+        print('- user.email: ${_user?.email}');
+        print('- user.phone: ${_user?.phone}');
         
         // Load customer info
         await _loadCustomerInfo(_user!.id);

@@ -25,4 +25,10 @@ public interface GearRepository extends JpaRepository<Gear, Long> {
 		        @Param("area") AreaName area,
 		        @Param("status") GearStatus status
 		    );
+		    
+		    // Đếm số sản phẩm theo danh mục
+		    long countByCategory(String category);
+		    
+		    // Tìm tất cả sản phẩm theo danh mục
+		    List<Gear> findByCategory(String category);
 }

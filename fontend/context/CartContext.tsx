@@ -20,6 +20,7 @@ interface CartContextType {
   addToCart: (item: CartItem) => void
   removeFromCart: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
+  updateRentalDays: (id: string, rentalDays: number) => void
   clearCart: () => void
   getTotalPrice: () => number
 }
@@ -104,6 +105,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const updateRentalDays = (id: string, rentalDays: number) => {
+    if (rentalDays <= 0) {
+      return
+    }
+
+    setCartItems(prev =>
+      prev.map(item => {
+        if (item.id === id) {
+          // Recalculate totalPrice based on quantity and new rentalDays
+          const newTotalPrice = item.quantity * item.item.price * rentalDays
+          return { ...item, rentalDays, totalPrice: newTotalPrice }
+        }
+        return item
+      })
+    )
+  }
+
   const clearCart = () => {
     setCartItems([])
   }
@@ -122,6 +140,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         removeFromCart,
         updateQuantity,
+        updateRentalDays,
         clearCart,
         getTotalPrice
       }}

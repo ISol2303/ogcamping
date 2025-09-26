@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useCart } from "@/context/CartContext"
+import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,10 +25,20 @@ import {
   Clock,
   Shield,
   Truck,
-  RotateCcw
+  RotateCcw,
+  AlertTriangle,
+  Info
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Gear {
   id: string
@@ -50,18 +61,15 @@ export default function EquipmentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [rentalDays, setRentalDays] = useState(1)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [notificationModal, setNotificationModal] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
   const { addToCart } = useCart()
-
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsLoggedIn(true)
-      setUser(JSON.parse(userData))
-    }
-  }, [])
+  const { isLoggedIn, user } = useAuth()
 
   useEffect(() => {
     const fetchGear = async () => {
@@ -136,8 +144,15 @@ export default function EquipmentDetailPage() {
     if (!gear) return
 
     if (!isLoggedIn) {
-      alert("Bạn cần đăng nhập để thêm vào giỏ hàng")
-      router.push('/login')
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Cần đăng nhập',
+        message: 'Bạn cần đăng nhập để thêm vào giỏ hàng',
+        onConfirm: () => {
+          router.push('/login')
+        }
+      })
       return
     }
 
@@ -161,21 +176,61 @@ export default function EquipmentDetailPage() {
     }
 
     addToCart(cartItem)
-    alert(`Đã thêm ${gear.name} vào giỏ hàng!`)
+    setNotificationModal({
+      isOpen: true,
+      type: 'success',
+      title: 'Thành công!',
+      message: `Đã thêm ${gear.name} vào giỏ hàng!`,
+      onConfirm: () => {}
+    })
   }
 
   const handleRentNow = () => {
     if (!gear) return
 
     if (!isLoggedIn) {
-      alert("Bạn cần đăng nhập để thuê thiết bị")
-      router.push('/login')
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Cần đăng nhập',
+        message: 'Bạn cần đăng nhập để thuê thiết bị',
+        onConfirm: () => {
+          router.push('/login')
+        }
+      })
       return
     }
 
     // Thêm vào giỏ hàng và chuyển đến checkout
-    handleAddToCart()
-    router.push('/checkout')
+    const cartItem = {
+      id: `equipment-${gear.id}-${Date.now()}`,
+      type: "EQUIPMENT" as const,
+      item: {
+        id: gear.id,
+        name: gear.name,
+        description: gear.description,
+        price: gear.pricePerDay,
+        imageUrl: gear.imageUrl,
+        category: gear.category,
+        area: gear.area,
+        available: gear.available,
+        quantityInStock: gear.quantityInStock
+      },
+      quantity: quantity,
+      rentalDays: rentalDays,
+      totalPrice: gear.pricePerDay * quantity * rentalDays
+    }
+
+    addToCart(cartItem)
+    setNotificationModal({
+      isOpen: true,
+      type: 'success',
+      title: 'Thành công!',
+      message: `Đã thêm ${gear.name} vào giỏ hàng!`,
+      onConfirm: () => {
+        router.push('/checkout')
+      }
+    })
   }
 
   if (loading) {
@@ -297,9 +352,31 @@ export default function EquipmentDetailPage() {
                   Còn {gear.available}/{gear.quantityInStock} sản phẩm
                 </div>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 mb-3">
                 * Giá thuê theo ngày, thanh toán khi nhận thiết bị
               </p>
+              
+              {/* Price Examples */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="text-center p-2 bg-white rounded">
+                  <div className="font-semibold text-gray-900">1 ngày</div>
+                  <div className="text-green-600 font-bold">
+                    {(gear.pricePerDay).toLocaleString('vi-VN')}đ
+                  </div>
+                </div>
+                <div className="text-center p-2 bg-white rounded">
+                  <div className="font-semibold text-gray-900">3 ngày</div>
+                  <div className="text-green-600 font-bold">
+                    {(gear.pricePerDay * 3).toLocaleString('vi-VN')}đ
+                  </div>
+                </div>
+                <div className="text-center p-2 bg-white rounded">
+                  <div className="font-semibold text-gray-900">7 ngày</div>
+                  <div className="text-green-600 font-bold">
+                    {(gear.pricePerDay * 7).toLocaleString('vi-VN')}đ
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Description */}
@@ -375,16 +452,35 @@ export default function EquipmentDetailPage() {
               </div>
 
               {/* Total Price */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Tổng cộng:</span>
-                  <span className="text-2xl font-bold text-green-600">
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-lg font-semibold text-gray-900">Tổng cộng:</span>
+                  <span className="text-3xl font-bold text-green-600">
                     {totalPrice.toLocaleString('vi-VN')}đ
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {quantity} thiết bị × {rentalDays} ngày × {gear.pricePerDay.toLocaleString('vi-VN')}đ/ngày
-                </p>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p className="flex justify-between">
+                    <span>Giá thuê/ngày:</span>
+                    <span>{gear.pricePerDay.toLocaleString('vi-VN')}đ</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span>Số lượng:</span>
+                    <span>{quantity} thiết bị</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span>Số ngày thuê:</span>
+                    <span>{rentalDays} ngày</span>
+                  </p>
+                  <hr className="my-2" />
+                  <p className="flex justify-between font-semibold text-gray-900">
+                    <span>Thành tiền:</span>
+                    <span>{totalPrice.toLocaleString('vi-VN')}đ</span>
+                  </p>
+                </div>
+                {/* <div className="mt-3 p-2 bg-green-100 rounded text-xs text-green-800 text-center">
+                  💰 Tiết kiệm {(gear.pricePerDay * quantity * rentalDays * 0.1).toLocaleString('vi-VN')}đ khi thuê từ 7 ngày trở lên
+                </div> */}
               </div>
             </div>
 
@@ -495,6 +591,54 @@ export default function EquipmentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <Dialog open={notificationModal.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setNotificationModal(prev => ({ ...prev, isOpen: false }))
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              {notificationModal.type === 'success' && (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              )}
+              {notificationModal.type === 'error' && (
+                <XCircle className="h-6 w-6 text-red-600" />
+              )}
+              {notificationModal.type === 'warning' && (
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              )}
+              {notificationModal.type === 'info' && (
+                <Info className="h-6 w-6 text-blue-600" />
+              )}
+              <DialogTitle className="text-lg font-semibold">
+                {notificationModal.title}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">{notificationModal.message}</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                notificationModal.onConfirm()
+                setNotificationModal(prev => ({ ...prev, isOpen: false }))
+              }}
+              className={`w-full ${
+                notificationModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                notificationModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                notificationModal.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

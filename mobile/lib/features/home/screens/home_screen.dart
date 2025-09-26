@@ -92,6 +92,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 case 'booking-history':
                   context.pushNamed(AppRoutes.bookingHistory);
                   break;
+                case 'equipment-history':
+                  context.pushNamed(AppRoutes.equipmentHistory);
+                  break;
                 case 'logout':
                   _logout();
                   break;
@@ -111,6 +114,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListTile(
                   leading: Icon(Icons.history),
                   title: Text('Lịch sử đặt chỗ'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'equipment-history',
+                child: ListTile(
+                  leading: Icon(Icons.shopping_cart),
+                  title: Text('Lịch sử thuê thiết bị'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -191,6 +202,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
+              ),
+              // Debug user data
+              Text(
+                'Debug - User: ${authProvider.user?.name}, Email: ${authProvider.user?.email}, Phone: ${authProvider.user?.phone}',
+                style: TextStyle(color: Colors.white, fontSize: 12),
               ),
               const SizedBox(height: 8),
               Text(

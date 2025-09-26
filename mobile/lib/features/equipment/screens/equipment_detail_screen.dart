@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/providers/services_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/providers/equipment_provider.dart';
 import '../../../core/providers/booking_provider.dart';
 import '../../../core/models/equipment.dart';
 import '../../../core/navigation/app_router.dart';
+import '../../../core/config/app_config.dart';
 import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 
@@ -39,17 +41,20 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
     });
 
     try {
-      final servicesProvider = context.read<ServicesProvider>();
-      final equipment = servicesProvider.getEquipmentById(widget.equipmentId);
+      final equipmentProvider = context.read<EquipmentProvider>();
+      
+      // Load equipment if not already loaded
+      if (equipmentProvider.equipment.isEmpty) {
+        await equipmentProvider.loadEquipment();
+      }
+      
+      final equipment = equipmentProvider.getEquipmentById(widget.equipmentId);
       
       if (equipment != null) {
         setState(() {
           _equipment = equipment;
           _isLoading = false;
         });
-        
-        // Load reviews
-        await servicesProvider.loadReviews(widget.equipmentId, 'equipment');
       } else {
         setState(() {
           _error = 'Không tìm thấy thiết bị';
@@ -68,7 +73,10 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
     if (_equipment == null) return;
 
     final bookingProvider = context.read<BookingProvider>();
-    bookingProvider.addEquipmentToCart(_equipment!, quantity: _quantity);
+    bookingProvider.addEquipmentToCart(
+      _equipment!, 
+      quantity: _quantity,
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -81,36 +89,24 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
     );
   }
 
-  String _getCategoryName(EquipmentCategory category) {
-    switch (category) {
-      case EquipmentCategory.tent:
-        return 'Lều';
-      case EquipmentCategory.cooking:
-        return 'Nấu ăn';
-      case EquipmentCategory.lighting:
-        return 'Chiếu sáng';
-      case EquipmentCategory.sleeping:
-        return 'Ngủ nghỉ';
-      case EquipmentCategory.furniture:
-        return 'Nội thất';
-      case EquipmentCategory.other:
-        return 'Khác';
-    }
-  }
-
-  IconData _getCategoryIcon(EquipmentCategory category) {
-    switch (category) {
-      case EquipmentCategory.tent:
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'lều':
+      case 'tent':
         return Icons.home;
-      case EquipmentCategory.cooking:
+      case 'nấu ăn':
+      case 'cooking':
         return Icons.local_fire_department;
-      case EquipmentCategory.lighting:
+      case 'chiếu sáng':
+      case 'lighting':
         return Icons.lightbulb;
-      case EquipmentCategory.sleeping:
+      case 'ngủ nghỉ':
+      case 'sleeping':
         return Icons.bed;
-      case EquipmentCategory.furniture:
+      case 'nội thất':
+      case 'furniture':
         return Icons.chair;
-      case EquipmentCategory.other:
+      default:
         return Icons.category;
     }
   }
@@ -169,25 +165,73 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  if (_equipment!.imageUrl.isNotEmpty && 
+                      _equipment!.imageUrl != 'null' && 
+                      _equipment!.imageUrl.startsWith('/'))
+                    CachedNetworkImage(
+                      imageUrl: AppConfig.getImageUrl(_equipment!.imageUrl),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      placeholder: (context, url) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _getCategoryIcon(_equipment!.category),
+                            size: 80,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            _getCategoryIcon(_equipment!.category),
+                            size: 80,
+                            color: Colors.white.withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          _getCategoryIcon(_equipment!.category),
+                          size: 80,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Icon(
-                        _getCategoryIcon(_equipment!.category),
-                        size: 80,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                    ),
-                  ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -230,7 +274,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          _getCategoryName(_equipment!.category),
+                          _equipment!.category,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -246,7 +290,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                         ),
                         child: Text(
                           _equipment!.isAvailable 
-                              ? 'Còn ${_equipment!.availableQuantity} cái'
+                              ? 'Còn ${_equipment!.available} cái'
                               : 'Hết hàng',
                           style: const TextStyle(
                             color: Colors.white,
@@ -291,7 +335,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Thương hiệu: ${_equipment!.brand}',
+                        'Khu vực: ${_equipment!.area}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -322,7 +366,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                         ],
                       ),
                       Text(
-                        'Tổng: ${_equipment!.quantity} cái',
+                        'Tổng: ${_equipment!.quantityInStock} cái',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
@@ -345,9 +389,9 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Specifications
+                  // Equipment Info
                   Text(
-                    'Thông số kỹ thuật',
+                    'Thông tin thiết bị',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -357,26 +401,55 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        children: _equipment!.specifications.entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 120,
-                                  child: Text(
-                                    '${entry.key}:',
-                                    style: const TextStyle(fontWeight: FontWeight.w500),
-                                  ),
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  'Danh mục:',
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
-                                Expanded(
-                                  child: Text(entry.value.toString()),
+                              ),
+                              Expanded(
+                                child: Text(_equipment!.category),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  'Khu vực:',
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                              ),
+                              Expanded(
+                                child: Text(_equipment!.area),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  'Số lượng:',
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text('${_equipment!.available}/${_equipment!.quantityInStock}'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -414,7 +487,7 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
                         ),
                         const SizedBox(width: 16),
                         IconButton(
-                          onPressed: _quantity < _equipment!.availableQuantity ? () {
+                          onPressed: _quantity < _equipment!.available ? () {
                             setState(() {
                               _quantity++;
                             });
@@ -503,92 +576,29 @@ class _EquipmentDetailScreenState extends State<EquipmentDetailScreen> {
   }
 
   Widget _buildReviewsSection() {
-    return Consumer<ServicesProvider>(
-      builder: (context, servicesProvider, child) {
-        final reviews = servicesProvider.getReviewsForItem(widget.equipmentId);
-        
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Đánh giá (${reviews.length})',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (reviews.isNotEmpty)
-                  TextButton(
-                    onPressed: () {
-                      // Show all reviews
-                    },
-                    child: const Text('Xem tất cả'),
-                  ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Đánh giá (0)',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Text(
+              'Chưa có đánh giá nào',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
-            
-            if (reviews.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text('Chưa có đánh giá nào'),
-              )
-            else
-              ...reviews.take(3).map((review) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              child: Text(
-                                review.userName.substring(0, 1).toUpperCase(),
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    review.userName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Row(
-                                    children: List.generate(5, (index) {
-                                      return Icon(
-                                        index < review.rating ? Icons.star : Icons.star_border,
-                                        size: 16,
-                                        color: Colors.amber,
-                                      );
-                                    }),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(review.comment),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }

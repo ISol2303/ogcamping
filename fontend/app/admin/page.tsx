@@ -935,8 +935,8 @@ export default function AdminDashboard() {
                   <TabsTrigger value="equipment" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Thiết bị</TabsTrigger>
                 </TabsList>
                 <TabsList className="grid grid-cols-2 lg:grid-cols-4 gap-1 h-auto p-1 bg-gray-100 rounded-lg">
-                  <TabsTrigger value="gear">Sản phẩm</TabsTrigger>
-                  <TabsTrigger value="categories">Danh mục</TabsTrigger>
+                  <TabsTrigger value="gear" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Sản phẩm</TabsTrigger>
+                  <TabsTrigger value="categories" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Danh mục</TabsTrigger>
                   <TabsTrigger value="customers" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Khách hàng</TabsTrigger>
                   <TabsTrigger value="locations" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Địa điểm</TabsTrigger>
                   <TabsTrigger value="inventory" className="whitespace-nowrap px-3 py-2 text-sm hover:bg-green-300">Kho</TabsTrigger>

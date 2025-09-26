@@ -8,6 +8,7 @@ import '../../features/services/screens/services_screen.dart';
 import '../../features/services/screens/service_detail_screen.dart';
 import '../../features/equipment/screens/equipment_screen.dart';
 import '../../features/equipment/screens/equipment_detail_screen.dart';
+import '../../features/equipment/screens/equipment_order_history_screen.dart';
 import '../../features/combo/screens/combo_screen.dart';
 import '../../features/combo/screens/combo_detail_screen.dart';
 import '../../features/booking/screens/cart_screen.dart';
@@ -139,6 +140,11 @@ class AppRouter {
                   builder: (context, state) => EquipmentDetailScreen(
                     equipmentId: state.pathParameters['id']!,
                   ),
+                ),
+                GoRoute(
+                  path: 'history',
+                  name: 'equipment-history',
+                  builder: (context, state) => const EquipmentOrderHistoryScreen(),
                 ),
               ],
             ),
@@ -280,6 +286,7 @@ class AppRoutes {
   static const serviceDetail = 'service-detail';
   static const equipment = 'equipment';
   static const equipmentDetail = 'equipment-detail';
+  static const equipmentHistory = 'equipment-history';
   static const combos = 'combos';
   static const comboDetail = 'combo-detail';
   static const chat = 'chat';

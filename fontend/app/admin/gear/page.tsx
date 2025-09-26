@@ -52,6 +52,7 @@ import {
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react"
 
 interface Gear {
   id: number
@@ -107,6 +108,13 @@ export default function AdminGearPage() {
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [notificationModal, setNotificationModal] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -150,11 +158,23 @@ export default function AdminGearPage() {
         console.log("Gears set (object):", data.data) // Debug log
       } else {
         console.error("Unexpected data format:", data)
-        toast.error(data.message || "Lỗi khi tải danh sách sản phẩm")
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: data.message || "Lỗi khi tải danh sách sản phẩm",
+          onConfirm: () => {}
+        })
       }
     } catch (error) {
       console.error("Error fetching gears:", error)
-      toast.error("Lỗi khi tải danh sách sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     } finally {
       setLoading(false)
     }
@@ -170,17 +190,35 @@ export default function AdminGearPage() {
     console.log("handleCreate called", { formData, imageFile })
     
     if (!formData.name.trim()) {
-      toast.error("Vui lòng nhập tên sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Thiếu thông tin!',
+        message: "Vui lòng nhập tên sản phẩm",
+        onConfirm: () => {}
+      })
       return
     }
 
     if (!formData.category.trim()) {
-      toast.error("Vui lòng chọn danh mục")
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Thiếu thông tin!',
+        message: "Vui lòng chọn danh mục",
+        onConfirm: () => {}
+      })
       return
     }
 
     if (!formData.area.trim()) {
-      toast.error("Vui lòng chọn khu vực")
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Thiếu thông tin!',
+        message: "Vui lòng chọn khu vực",
+        onConfirm: () => {}
+      })
       return
     }
 
@@ -211,7 +249,8 @@ export default function AdminGearPage() {
 
       console.log("Sending request to:", "http://localhost:8080/apis/v1/gears")
       console.log("Form data entries:")
-      for (let [key, value] of form.entries()) {
+      const formEntries = Array.from(form.entries())
+      for (let [key, value] of formEntries) {
         console.log(key, value)
       }
 
@@ -228,27 +267,46 @@ export default function AdminGearPage() {
       console.log("Response data:", data)
       
       if (response.ok) {
-        toast.success("Tạo sản phẩm thành công")
-        setIsCreateDialogOpen(false)
-        setFormData({
-          name: "",
-          category: "",
-          area: "",
-          description: "",
-          quantityInStock: 0,
-          image: "",
-          available: 0,
-          pricePerDay: 0,
-          status: "AVAILABLE"
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: "Tạo sản phẩm thành công",
+          onConfirm: () => {
+            setIsCreateDialogOpen(false)
+            setFormData({
+              name: "",
+              category: "",
+              area: "",
+              description: "",
+              quantityInStock: 0,
+              image: "",
+              available: 0,
+              pricePerDay: 0,
+              status: "AVAILABLE"
+            })
+            setImageFile(null)
+            fetchGears()
+          }
         })
-        setImageFile(null)
-        fetchGears()
       } else {
-        toast.error(data.message || "Lỗi khi tạo sản phẩm")
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: data.message || "Lỗi khi tạo sản phẩm",
+          onConfirm: () => {}
+        })
       }
     } catch (error) {
       console.error("Error creating gear:", error)
-      toast.error("Lỗi khi tạo sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     } finally {
       setSubmitting(false)
     }
@@ -257,7 +315,13 @@ export default function AdminGearPage() {
   // Handle update gear
   const handleUpdate = async () => {
     if (!formData.name.trim()) {
-      toast.error("Vui lòng nhập tên sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'warning',
+        title: 'Thiếu thông tin!',
+        message: "Vui lòng nhập tên sản phẩm",
+        onConfirm: () => {}
+      })
       return
     }
 
@@ -291,28 +355,47 @@ export default function AdminGearPage() {
       const data = await response.json()
       
       if (response.ok) {
-        toast.success("Cập nhật sản phẩm thành công")
-        setIsEditDialogOpen(false)
-        setEditingGear(null)
-        setFormData({
-          name: "",
-          category: "",
-          area: "",
-          description: "",
-          quantityInStock: 0,
-          image: "",
-          available: 0,
-          pricePerDay: 0,
-          status: "AVAILABLE"
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: "Cập nhật sản phẩm thành công",
+          onConfirm: () => {
+            setIsEditDialogOpen(false)
+            setEditingGear(null)
+            setFormData({
+              name: "",
+              category: "",
+              area: "",
+              description: "",
+              quantityInStock: 0,
+              image: "",
+              available: 0,
+              pricePerDay: 0,
+              status: "AVAILABLE"
+            })
+            setImageFile(null)
+            fetchGears()
+          }
         })
-        setImageFile(null)
-        fetchGears()
       } else {
-        toast.error(data.message || "Lỗi khi cập nhật sản phẩm")
+        setNotificationModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Lỗi!',
+          message: data.message || "Lỗi khi cập nhật sản phẩm",
+          onConfirm: () => {}
+        })
       }
     } catch (error) {
       console.error("Error updating gear:", error)
-      toast.error("Lỗi khi cập nhật sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     } finally {
       setSubmitting(false)
     }
@@ -329,20 +412,45 @@ export default function AdminGearPage() {
       })
 
       if (response.ok) {
-        toast.success("Xóa sản phẩm thành công")
-        fetchGears()
+        setNotificationModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công!',
+          message: "Xóa sản phẩm thành công",
+          onConfirm: () => {
+            fetchGears()
+          }
+        })
       } else {
         // Chỉ parse JSON nếu có content
         if (response.status !== 204) {
           const data = await response.json()
-          toast.error(data.message || "Lỗi khi xóa sản phẩm")
+          setNotificationModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Lỗi!',
+            message: data.message || "Lỗi khi xóa sản phẩm",
+            onConfirm: () => {}
+          })
         } else {
-          toast.error("Lỗi khi xóa sản phẩm")
+          setNotificationModal({
+            isOpen: true,
+            type: 'error',
+            title: 'Lỗi!',
+            message: "Lỗi khi xóa sản phẩm",
+            onConfirm: () => {}
+          })
         }
       }
     } catch (error) {
       console.error("Error deleting gear:", error)
-      toast.error("Lỗi khi xóa sản phẩm")
+      setNotificationModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi kết nối!',
+        message: "Không thể kết nối đến server. Vui lòng thử lại.",
+        onConfirm: () => {}
+      })
     }
   }
 
@@ -370,7 +478,21 @@ export default function AdminGearPage() {
                         gear.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = !categoryFilter || categoryFilter === "all" || gear.category === categoryFilter
     const matchesArea = !areaFilter || areaFilter === "all" || gear.area === areaFilter
-    const matchesStatus = !statusFilter || statusFilter === "all" || gear.status === statusFilter
+    
+    // Cập nhật logic filter status để xem xét số lượng có sẵn
+    let matchesStatus = true
+    if (statusFilter && statusFilter !== "all") {
+      if (statusFilter === "AVAILABLE") {
+        // Nếu filter "Có sẵn", chỉ hiển thị sản phẩm có available > 0
+        matchesStatus = gear.available > 0
+      } else if (statusFilter === "OUT_OF_STOCK") {
+        // Nếu filter "Hết hàng", hiển thị sản phẩm có available = 0
+        matchesStatus = gear.available === 0
+      } else {
+        // Các filter khác giữ nguyên logic cũ
+        matchesStatus = gear.status === statusFilter
+      }
+    }
     
     return matchesSearch && matchesCategory && matchesArea && matchesStatus
   })
@@ -386,15 +508,25 @@ export default function AdminGearPage() {
     return option ? option.label : value
   }
 
-  // Get status label
-  const getStatusLabel = (value: string) => {
-    const option = STATUS_OPTIONS.find(opt => opt.value === value)
-    return option ? option.label : value
+  // Get status label - tự động cập nhật dựa trên số lượng có sẵn
+  const getStatusLabel = (gear: Gear) => {
+    // Nếu số lượng có sẵn = 0, hiển thị "Hết hàng" bất kể status trong DB
+    if (gear.available === 0) {
+      return "Hết hàng"
+    }
+    // Nếu có số lượng, hiển thị theo status trong DB
+    const option = STATUS_OPTIONS.find(opt => opt.value === gear.status)
+    return option ? option.label : gear.status
   }
 
-  // Get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
-    return status === "AVAILABLE" ? "default" : "destructive"
+  // Get status badge variant - tự động cập nhật dựa trên số lượng có sẵn
+  const getStatusBadgeVariant = (gear: Gear) => {
+    // Nếu số lượng có sẵn = 0, hiển thị màu đỏ (destructive)
+    if (gear.available === 0) {
+      return "destructive"
+    }
+    // Nếu có số lượng, hiển thị theo status trong DB
+    return gear.status === "AVAILABLE" ? "default" : "destructive"
   }
 
   return (
@@ -586,7 +718,7 @@ export default function AdminGearPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {gears.filter(g => g.status === "AVAILABLE").length}
+              {gears.filter(g => g.available > 0).length}
             </div>
           </CardContent>
         </Card>
@@ -597,7 +729,7 @@ export default function AdminGearPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {gears.filter(g => g.status === "OUT_OF_STOCK").length}
+              {gears.filter(g => g.available === 0).length}
             </div>
           </CardContent>
         </Card>
@@ -735,7 +867,7 @@ export default function AdminGearPage() {
                       <TableCell>{getAreaLabel(gear.area)}</TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>Tồn kho: {gear.quantityInStock}</div>
+                          <div>Tổng sản phẩm: {gear.quantityInStock}</div>
                           <div>Có sẵn: {gear.available}</div>
                         </div>
                       </TableCell>
@@ -743,8 +875,8 @@ export default function AdminGearPage() {
                         {gear.pricePerDay.toLocaleString('vi-VN')} VNĐ
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(gear.status)}>
-                          {getStatusLabel(gear.status)}
+                        <Badge variant={getStatusBadgeVariant(gear)}>
+                          {getStatusLabel(gear)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -936,6 +1068,54 @@ export default function AdminGearPage() {
             <Button onClick={handleUpdate} disabled={submitting}>
               {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Cập nhật
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notification Modal */}
+      <Dialog open={notificationModal.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setNotificationModal(prev => ({ ...prev, isOpen: false }))
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              {notificationModal.type === 'success' && (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              )}
+              {notificationModal.type === 'error' && (
+                <XCircle className="h-6 w-6 text-red-600" />
+              )}
+              {notificationModal.type === 'warning' && (
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              )}
+              {notificationModal.type === 'info' && (
+                <Info className="h-6 w-6 text-blue-600" />
+              )}
+              <DialogTitle className="text-lg font-semibold">
+                {notificationModal.title}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">{notificationModal.message}</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                notificationModal.onConfirm()
+                setNotificationModal(prev => ({ ...prev, isOpen: false }))
+              }}
+              className={`w-full ${
+                notificationModal.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                notificationModal.type === 'error' ? 'bg-red-600 hover:bg-red-700' :
+                notificationModal.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              OK
             </Button>
           </DialogFooter>
         </DialogContent>

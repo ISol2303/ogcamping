@@ -17,7 +17,7 @@ class ApiService {
       return 'http://localhost:8080/apis/v1';
     }
     // For mobile, use IP address for real device connectivity
-    return 'http://192.168.56.1:8080/apis/v1';
+    return 'http://192.168.1.13:8080/apis/v1';
   }
 
   static const Duration requestTimeout =
@@ -38,13 +38,15 @@ class ApiService {
         'success': true,
         'token': 'mock_jwt_token_${DateTime.now().millisecondsSinceEpoch}',
         'user': {
-          'id': 'user_1',
+          'id': 1,
           'email': email,
-          'fullName': 'Nguyễn Văn A',
-          'phoneNumber': '0123456789',
+          'name': 'Nguyễn Văn A',
+          'phone': '0123456789',
           'avatar': 'https://via.placeholder.com/150',
-          'createdAt':
-              DateTime.now().subtract(Duration(days: 30)).toIso8601String(),
+          'role': 'CUSTOMER',
+          'status': 'ACTIVE',
+          'agreeMarketing': false,
+          'createdAt': DateTime.now().subtract(Duration(days: 30)).toIso8601String(),
         }
       };
     }
@@ -273,6 +275,50 @@ class ApiService {
     } catch (e) {
       print('Create booking API error: $e');
       throw Exception('Network error: $e');
+    }
+  }
+
+  // Create order for equipment (GEAR) - calls different API
+  Future<Map<String, dynamic>> createEquipmentOrder(
+      String customerId, Map<String, dynamic> orderData) async {
+    try {
+      // Use the same API as web - without /v1
+      final gearApiUrl = baseUrl.replaceAll('/v1', '') + '/orders/gear';
+      print(
+          'Creating equipment order API call: POST $gearApiUrl');
+      print('Request body: $orderData');
+
+      final response = await http
+          .post(
+            Uri.parse(gearApiUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(orderData),
+          )
+          .timeout(requestTimeout);
+
+      print('Equipment Order API Response Status: ${response.statusCode}');
+      print('Equipment Order API Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        try {
+          return json.decode(response.body);
+        } catch (e) {
+          print('JSON decode error: $e');
+          // Return minimal response if JSON parsing fails
+          return {
+            'id': 0,
+            'status': 'PENDING',
+            'totalPrice': 0.0,
+            'orderDate': DateTime.now().toIso8601String(),
+          };
+        }
+      } else {
+        throw Exception(
+            'Failed to create equipment order: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Create equipment order API error: $e');
+      throw Exception('Failed to create equipment order: $e');
     }
   }
 
@@ -527,7 +573,7 @@ class ApiService {
               'name': jsonResponse['fullname'], // Backend uses 'fullname'
               'email': jsonResponse['email'],
               'role': jsonResponse['role'],
-              'phone': null, // Not provided by backend
+              'phone': jsonResponse['phone'], // Now provided by backend
               'address': null, // Not provided by backend
               'status': 'ACTIVE',
               'agreeMarketing': false,
@@ -683,6 +729,62 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('OAuth2 Network error: $e');
+    }
+  }
+
+  // Get equipment orders like web
+  Future<List<Map<String, dynamic>>> getEquipmentOrders(String userId) async {
+    try {
+      // Use the same API as web - without /v1
+      final gearApiUrl = baseUrl.replaceAll('/v1', '') + '/gear-orders/$userId';
+      print('Fetching equipment orders from: $gearApiUrl');
+
+      final response = await http
+          .get(
+            Uri.parse(gearApiUrl),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(requestTimeout);
+
+      print('Equipment orders API Response Status: ${response.statusCode}');
+      print('Equipment orders API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> orders = json.decode(response.body);
+        return orders.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to fetch equipment orders: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Get equipment orders API error: $e');
+      throw Exception('Failed to fetch equipment orders: $e');
+    }
+  }
+
+  // Get equipment by ID
+  Future<Map<String, dynamic>> getEquipmentById(int equipmentId) async {
+    try {
+      final equipmentUrl = '$baseUrl/gears/$equipmentId';
+      print('Fetching equipment details from: $equipmentUrl');
+
+      final response = await http
+          .get(
+            Uri.parse(equipmentUrl),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(requestTimeout);
+
+      print('Equipment details API Response Status: ${response.statusCode}');
+      print('Equipment details API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to fetch equipment details: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Get equipment details API error: $e');
+      throw Exception('Failed to fetch equipment details: $e');
     }
   }
 }

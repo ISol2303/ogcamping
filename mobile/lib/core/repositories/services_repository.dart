@@ -125,7 +125,7 @@ class ServicesRepository {
       return allEquipment.where((equipment) =>
         equipment.name.toLowerCase().contains(query.toLowerCase()) ||
         equipment.description.toLowerCase().contains(query.toLowerCase()) ||
-        equipment.brand.toLowerCase().contains(query.toLowerCase())
+        equipment.area.toLowerCase().contains(query.toLowerCase())
       ).toList();
     } catch (e) {
       throw Exception('Failed to search equipment: $e');

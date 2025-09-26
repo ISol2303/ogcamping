@@ -14,4 +14,6 @@ public interface GearService {
     void deleteGear(Long id);
     List<GearDTO> findAll();
     List<GearDTO> searchGears(String name, String category, AreaName area, GearStatus status);
+    void updateGearStatusBasedOnAvailable();
+    GearDTO updateGearAvailableQuantity(Long gearId, Integer quantityChange);
 }

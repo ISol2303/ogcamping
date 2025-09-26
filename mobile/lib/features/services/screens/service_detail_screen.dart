@@ -177,7 +177,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                   // Service Image
                   if (_service!.imageUrl.isNotEmpty)
                     Image.network(
-                      'http://192.168.56.1:8080${_service!.imageUrl}',
+                      'http://192.168.1.13:8080${_service!.imageUrl}',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(

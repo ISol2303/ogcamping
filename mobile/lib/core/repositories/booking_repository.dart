@@ -14,6 +14,9 @@ class BookingRepository {
     required int participants,
     required double totalAmount,
     String? notes,
+    String? customerName,
+    String? customerEmail,
+    String? customerPhone,
   }) async {
     try {
       // Separate services and combos like in NextJS code
@@ -62,22 +65,97 @@ class BookingRepository {
         };
       }).toList();
 
-      final bookingData = {
-        'services': services,
-        'combos': combos,
-        'note': notes ?? '',
-      };
+      // Add equipment handling
+      final equipments =
+          items.where((item) => item.type == BookingType.EQUIPMENT).map((item) {
+        // Extract numeric ID from composite ID
+        final numericId = _extractNumericId(item.id);
+        print('Equipment item.id: ${item.id} -> numericId: $numericId');
 
-      print('Creating booking with data: $bookingData');
-      print('CustomerId: $customerId');
+        // Get rental days from CartItem details
+        final rentalDays = item.details['rentalDays'] ?? 1;
+        print('Equipment rentalDays: $rentalDays');
 
-      final response = await _apiService.createBookingWithCustomerId(
-          customerId, bookingData);
+        // Use dates from CartItem if available, otherwise use method parameters
+        final itemCheckInDate = item.checkInDate ?? checkInDate;
+        final itemCheckOutDate = item.checkOutDate ?? checkOutDate;
+        
+        print('Equipment dates - CheckIn: $itemCheckInDate, CheckOut: $itemCheckOutDate');
+        
+        return {
+          'equipmentId': numericId,
+          'quantity': item.quantity,
+          'rentalDays': rentalDays,
+          'checkInDate': '${itemCheckInDate.toIso8601String().split('T')[0]}T08:00:00',
+          'checkOutDate': '${itemCheckOutDate.toIso8601String().split('T')[0]}T12:00:00',
+        };
+      }).toList();
 
-      print('Booking response: $response');
+      // Check if we have equipment items - use different API
+      if (equipments.isNotEmpty) {
+        // Use equipment order API for equipment items - same format as web
+        print('Customer data from AuthProvider:');
+        print('- customerName: $customerName');
+        print('- customerEmail: $customerEmail');
+        print('- customerPhone: $customerPhone');
+        
+        final orderData = {
+          'userId': int.parse(customerId),
+          'customerName': customerName ?? 'Mobile User',
+          'email': customerEmail ?? 'mobile@example.com',
+          'phone': customerPhone ?? '0123456789',
+          'totalPrice': totalAmount,
+          'items': equipments.map((equipment) => {
+            'itemType': 'GEAR',
+            'itemId': equipment['equipmentId'],
+            'quantity': equipment['quantity'],
+            'rentalDays': equipment['rentalDays'],
+            'unitPrice': 0.0, // Will be filled by backend
+            'totalPrice': 0.0, // Will be calculated by backend
+          }).toList(),
+        };
 
-      // Backend trả về booking object trực tiếp, không wrap trong success
-      return Booking.fromJson(response);
+        print('Creating equipment order with data: $orderData');
+        print('CustomerId: $customerId');
+
+        await _apiService.createEquipmentOrder(
+            customerId, orderData);
+        
+        // Simple success response - don't parse complex JSON
+        return Booking.fromJson({
+          'id': 'equipment_${DateTime.now().millisecondsSinceEpoch}',
+          'customerId': int.parse(customerId),
+          'services': [],
+          'combos': [],
+          'equipments': equipments,
+          'checkInDate': null,
+          'checkOutDate': null,
+          'bookingDate': DateTime.now().toIso8601String(),
+          'numberOfPeople': null,
+          'status': 'PENDING',
+          'payment': null,
+          'note': notes ?? '',
+          'staff': null,
+          'internalNotes': null,
+          'totalPrice': totalAmount,
+          'hasReview': false,
+        });
+      } else {
+        // Use regular booking API for services and combos only
+        final bookingData = {
+          'services': services,
+          'combos': combos,
+          'note': notes ?? '',
+        };
+
+        print('Creating booking with data: $bookingData');
+        print('CustomerId: $customerId');
+
+        final response = await _apiService.createBookingWithCustomerId(
+            customerId, bookingData);
+        
+        return Booking.fromJson(response);
+      }
     } catch (e) {
       print('BookingRepository.createBooking error: $e');
       throw Exception('Failed to create booking: $e');

@@ -47,7 +47,7 @@ File: `android/app/src/main/AndroidManifest.xml`
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">192.168.56.1</domain>
+        <domain includeSubdomains="true">192.168.1.13</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
@@ -84,7 +84,7 @@ CorsFilter corsFilter() {
     config.addAllowedOrigin("http://localhost:3000"); // ReactJS
     config.addAllowedOrigin("http://localhost:*"); // Flutter web
     config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
-    config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
+    config.addAllowedOrigin("http://192.168.1.13:*"); // Mobile device IP
     config.addAllowedOriginPattern("http://localhost:*");
     config.addAllowedOriginPattern("http://192.168.*:*"); // Mobile network
     // ... rest of configuration
@@ -100,7 +100,7 @@ static String get baseUrl {
     return 'http://localhost:8080/apis/v1';
   }
   // For mobile, use IP address for real device connectivity
-  return 'http://192.168.56.1:8080/apis/v1';
+  return 'http://192.168.1.13:8080/apis/v1';
 }
 ```
 
@@ -205,7 +205,7 @@ xcrun simctl openurl booted "ogcamping://payment/result?bookingId=123&status=suc
 ### Network Configuration
 
 #### For Development
-- Backend: `http://192.168.56.1:8080`
+- Backend: `http://192.168.1.13:8080`
 - Make sure mobile device can reach this IP
 - Configure firewall to allow connections
 

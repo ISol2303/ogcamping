@@ -149,7 +149,7 @@ class ComboPackage {
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     }
-    return 'http://192.168.56.1:8080$imageUrl';
+    return 'http://192.168.1.13:8080$imageUrl';
   }
 
   // Backward compatibility getters

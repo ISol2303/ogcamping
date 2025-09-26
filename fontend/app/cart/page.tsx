@@ -24,65 +24,28 @@ import {
     CreditCard,
     Sparkles,
     Settings,
+    Calendar,
+    Package,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/context/AuthContext"
 
 
 export default function CartPage() {
-    const { cartItems, updateQuantity, removeFromCart } = useCart()
-    const { user: authUser, isLoggedIn: authIsLoggedIn } = useAuth()
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
-    //const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
+    const { cartItems, updateQuantity, removeFromCart, updateRentalDays } = useCart()
+    const { user, isLoggedIn, logout } = useAuth()
     const [isLoading, setIsLoading] = useState(true)
-    // const [user, setUser] = useState<{ id: number; email: string; name: string; role: string } | null>(null)
-    const { user, logout } = useAuth()
     const router = useRouter()
 
     const [promoCode, setPromoCode] = useState("");
     const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
 
     // Load initial data
-//    useEffect(() => {
-//        const token = localStorage.getItem('authToken')
-//        const userData = localStorage.getItem('user')
-  //      console.log('Initial load - token:', !!token, 'userData:', !!userData)
-        
- //      if (token && userData) {
-  //          setIsLoggedIn(true)
-  //          setUser(JSON.parse(userData))
-  //      } else {
-  //          setIsLoggedIn(false)
-  //          setUser(null)
-  //      }
-  //      setIsLoading(false)
-  //  }, [])
-  
-    // useEffect(() => {
-    //     const token = localStorage.getItem('authToken')
-    //     const userData = localStorage.getItem('user')
-    //     if (token && userData) {
-    //         setIsLoggedIn(true)
-    //         setUser(JSON.parse(userData))
-    //     }
-    // }, [])
-
-    // Sync with AuthContext (ưu tiên AuthContext)
     useEffect(() => {
-        console.log('AuthContext changed - authIsLoggedIn:', authIsLoggedIn, 'authUser:', authUser)
-        if (authIsLoggedIn && authUser) {
-            setIsLoggedIn(true)
-            setUser({
-                id: parseInt(authUser.id), // AuthContext id là string, cần parse thành number
-                email: authUser.email,
-                name: authUser.name || '',
-                role: authUser.role
-            })
-        }
-    }, [authIsLoggedIn, authUser])
+        setIsLoading(false)
+    }, [])
 
     // Cart items are now managed by CartContext
 
@@ -134,8 +97,6 @@ export default function CartPage() {
     console.log('=== CART PAGE DEBUG ===');
     console.log('isLoggedIn:', isLoggedIn);
     console.log('user:', user);
-    console.log('authIsLoggedIn:', authIsLoggedIn);
-    console.log('authUser:', authUser);
     console.log('cartItems:', cartItems);
     console.log('subtotal:', subtotal);
     console.log('total:', total);
@@ -382,11 +343,55 @@ export default function CartPage() {
                                             </div>
 
                                             {/* Equipment specific info */}
-                                            {item.type === "EQUIPMENT" && item.rentalDays && (
-                                                <div className="mt-2 text-sm text-gray-600">
-                                                    <span>Thuê {item.rentalDays} ngày</span>
-                                                    <span className="mx-2">•</span>
-                                                    <span>{item.item.price?.toLocaleString('vi-VN')}đ/ngày</span>
+                                            {item.type === "EQUIPMENT" && (
+                                                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                                    <div className="flex items-center justify-between text-sm mb-3">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex items-center gap-1">
+                                                                <Calendar className="w-4 h-4 text-blue-500" />
+                                                                <span className="font-medium text-gray-700">
+                                                                    Thuê {item.rentalDays || 1} ngày
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <Package className="w-4 h-4 text-purple-500" />
+                                                                <span className="font-medium text-gray-700">
+                                                                    {item.quantity} thiết bị
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-gray-600">
+                                                                {item.item.price?.toLocaleString('vi-VN')}đ/ngày
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">
+                                                                = {item.totalPrice.toLocaleString('vi-VN')}đ
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {/* Rental Days Controls */}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-gray-600">Số ngày thuê:</span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => updateRentalDays(item.id, Math.max(1, (item.rentalDays || 1) - 1))}
+                                                            disabled={(item.rentalDays || 1) <= 1}
+                                                            className="w-8 h-8 p-0"
+                                                        >
+                                                            <Minus className="w-4 h-4" />
+                                                        </Button>
+                                                        <span className="w-12 text-center font-medium">{item.rentalDays || 1}</span>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => updateRentalDays(item.id, (item.rentalDays || 1) + 1)}
+                                                            className="w-8 h-8 p-0"
+                                                        >
+                                                            <Plus className="w-4 h-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             )}
 

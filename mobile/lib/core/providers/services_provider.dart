@@ -266,7 +266,7 @@ class ServicesProvider extends ChangeNotifier {
       bool matchesSearch = _searchQuery.isEmpty ||
           equipment.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           equipment.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          equipment.brand.toLowerCase().contains(_searchQuery.toLowerCase());
+          equipment.area.toLowerCase().contains(_searchQuery.toLowerCase());
 
       bool matchesCategory = _selectedEquipmentCategory == null || 
           equipment.category == _selectedEquipmentCategory;

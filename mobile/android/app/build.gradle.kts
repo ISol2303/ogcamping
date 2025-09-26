@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.og_camping_private"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    //ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
