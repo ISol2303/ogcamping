@@ -130,7 +130,19 @@ export default function CombosPage() {
     dayOptions.push(i);
   }
 
-  if (loading) return <p>Đang tải combos...</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-3"></div>
+          <p className="text-gray-700">Đang tải combos...</p>
+        </div>
+      </div>
+    );
+  }
+
+
+
   if (error) return <p>Lỗi: {error}</p>;
 
   // Filter logic
@@ -182,7 +194,7 @@ export default function CombosPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-    
+
 
       {/* Hero Section */}
       <section className="relative h-80 bg-gradient-to-br from-green-600 via-green-700 to-green-800 overflow-hidden">

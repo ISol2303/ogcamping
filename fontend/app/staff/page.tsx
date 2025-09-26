@@ -44,7 +44,92 @@ import { LineChart, Bar, CartesianGrid, Legend, Line, ResponsiveContainer, Toolt
 import { Stomp } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+// Helper function to get booking dates with priority logic
+const getBookingDates = (booking: any) => {
+  // Priority 1: Use booking-level dates if available
+  if (booking.checkInDate && booking.checkOutDate) {
+    return {
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate
+    };
+  }
 
+  // Priority 2: Find first service with dates
+  const serviceWithDates = booking.services?.find((service: any) =>
+    service.checkInDate && service.checkOutDate
+  );
+
+  if (serviceWithDates) {
+    return {
+      checkInDate: serviceWithDates.checkInDate,
+      checkOutDate: serviceWithDates.checkOutDate
+    };
+  }
+
+  // Priority 3: Find first combo with dates
+  const comboWithDates = booking.combos?.find((combo: any) =>
+    combo.checkInDate && combo.checkOutDate
+  );
+
+  if (comboWithDates) {
+    return {
+      checkInDate: comboWithDates.checkInDate,
+      checkOutDate: comboWithDates.checkOutDate
+    };
+  }
+
+  // Fallback: Return null if no dates found
+  return {
+    checkInDate: null,
+    checkOutDate: null
+  };
+};
+
+// Helper function to format date safely
+const formatBookingDate = (dateString: string | null) => {
+  if (!dateString) return '-';
+  try {
+    return new Date(dateString).toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    return '-';
+  }
+};
+
+// Helper function to get number of people with priority logic
+const getNumberOfPeople = (booking: any) => {
+  // Priority 1: Use booking-level numberOfPeople if available
+  if (booking.numberOfPeople) {
+    return booking.numberOfPeople;
+  }
+
+  // Priority 2: Find first service with numberOfPeople
+  const serviceWithPeople = booking.services?.find((service: any) =>
+    service.numberOfPeople
+  );
+
+  if (serviceWithPeople) {
+    return serviceWithPeople.numberOfPeople;
+  }
+
+  // Priority 3: Find first combo with numberOfPeople
+  const comboWithPeople = booking.combos?.find((combo: any) =>
+    combo.numberOfPeople
+  );
+
+  if (comboWithPeople) {
+    return comboWithPeople.numberOfPeople;
+  }
+
+  // Fallback: Return null if no numberOfPeople found
+  return null;
+};
 
 interface Order {
   id: string;
@@ -63,6 +148,17 @@ interface Order {
   emailSentAt?: string | null;
   items: OrderItem[];
 }
+
+interface OrderItem {
+  orderId: number;
+  dishId: number;
+  dishName: string;
+  category: string;
+  quantity: number;
+  price: number;
+  totalPrice: number;
+}
+
 // BookingItem chung cho service, combo, equipment
 interface BookingItem {
   id: number;
@@ -279,24 +375,24 @@ export default function StaffDashboard({ orderId }: Props) {
           return;
         }
 
-        // 2️⃣ Lấy thống kê
-        const statsResponse = await axios.get('http://localhost:8080/stats/staff');
-        setStats(statsResponse.data.stats);
+        // // 2️⃣ Lấy thống kê
+        // const statsResponse = await axios.get('http://localhost:8080/stats/staff');
+        // setStats(statsResponse.data.stats);
 
-        // 3️⃣ Lấy tất cả orders
-        const ordersResponse = await axios.get('http://localhost:8080/apis/orders');
-        console.log('Orders Response:', ordersResponse.data);
+        // // 3️⃣ Lấy tất cả orders
+        // const ordersResponse = await axios.get('http://localhost:8080/apis/orders');
+        // console.log('Orders Response:', ordersResponse.data);
 
-        // Convert bookingDate về string để frontend hiển thị
-        const orders: Order[] = ordersResponse.data.map((order: any) => ({
-          ...order,
-          bookingDate: order.bookingDate || order.date || '', // fallback nếu khác tên field
-        }));
-        setPendingOrders(orders);
+        // // Convert bookingDate về string để frontend hiển thị
+        // const orders: Order[] = ordersResponse.data.map((order: any) => ({
+        //   ...order,
+        //   bookingDate: order.bookingDate || order.date || '', // fallback nếu khác tên field
+        // }));
+        // setPendingOrders(orders);
 
-        // 4️⃣ Lấy equipment checks
-        const equipmentResponse = await axios.get('http://localhost:8080/equipment/checks');
-        setEquipmentChecks(equipmentResponse.data);
+        // // 4️⃣ Lấy equipment checks
+        // const equipmentResponse = await axios.get('http://localhost:8080/equipment/checks');
+        // setEquipmentChecks(equipmentResponse.data);
 
 
       } catch (err: any) {
@@ -334,7 +430,7 @@ export default function StaffDashboard({ orderId }: Props) {
 
         // ✅ gọi API booking mới
         const response = await axios.get(
-          "http://localhost:8080/apis/v1/bookings/all"
+          "http://localhost:8080/apis/v1/bookings"
         );
 
         console.log("Bookings response:", response.data);
@@ -817,6 +913,8 @@ export default function StaffDashboard({ orderId }: Props) {
         return <Badge className="bg-yellow-100 text-yellow-800">Chờ xử lý</Badge>;
       case 'CONFIRMED':
         return <Badge className="bg-green-100 text-green-800">Đã xác nhận</Badge>;
+      case 'COMPLETED':
+        return <Badge className="bg-purple-100 text-purple-800">Hoàn Thành</Badge>;
       case 'CANCELLED':
         return <Badge className="bg-red-100 text-red-800">Hủy</Badge>;
       default:
@@ -1334,16 +1432,12 @@ export default function StaffDashboard({ orderId }: Props) {
 
                           {/* Ngày Check in */}
                           <TableCell>
-                            {booking.checkInDate
-                              ? new Date(booking.checkInDate).toLocaleDateString()
-                              : "-"}
+                            {formatBookingDate(getBookingDates(booking).checkInDate)}
                           </TableCell>
 
                           {/* Ngày Check out */}
                           <TableCell>
-                            {booking.checkOutDate
-                              ? new Date(booking.checkOutDate).toLocaleDateString()
-                              : "-"}
+                            {formatBookingDate(getBookingDates(booking).checkOutDate)}
                           </TableCell>
 
                           {/* Trạng thái */}
@@ -1437,9 +1531,9 @@ export default function StaffDashboard({ orderId }: Props) {
                       ["Số điện thoại", selectedBooking.phone],
                       ["Địa chỉ", selectedBooking.address || "-"],
                       ["Ngày đặt", selectedBooking.bookingDate ? new Date(selectedBooking.bookingDate).toLocaleString("vi-VN") : "-"],
-                      ["Check-in", selectedBooking.checkInDate ? new Date(selectedBooking.checkInDate).toLocaleDateString("vi-VN") : "-"],
-                      ["Check-out", selectedBooking.checkOutDate ? new Date(selectedBooking.checkOutDate).toLocaleDateString("vi-VN") : "-"],
-                      ["Số người tham gia", selectedBooking.numberOfPeople ?? "-"],
+                      ["Check-in", formatBookingDate(getBookingDates(selectedBooking).checkInDate)],
+                      ["Check-out", formatBookingDate(getBookingDates(selectedBooking).checkOutDate)],
+                      ["Số người tham gia", getNumberOfPeople(selectedBooking) ?? "-"],
                     ].map(([label, value], idx) => (
                       <div key={idx} className={`grid grid-cols-2 p-3 ${idx % 2 === 0 ? "bg-gray-50" : ""}`}>
                         <p className="font-semibold text-gray-600">{label}</p>

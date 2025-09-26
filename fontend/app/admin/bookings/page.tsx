@@ -123,7 +123,7 @@ export default function BookingManagementPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [staff, setStaff] = useState<Staff[]>([]);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -292,20 +292,20 @@ export default function BookingManagementPage() {
         if (!booking.bookingDate) return false;
         const bookingCreatedDate = new Date(booking.bookingDate);
         const today = new Date();
-        
+
         // Đầu tuần (Chủ nhật)
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
         startOfWeek.setHours(0, 0, 0, 0);
-        
+
         // Cuối tuần (Thứ 7)
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
-        
+
         // Đầu tháng
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        
+
         // Cuối tháng
         const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         endOfMonth.setHours(23, 59, 59, 999);
@@ -437,10 +437,10 @@ export default function BookingManagementPage() {
     }
 
     // Priority 2: Find first service with dates
-    const serviceWithDates = booking.services?.find(service => 
+    const serviceWithDates = booking.services?.find(service =>
       service.checkInDate && service.checkOutDate
     );
-    
+
     if (serviceWithDates) {
       return {
         checkInDate: serviceWithDates.checkInDate,
@@ -449,10 +449,10 @@ export default function BookingManagementPage() {
     }
 
     // Priority 3: Find first combo with dates
-    const comboWithDates = booking.combos?.find(combo => 
+    const comboWithDates = booking.combos?.find(combo =>
       combo.checkInDate && combo.checkOutDate
     );
-    
+
     if (comboWithDates) {
       return {
         checkInDate: comboWithDates.checkInDate,
@@ -471,12 +471,12 @@ export default function BookingManagementPage() {
   const isBookingExpired = (booking: Booking) => {
     const now = new Date();
     const { checkOutDate } = getBookingDates(booking);
-    
+
     // Nếu có checkOutDate thông minh, so sánh với checkOutDate
     if (checkOutDate) {
       return new Date(checkOutDate) < now;
     }
-    
+
     // Nếu không có checkOutDate, so sánh với bookingDate + 1 ngày
     const bookingDate = new Date(booking.bookingDate);
     const bookingEndDate = new Date(bookingDate);
@@ -523,12 +523,12 @@ export default function BookingManagementPage() {
   const getAvailableStaffForShift = (bookingDate: string) => {
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    const today = now.toISOString().split('T')[0]; 
+    const today = now.toISOString().split('T')[0];
     // Debug logging
     console.log('🔍 DEBUG getAvailableStaffForShift:');
     console.log('📅 Today:', today);
     console.log('📅 Booking Date:', bookingDate);
-    console.log('⏰ Current time (minutes):', currentTime, `(${Math.floor(currentTime/60)}:${String(currentTime%60).padStart(2,'0')})`);
+    console.log('⏰ Current time (minutes):', currentTime, `(${Math.floor(currentTime / 60)}:${String(currentTime % 60).padStart(2, '0')})`);
     console.log('📊 Total shifts:', shifts.length);
     console.log('👥 Total users:', users.length);
 
@@ -545,7 +545,7 @@ export default function BookingManagementPage() {
       const todayDate = new Date(today);
       const timeDiff = Math.abs(shiftDate.getTime() - todayDate.getTime());
       const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-      
+
       if (daysDiff > 1) {
         console.log('❌ Date too far:', shift.shiftDate, 'vs', today, '- days diff:', daysDiff);
         return false;
@@ -567,18 +567,18 @@ export default function BookingManagementPage() {
         shiftStart: startTime,
         shiftEnd: endTime,
         currentTime: currentTime,
-        startFormatted: `${Math.floor(startTime/60)}:${String(startTime%60).padStart(2,'0')}`,
-        endFormatted: `${Math.floor(endTime/60)}:${String(endTime%60).padStart(2,'0')}`
+        startFormatted: `${Math.floor(startTime / 60)}:${String(startTime % 60).padStart(2, '0')}`,
+        endFormatted: `${Math.floor(endTime / 60)}:${String(endTime % 60).padStart(2, '0')}`
       });
 
       let isTimeMatch = false;
-      
+
       if (shift.shiftDate === today) {
         isTimeMatch = currentTime >= startTime && currentTime <= endTime;
       } else {
         isTimeMatch = true;
       }
-      
+
       const isStatusValid = ['REGISTERED', 'ACTIVE', 'APPROVED', 'IN_PROGRESS'].includes(shift.status);
 
       console.log('✅ Validation results:', {
@@ -639,16 +639,17 @@ export default function BookingManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-       {/* Back Button */}
-              <Link
-                href="/admin"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Quay lại</span>
-              </Link>
-      
+
+
       <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Link
+          href="/admin"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Quay lại</span>
+        </Link>
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quản lý Booking</h1>
@@ -758,7 +759,7 @@ export default function BookingManagementPage() {
               </div>
 
             </div>
-            
+
             {/* Thống kê kết quả và phân trang */}
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-sm text-gray-600">
@@ -818,7 +819,7 @@ export default function BookingManagementPage() {
                       const currentPageIds = selectableBookings.map(b => Number(b.id));
                       const selectedNumbers = selectedBookings.map(id => Number(id));
                       const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedNumbers.includes(id));
-                      
+
                       if (allSelected) {
                         // Bỏ chọn tất cả trang hiện tại
                         setSelectedBookings(prev => prev.filter(id => !currentPageIds.includes(Number(id))));
@@ -839,7 +840,7 @@ export default function BookingManagementPage() {
                       const currentPageIds = selectableBookings.map(b => Number(b.id));
                       const selectedNumbers = selectedBookings.map(id => Number(id));
                       const allSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedNumbers.includes(id));
-                      
+
                       if (selectableBookings.length === 0) {
                         return 'Tất cả đã qua hạn';
                       }
@@ -864,211 +865,209 @@ export default function BookingManagementPage() {
               ) : (
                 paginatedBookings.map((booking) => (
 
-                <div key={booking.id} className={`border rounded-lg p-6 transition-colors ${
-                  isBookingExpired(booking) 
-                    ? 'bg-gray-100 border-gray-300 opacity-75' 
-                    : 'hover:bg-gray-50'
-                }`}>
-                  <div className="flex items-start gap-4">
-                    <Checkbox
-                      checked={selectedBookings.includes(Number(booking.id))}
-                      disabled={isBookingExpired(booking)}
-                      onCheckedChange={(checked) => {
-                        if (isBookingExpired(booking)) return;
-                        const bookingId = Number(booking.id); // ép kiểu number
-                        if (checked) {
-                          setSelectedBookings([...selectedBookings, bookingId]);
-                        } else {
-                          setSelectedBookings(selectedBookings.filter((id) => id !== bookingId));
-                        }
-                      }}
-                    />
-                    <Avatar>
-                      <AvatarImage src={customers[booking.customerId]?.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {customers[booking.customerId]?.name
-                          ? customers[booking.customerId]?.name.charAt(0)
-                          : "?"}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div key={booking.id} className={`border rounded-lg p-6 transition-colors ${isBookingExpired(booking)
+                      ? 'bg-gray-100 border-gray-300 opacity-75'
+                      : 'hover:bg-gray-50'
+                    }`}>
+                    <div className="flex items-start gap-4">
+                      <Checkbox
+                        checked={selectedBookings.includes(Number(booking.id))}
+                        disabled={isBookingExpired(booking)}
+                        onCheckedChange={(checked) => {
+                          if (isBookingExpired(booking)) return;
+                          const bookingId = Number(booking.id); // ép kiểu number
+                          if (checked) {
+                            setSelectedBookings([...selectedBookings, bookingId]);
+                          } else {
+                            setSelectedBookings(selectedBookings.filter((id) => id !== bookingId));
+                          }
+                        }}
+                      />
+                      <Avatar>
+                        <AvatarImage src={customers[booking.customerId]?.avatar || "/placeholder.svg"} />
+                        <AvatarFallback>
+                          {customers[booking.customerId]?.name
+                            ? customers[booking.customerId]?.name.charAt(0)
+                            : "?"}
+                        </AvatarFallback>
+                      </Avatar>
 
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-lg text-gray-900">#OGC00000{booking.id}</h3>
-                          <p className="text-gray-600">
-                            {customers[booking.customerId]?.name || ""} - {customers[booking.customerId]?.phone || ""}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isBookingExpired(booking) && (
-                            <Badge className="bg-gray-100 text-gray-800 border-0">
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Đã qua hạn
-                            </Badge>
-                          )}
-                          {getStatusBadge(booking.status)}
-                          {booking.payment?.status && (
-                            <Badge
-                              className={
-                                booking.payment.status === "PAID"
-                                  ? "bg-green-100 text-green-800 border-0"
-                                  : "bg-red-100 text-red-800 border-0"
-                              }
-                            >
-                              {booking.payment.status === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-
-                      {/* Service Info */}
-                      < div className="grid md:grid-cols-2 gap-4" >
-                        <div className="space-y-2">
-                          {booking.services.map((s) => (
-                            <div key={s.id} className="flex items-center gap-2 text-sm text-gray-600">
-                              <Tent className="w-4 h-4" />
-                              <span className="font-medium">{s.name}</span>
-                            </div>
-                          ))}
-
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              Checkin: {booking.checkInDate ? formatDateTime(booking.checkInDate) : '*'}
-                            </span>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg text-gray-900">#OGC00000{booking.id}</h3>
+                            <p className="text-gray-600">
+                              {customers[booking.customerId]?.name || ""} - {customers[booking.customerId]?.phone || ""}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span>
-                              CheckOut: {booking.checkOutDate ? formatDateTime(booking.checkOutDate) : '*'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <DollarSign className="w-4 h-4" />
-                            <span className="font-medium text-green-600">{formatCurrency(booking.totalPrice)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-
-                      {/* Staff Assignment */}
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <UserCheck className="w-4 h-4 text-gray-600" />
-                          {assignedStaffMap[booking.id as number] ? (
-                            <div className="flex items-center gap-2">
-                              <Avatar className="w-6 h-6">
-                                <AvatarImage src={assignedStaffMap[booking.id as number]?.avatar || "/placeholder.svg"} />
-                                <AvatarFallback className="text-xs">
-                                  {assignedStaffMap[booking.id as number]?.name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm font-medium">{assignedStaffMap[booking.id as number]?.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {assignedStaffMap[booking.id as number]?.role}
+                          <div className="flex items-center gap-2">
+                            {isBookingExpired(booking) && (
+                              <Badge className="bg-gray-100 text-gray-800 border-0">
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Đã qua hạn
                               </Badge>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-500">Chưa gán nhân viên</span>
-                          )}
+                            )}
+                            {getStatusBadge(booking.status)}
+                            {booking.payment?.status && (
+                              <Badge
+                                className={
+                                  booking.payment.status === "PAID"
+                                    ? "bg-green-100 text-green-800 border-0"
+                                    : "bg-red-100 text-red-800 border-0"
+                                }
+                              >
+                                {booking.payment.status === "PAID" ? "Đã thanh toán" : "Chưa thanh toán"}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          {(() => {
-                            const availableStaff = getAvailableStaffForShift(booking.checkInDate);
-                            const hasAvailableStaff = availableStaff.length > 0;
-                            const isExpired = isBookingExpired(booking);
 
-                            return (
-                              <>
-                                <div className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${
-                                  isExpired
-                                    ? 'text-gray-600 bg-gray-100'
-                                    : hasAvailableStaff
-                                    ? 'text-green-600 bg-green-50'
-                                    : 'text-amber-600 bg-amber-50'
-                                  }`}>
-                                  <Clock className="w-3 h-3" />
-                                  {isExpired
-                                    ? 'Booking đã qua hạn'
-                                    : hasAvailableStaff
-                                    ? `${availableStaff.length} nhân viên đang trực`
-                                    : 'Không có nhân viên trong ca'
-                                  }
-                                </div>
-                                <Select
-                                  value={assignedStaffMap[booking.id as number]?.id?.toString() || ""}
-                                  onValueChange={(staffId) => handleAssignStaff(booking.id as number, staffId)}
-                                  disabled={!hasAvailableStaff || isExpired}
-                                >
-                                  <SelectTrigger
-                                    className={`w-80 h-13 px-4 text-sm rounded-lg border border-gray-300 shadow-sm bg-white 
-      ${(!hasAvailableStaff || isExpired) ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400 focus:ring-2 focus:ring-blue-500"}`}
+                        {/* Service Info */}
+                        < div className="grid md:grid-cols-2 gap-4" >
+                          <div className="space-y-2">
+                            {booking.services.map((s) => (
+                              <div key={s.id} className="flex items-center gap-2 text-sm text-gray-600">
+                                <Tent className="w-4 h-4" />
+                                <span className="font-medium">{s.name}</span>
+                              </div>
+                            ))}
+
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Calendar className="w-4 h-4" />
+                              <span>
+                                Checkin: {booking.checkInDate ? formatDateTime(booking.checkInDate) : '*'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Calendar className="w-4 h-4" />
+                              <span>
+                                CheckOut: {booking.checkOutDate ? formatDateTime(booking.checkOutDate) : '*'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <DollarSign className="w-4 h-4" />
+                              <span className="font-medium text-green-600">{formatCurrency(booking.totalPrice)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+
+                        {/* Staff Assignment */}
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <UserCheck className="w-4 h-4 text-gray-600" />
+                            {assignedStaffMap[booking.id as number] ? (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={assignedStaffMap[booking.id as number]?.avatar || "/placeholder.svg"} />
+                                  <AvatarFallback className="text-xs">
+                                    {assignedStaffMap[booking.id as number]?.name.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-medium">{assignedStaffMap[booking.id as number]?.name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {assignedStaffMap[booking.id as number]?.role}
+                                </Badge>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-500">Chưa gán nhân viên</span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const availableStaff = getAvailableStaffForShift(booking.checkInDate);
+                              const hasAvailableStaff = availableStaff.length > 0;
+                              const isExpired = isBookingExpired(booking);
+
+                              return (
+                                <>
+                                  <div className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${isExpired
+                                      ? 'text-gray-600 bg-gray-100'
+                                      : hasAvailableStaff
+                                        ? 'text-green-600 bg-green-50'
+                                        : 'text-amber-600 bg-amber-50'
+                                    }`}>
+                                    <Clock className="w-3 h-3" />
+                                    {isExpired
+                                      ? 'Booking đã qua hạn'
+                                      : hasAvailableStaff
+                                        ? `${availableStaff.length} nhân viên đang trực`
+                                        : 'Không có nhân viên trong ca'
+                                    }
+                                  </div>
+                                  <Select
+                                    value={assignedStaffMap[booking.id as number]?.id?.toString() || ""}
+                                    onValueChange={(staffId) => handleAssignStaff(booking.id as number, staffId)}
+                                    disabled={!hasAvailableStaff || isExpired}
                                   >
-                                    <SelectValue
-                                      placeholder={
-                                        isExpired 
-                                          ? "Booking đã qua hạn" 
-                                          : hasAvailableStaff 
-                                          ? "Chọn nhân viên để gán" 
-                                          : "Không có nhân viên khả dụng"
-                                      }
-                                    />
-                                  </SelectTrigger>
+                                    <SelectTrigger
+                                      className={`w-80 h-13 px-4 text-sm rounded-lg border border-gray-300 shadow-sm bg-white 
+      ${(!hasAvailableStaff || isExpired) ? "opacity-50 cursor-not-allowed" : "hover:border-gray-400 focus:ring-2 focus:ring-blue-500"}`}
+                                    >
+                                      <SelectValue
+                                        placeholder={
+                                          isExpired
+                                            ? "Booking đã qua hạn"
+                                            : hasAvailableStaff
+                                              ? "Chọn nhân viên để gán"
+                                              : "Không có nhân viên khả dụng"
+                                        }
+                                      />
+                                    </SelectTrigger>
 
-                                  <SelectContent className="rounded-lg shadow-lg max-h-80 overflow-auto">
-                                    {availableStaff.map((staffMember) => (
-                                      <SelectItem
-                                        key={staffMember.id}
-                                        value={staffMember.id.toString()}
-                                        className="p-3 hover:bg-gray-100 cursor-pointer"
-                                      >
-                                        <div className="flex items-center gap-4">
-                                          {/* Avatar */}
-                                          <Avatar className="w-10 h-10 shrink-0">
-                                            <AvatarImage src={staffMember.avatar || "/placeholder.svg"} />
-                                            <AvatarFallback className="text-sm">
-                                              {staffMember.name.charAt(0)}
-                                            </AvatarFallback>
-                                          </Avatar>
+                                    <SelectContent className="rounded-lg shadow-lg max-h-80 overflow-auto">
+                                      {availableStaff.map((staffMember) => (
+                                        <SelectItem
+                                          key={staffMember.id}
+                                          value={staffMember.id.toString()}
+                                          className="p-3 hover:bg-gray-100 cursor-pointer"
+                                        >
+                                          <div className="flex items-center gap-4">
+                                            {/* Avatar */}
+                                            <Avatar className="w-10 h-10 shrink-0">
+                                              <AvatarImage src={staffMember.avatar || "/placeholder.svg"} />
+                                              <AvatarFallback className="text-sm">
+                                                {staffMember.name.charAt(0)}
+                                              </AvatarFallback>
+                                            </Avatar>
 
-                                          {/* Info */}
-                                          <div className="flex flex-col w-full min-w-0">
-                                            <span className="text-sm font-medium truncate leading-snug">
-                                              {staffMember.name}
-                                            </span>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                              <Badge variant="outline" className="text-xs px-2 py-0.5">
-                                                {staffMember.role}
-                                              </Badge>
-                                              <Badge
-                                                variant="secondary"
-                                                className="text-xs px-2 py-0.5 flex items-center"
-                                              >
-                                                <Clock className="w-3 h-3 mr-1" />
-                                                {staffMember.shift}
-                                              </Badge>
+                                            {/* Info */}
+                                            <div className="flex flex-col w-full min-w-0">
+                                              <span className="text-sm font-medium truncate leading-snug">
+                                                {staffMember.name}
+                                              </span>
+                                              <div className="flex flex-wrap gap-2 mt-1">
+                                                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                                  {staffMember.role}
+                                                </Badge>
+                                                <Badge
+                                                  variant="secondary"
+                                                  className="text-xs px-2 py-0.5 flex items-center"
+                                                >
+                                                  <Clock className="w-3 h-3 mr-1" />
+                                                  {staffMember.shift}
+                                                </Badge>
+                                              </div>
                                             </div>
                                           </div>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </>
-                            );
-                          })()}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </>
+                              );
+                            })()}
 
 
 
 
-                          {/* Status Change Dropdown */}
-                          {/* <Select
+                            {/* Status Change Dropdown */}
+                            {/* <Select
                             value={assignedStaffMap[String(booking.id)]?.id || ""} // ép booking.id sang string
                             onValueChange={(staffId: string) => handleAssignStaff(booking.id, staffId)}
                           >
@@ -1084,61 +1083,61 @@ export default function BookingManagementPage() {
                             </SelectContent>
                           </Select> */}
 
-                          {/* Auto Confirm Button */}
-                          {booking.status === "pending" && booking.payment?.status === "PAID" && !isBookingExpired(booking) && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleAutoConfirm(booking.id as string)}
-                              className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Xác nhận
-                            </Button>
-                          )}
-
-
-                          {/* Actions Menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            {/* Auto Confirm Button */}
+                            {booking.status === "pending" && booking.payment?.status === "PAID" && !isBookingExpired(booking) && (
                               <Button
-                                variant="outline"
                                 size="sm"
-                                className="h-8 w-8 p-0 border-gray-300 bg-transparent"
+                                onClick={() => handleAutoConfirm(booking.id as string)}
+                                className="h-8 text-xs bg-green-600 hover:bg-green-700 text-white"
                               >
-                                <MoreHorizontal className="w-4 h-4" />
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Xác nhận
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                Xem chi tiết
-                              </DropdownMenuItem>
-                          
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            )}
+
+
+                            {/* Actions Menu */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 border-gray-300 bg-transparent"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => router.push(`/admin/bookings/${booking.id}`)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  Xem chi tiết
+                                </DropdownMenuItem>
+
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
+
+                        {/* Notes */}
+                        {booking.note && (
+                          <div className="p-3 bg-yellow-50 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                              <strong>Ghi chú:</strong> {booking.note}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Booking Timeline */}
+                        <div className="text-xs text-gray-500">Tạo: {formatDateTime(booking.bookingDate)}</div>
                       </div>
-
-                      {/* Notes */}
-                      {booking.note && (
-                        <div className="p-3 bg-yellow-50 rounded-lg">
-                          <p className="text-sm text-yellow-800">
-                            <strong>Ghi chú:</strong> {booking.note}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Booking Timeline */}
-                      <div className="text-xs text-gray-500">Tạo: {formatDateTime(booking.bookingDate)}</div>
                     </div>
                   </div>
-                </div>
                 ))
               )}
             </div>
-            
+
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-6 pt-4 border-t border-gray-200">
@@ -1146,7 +1145,7 @@ export default function BookingManagementPage() {
                   <div className="text-sm text-gray-600">
                     Trang <strong>{currentPage}</strong> / <strong>{totalPages}</strong>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {/* Previous button */}
                     <Button
@@ -1158,7 +1157,7 @@ export default function BookingManagementPage() {
                     >
                       Trước
                     </Button>
-                    
+
                     {/* Page numbers */}
                     <div className="flex items-center gap-1">
                       {(() => {
@@ -1166,12 +1165,12 @@ export default function BookingManagementPage() {
                         const showPages = 5; // Hiển thị tối đa 5 trang
                         let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
                         let endPage = Math.min(totalPages, startPage + showPages - 1);
-                        
+
                         // Điều chỉnh nếu không đủ trang ở cuối
                         if (endPage - startPage + 1 < showPages) {
                           startPage = Math.max(1, endPage - showPages + 1);
                         }
-                        
+
                         // Nút trang đầu tiên
                         if (startPage > 1) {
                           pages.push(
@@ -1189,7 +1188,7 @@ export default function BookingManagementPage() {
                             pages.push(<span key="start-ellipsis" className="px-2 text-gray-400">...</span>);
                           }
                         }
-                        
+
                         // Các trang giữa
                         for (let i = startPage; i <= endPage; i++) {
                           pages.push(
@@ -1204,7 +1203,7 @@ export default function BookingManagementPage() {
                             </Button>
                           );
                         }
-                        
+
                         // Nút trang cuối cùng
                         if (endPage < totalPages) {
                           if (endPage < totalPages - 1) {
@@ -1222,12 +1221,12 @@ export default function BookingManagementPage() {
                             </Button>
                           );
                         }
-                        
+
                         return pages;
                       })()
                       }
                     </div>
-                    
+
                     {/* Next button */}
                     <Button
                       variant="outline"

@@ -42,16 +42,11 @@ public class BookingController {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
 
-    @GetMapping("/all")
+    @GetMapping
     public ResponseEntity<List<BookingResponseDTO>> getAllBookings() {
-        List<BookingResponseDTO> bookings = bookingService.getAllBookings(); // dùng method có sẵn
-
-        // 🔹 Log tất cả DTO trước khi trả về
-        bookings.forEach(dto -> System.out.println("DTO sent to frontend: " + dto));
-
+        List<BookingResponseDTO> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
-
     @PostMapping
     public ResponseEntity<BookingResponseDTO> placeBooking(
             @RequestParam(name = "customerId") Long customerId,

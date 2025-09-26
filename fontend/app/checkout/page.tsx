@@ -189,7 +189,6 @@ export default function CheckoutPage() {
         .map((item: any) => ({
           serviceId: item.item.id,
           checkInDate: item.checkInDate ? `${item.checkInDate}T08:00:00` : null,
-          checkOutDate: item.checkOutDate ? `${item.checkOutDate}T12:00:00` : null,
           numberOfPeople: item.extraPeople
             ? item.item.maxCapacity + item.extraPeople
             : item.item.maxCapacity,
@@ -199,12 +198,10 @@ export default function CheckoutPage() {
         .filter((item: any) => item.type === "COMBO")
         .map((item: any) => ({
           comboId: item.item.id,
-          quantity: item.quantity,
           checkInDate: item.checkInDate ? `${item.checkInDate}T08:00:00` : null,
           checkOutDate: item.checkOutDate ? `${item.checkOutDate}T12:00:00` : null,
-          extraPeople: item.extraPeople || 0,
+          numberOfPeople: item.extraPeople && item.extraPeople > 0 ? item.extraPeople : 2, // Map extraPeople to numberOfPeople for backend
         }));
-
 
       const equipment = cart
         .filter((item: any) => item.type === "EQUIPMENT")

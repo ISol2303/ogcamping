@@ -16,16 +16,9 @@ import com.mytech.backend.portal.models.Service.Service;
 import com.mytech.backend.portal.models.Service.ServiceAvailability;
 import com.mytech.backend.portal.repositories.*;
 import com.mytech.backend.portal.services.EmailService;
-
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-import org.thymeleaf.context.Context;
+
 import java.math.BigDecimal;
 
 import java.time.LocalDate;
@@ -35,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
@@ -48,8 +42,6 @@ public class BookingServiceImpl implements BookingService {
     private final ServiceAvailabilityRepository serviceAvailabilityRepository;
     private final EquipmentRepository equipmentRepository;
     private final BookingItemRepository bookingItemRepository;
-    private final JavaMailSender mailSender;
-    private final SpringTemplateEngine templateEngine;
     private final EmailService emailService;
 
     @Override
@@ -65,9 +57,6 @@ public class BookingServiceImpl implements BookingService {
                 .note(req.getNote())
                 .status(BookingStatus.PENDING)
                 .createdAt(LocalDateTime.now())
-                .checkInDate(req.getCheckInDate())
-                .checkOutDate(req.getCheckOutDate())
-                .numberOfPeople(req.getNumberOfPeople())
                 .build();
 
         List<BookingItem> bookingItems = new ArrayList<>();
@@ -103,12 +92,10 @@ public class BookingServiceImpl implements BookingService {
                 }
                 if (people > service.getMaxCapacity()) {
                     if (!Boolean.TRUE.equals(service.getAllowExtraPeople())) {
-                        throw new RuntimeException(
-                                "Number of people exceeds maximum for service: " + service.getName());
+                        throw new RuntimeException("Number of people exceeds maximum for service: " + service.getName());
                     }
                     if (people > service.getMaxCapacity() + service.getMaxExtraPeople()) {
-                        throw new RuntimeException(
-                                "Number of people exceeds maximum with extra for service: " + service.getName());
+                        throw new RuntimeException("Number of people exceeds maximum with extra for service: " + service.getName());
                     }
                 }
 
@@ -132,16 +119,17 @@ public class BookingServiceImpl implements BookingService {
                     current = current.plusDays(1);
                 }
 
+
                 double base = service.getPrice() != null ? service.getPrice() : 0.0;
                 int capacity = service.getMaxCapacity() != null ? service.getMaxCapacity() : 0;
                 int maxExtra = service.getMaxExtraPeople() != null ? service.getMaxExtraPeople() : 0;
-                double extraFeePerPerson = service.getExtraFeePerPerson() != null ? service.getExtraFeePerPerson()
-                        : 0.0;
+                double extraFeePerPerson = service.getExtraFeePerPerson() != null ? service.getExtraFeePerPerson() : 0.0;
 
                 int extraPeople = Math.max(0, people - capacity);
                 int chargeableExtra = Math.min(extraPeople, maxExtra);
 
                 double price = base + chargeableExtra * extraFeePerPerson;
+
 
                 // Tạo BookingItem
                 BookingItem item = BookingItem.builder()
@@ -150,7 +138,11 @@ public class BookingServiceImpl implements BookingService {
                         .type(ItemType.SERVICE)
                         .quantity(1)
                         .price(price)
+                        .checkInDate(s.getCheckInDate())
+                        .checkOutDate(s.getCheckOutDate())
+                        .numberOfPeople(people)
                         .build();
+
                 bookingItems.add(item);
             }
         }
@@ -173,14 +165,15 @@ public class BookingServiceImpl implements BookingService {
                         .type(ItemType.COMBO)
                         .quantity(1)
                         .price(combo.getPrice())
-                        // .checkInDate(c.getCheckInDate())
-                        // .checkOutDate(c.getCheckOutDate())
-                        // .numberOfPeople(numberOfPeople)
+                        .checkInDate(c.getCheckInDate())
+                        .checkOutDate(c.getCheckOutDate())
+                        .numberOfPeople(numberOfPeople)
                         .build();
 
                 bookingItems.add(item);
             }
         }
+
 
         // 5. Xử lý equipment
         if (req.getEquipmentIds() != null) {
@@ -244,12 +237,11 @@ public class BookingServiceImpl implements BookingService {
         for (BookingItem item : booking.getItems()) {
             if (item.getType() == ItemType.SERVICE && item.getService() != null) {
                 Service service = item.getService();
-                LocalDateTime current = booking.getCheckInDate(); // LocalDateTime
-                LocalDateTime end = booking.getCheckOutDate(); // LocalDateTime
+                LocalDateTime current = booking.getCheckInDate();   // LocalDateTime
+                LocalDateTime end = booking.getCheckOutDate();      // LocalDateTime
 
                 while (!current.isAfter(end.minusDays(1))) {
-                    final LocalDate dateToCheck = current.toLocalDate(); // convert về LocalDate để query availability
-                                                                         // theo ngày
+                    final LocalDate dateToCheck = current.toLocalDate(); // convert về LocalDate để query availability theo ngày
 
                     ServiceAvailability availability = serviceAvailabilityRepository
                             .findByServiceIdAndDate(service.getId(), dateToCheck)
@@ -266,8 +258,11 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+
         return mapToDTO(booking);
     }
+
+
 
     @Override
     @Transactional
@@ -303,28 +298,30 @@ public class BookingServiceImpl implements BookingService {
     public long getConfirmedBookingsForCombo(Long comboId) {
         return bookingItemRepository.countByComboAndBookingStatus(
                 comboId,
-                BookingStatus.CONFIRMED);
+                BookingStatus.CONFIRMED
+        );
     }
-
     @Override
     public long getRevenueByCombo(Long comboId) {
         return bookingItemRepository.getTotalRevenueByComboAndStatus(
-                comboId, BookingStatus.CONFIRMED);
+                comboId, BookingStatus.CONFIRMED
+        );
     }
 
     @Override
     public long getMonthlyRevenueByCombo(Long comboId) {
         return bookingItemRepository.getMonthlyRevenueByComboAndStatus(
-                comboId, BookingStatus.CONFIRMED);
+                comboId, BookingStatus.CONFIRMED
+        );
     }
-
     public BigDecimal getTotalSavings(Long comboId) {
         Combo combo = comboRepository.findById(comboId)
                 .orElseThrow(() -> new RuntimeException("Combo not found"));
 
         long confirmedCount = bookingItemRepository.countByComboIdAndBookingStatus(
                 comboId,
-                BookingStatus.CONFIRMED);
+                BookingStatus.CONFIRMED
+        );
 
         if (combo.getOriginalPrice() == null || combo.getPrice() == null) {
             return BigDecimal.ZERO;
@@ -336,12 +333,10 @@ public class BookingServiceImpl implements BookingService {
 
         return savingPerBooking.multiply(BigDecimal.valueOf(confirmedCount));
     }
-
     public long getTotalConfirmedBookingsFromAllCombos() {
         return bookingItemRepository.countAllConfirmedComboBookings();
     }
 
-    // Mapper Booking -> DTO
     // Mapper Booking -> DTO
     public BookingResponseDTO mapToDTO(Booking booking) {
         List<BookingItemResponseDTO> services = booking.getItems().stream()
@@ -349,15 +344,17 @@ public class BookingServiceImpl implements BookingService {
                 .map(i -> BookingItemResponseDTO.builder()
                         .id(i.getId())
                         .serviceId(i.getService().getId())
-                        .bookingId(booking.getId())
-                        .numberOfPeople(i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : null)
+                        .bookingId(i.getBooking().getId())
+                        .numberOfPeople(
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
+                        )
                         .name(i.getService().getName())
                         .type(ItemType.SERVICE)
                         .checkInDate(i.getCheckInDate())
                         .checkOutDate(i.getCheckOutDate())
                         .quantity(i.getQuantity())
-                        .price(i.getPrice() != null ? i.getPrice() : 0.0)
-                        .total((i.getPrice() != null ? i.getPrice() : 0.0) * i.getQuantity())
+                        .price(i.getPrice())
+                        .total(i.getPrice() * i.getQuantity())
                         .build())
                 .toList();
 
@@ -368,15 +365,18 @@ public class BookingServiceImpl implements BookingService {
                         .comboId(i.getCombo().getId())
                         .bookingId(booking.getId())
                         .type(ItemType.COMBO)
-                        .numberOfPeople(i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : null)
+                        .numberOfPeople(
+                                i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : 0L
+                        )
                         .checkInDate(i.getCheckInDate())
                         .checkOutDate(i.getCheckOutDate())
                         .name(i.getCombo().getName())
                         .quantity(i.getQuantity())
-                        .price(i.getPrice() != null ? i.getPrice() : 0.0)
-                        .total((i.getPrice() != null ? i.getPrice() : 0.0) * i.getQuantity())
+                        .price(i.getPrice())
+                        .total(i.getPrice() * i.getQuantity())
                         .build())
                 .toList();
+
 
         List<BookingItemResponseDTO> equipments = booking.getItems().stream()
                 .filter(i -> i.getType() == ItemType.EQUIPMENT && i.getEquipment() != null)
@@ -387,37 +387,38 @@ public class BookingServiceImpl implements BookingService {
                         .quantity(i.getQuantity())
                         .price(i.getPrice())
                         .total(i.getPrice() * i.getQuantity())
-                        .numberOfPeople(i.getNumberOfPeople() != null ? i.getNumberOfPeople().longValue() : null)
-                        .checkInDate(i.getCheckInDate())
-                        .checkOutDate(i.getCheckOutDate())
                         .build())
                 .toList();
 
         return BookingResponseDTO.builder()
                 .id(booking.getId())
-                .customerId(booking.getCustomer() != null ? booking.getCustomer().getId() : null)
-                .customerName(booking.getCustomer() != null ? booking.getCustomer().getName() : "")
-                .email(booking.getCustomer() != null ? booking.getCustomer().getEmail() : "")
-                .phone(booking.getCustomer() != null ? booking.getCustomer().getPhone() : "")
-                .address(booking.getCustomer() != null ? booking.getCustomer().getAddress() : "")
+                .customerId(booking.getCustomer().getId())
+                .customerName(booking.getCustomer().getName())
+                .email(booking.getCustomer().getEmail())
+                .address(booking.getCustomer().getAddress())
+                .phone(booking.getCustomer().getPhone())
                 .services(services)
                 .combos(combos)
                 .equipments(equipments)
-                .bookingDate(booking.getCreatedAt()) // Lấy trực tiếp từ DB
+                .bookingDate(booking.getCreatedAt())
                 .checkInDate(booking.getCheckInDate())
                 .checkOutDate(booking.getCheckOutDate())
                 .hasReview(booking.isHasReview())
-                .numberOfPeople(booking.getNumberOfPeople()) // Lấy trực tiếp từ DB
+                .numberOfPeople(booking.getNumberOfPeople())
                 .status(booking.getStatus())
                 .staff(booking.getAssignedStaff() != null
-                        ? new AssignedStaffResponse(
+                                ? new AssignedStaffResponse(
                                 booking.getAssignedStaff().getId(),
                                 booking.getAssignedStaff().getName(),
-                                booking.getAssignedStaff().getRole() != null
-                                        ? booking.getAssignedStaff().getRole().name()
-                                        : "")
-                        : null)
-                .totalPrice(booking.calculateTotalPrice().doubleValue())
+                                booking.getAssignedStaff().getRole().name()
+                        )
+                                : null
+                )
+                .totalPrice(
+                        booking.getTotalPrice() != null
+                                ? booking.getTotalPrice().doubleValue()
+                                : 0.0
+                )
                 .payment(booking.getPayment() != null ? PaymentResponseDTO.builder()
                         .id(booking.getPayment().getId())
                         .method(booking.getPayment().getMethod())
@@ -428,9 +429,7 @@ public class BookingServiceImpl implements BookingService {
                         .build() : null)
                 .note(booking.getNote())
                 .internalNotes(booking.getInternalNotes())
-                .emailSentAt(booking.getEmailSentAt())
                 .build();
-
     }
 
     public List<BookingGetByServiceDTO> getBookingsByService(Long serviceId) {
@@ -449,7 +448,8 @@ public class BookingServiceImpl implements BookingService {
                                     bi.getQuantity(),
                                     bi.getPrice(),
                                     bi.getCheckInDate(),
-                                    bi.getCheckOutDate()))
+                                    bi.getCheckOutDate()
+                            ))
                             .toList();
 
                     // Trả về DTO
@@ -460,10 +460,12 @@ public class BookingServiceImpl implements BookingService {
                             booking.getCheckOutDate(),
                             booking.getNumberOfPeople(),
                             booking.getStatus().name(),
-                            itemDTOs);
+                            itemDTOs
+                    );
                 })
                 .toList();
     }
+
 
     public List<BookingResponseDTO> getAllBookings() {
         return bookingRepository.findAll().stream()
@@ -471,7 +473,16 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    
+    @Transactional
+    public BookingResponseDTO updateBookingStatus(Long id, String status) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setStatus(BookingStatus.valueOf(status));
+        Booking updated = bookingRepository.save(booking);
+
+        return mapToDTO(updated);
+    }
 
     @Transactional
     public void deleteBooking(Long id) {
@@ -480,23 +491,20 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.deleteById(id);
     }
-
     public BookingStatsDTO getStatsByService(Long serviceId) {
         Long totalBookings = bookingItemRepository.countByServiceId(serviceId);
         Long revenue = bookingItemRepository.sumRevenueByServiceId(serviceId);
 
-        // TODO: bạn có thể bổ sung logic lấy monthlyBookings, monthlyRevenue, rating,
-        // completionRate
+        // TODO: bạn có thể bổ sung logic lấy monthlyBookings, monthlyRevenue, rating, completionRate
         return new BookingStatsDTO(
                 totalBookings,
                 0L, // monthlyBookings
                 revenue != null ? revenue : 0L,
                 0L, // monthlyRevenue
                 0.0, // averageRating
-                0.0 // completionRate
+                0.0  // completionRate
         );
     }
-
     // ===== Update methods =====
     @Override
     public BookingResponseDTO updateBookingStatus(Long bookingId, BookingStatus status) {
@@ -506,6 +514,7 @@ public class BookingServiceImpl implements BookingService {
         return mapToDTO(bookingRepository.save(booking));
     }
 
+
     @Override
     public BookingResponseDTO updateInternalNotes(Long bookingId, String internalNotes) {
         Booking booking = bookingRepository.findById(bookingId)
@@ -513,7 +522,6 @@ public class BookingServiceImpl implements BookingService {
         booking.setInternalNotes(internalNotes);
         return mapToDTO(bookingRepository.save(booking));
     }
-
     public Booking confirmCheckIn(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
@@ -533,6 +541,7 @@ public class BookingServiceImpl implements BookingService {
 
         return bookingRepository.save(booking);
     }
+
 
     @Override
     public BookingResponseDTO confirmBooking(Long id) {

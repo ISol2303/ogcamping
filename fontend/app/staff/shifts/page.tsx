@@ -253,6 +253,7 @@ export default function StaffDashboard() {
   // Filter states
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("all")
   const [shiftStatusFilter, setShiftStatusFilter] = useState<string>("all")
+  const [shiftDateFilter, setShiftDateFilter] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
 
   // Load data on component mount
@@ -311,10 +312,70 @@ export default function StaffDashboard() {
   }
 
   const getServiceNames = (booking: StaffBooking): string => {
+    const items: string[] = []
+    
+    // Add services
     if (booking.services && booking.services.length > 0) {
-      return booking.services.map(service => service.name).join(', ')
+      const serviceNames = booking.services.map(service => service.name)
+      items.push(...serviceNames)
     }
-    return 'Chưa có dịch vụ'
+    
+    // Add combos
+    if (booking.combos && booking.combos.length > 0) {
+      const comboNames = booking.combos.map(combo => `${combo.name} (Combo)`)
+      items.push(...comboNames)
+    }
+    
+    // Add equipments if any
+    if (booking.equipments && booking.equipments.length > 0) {
+      const equipmentNames = booking.equipments.map(equipment => `${equipment.name} (Thiết bị)`)
+      items.push(...equipmentNames)
+    }
+    
+    return items.length > 0 ? items.join(', ') : 'Chưa có dịch vụ'
+  }
+
+  // Enhanced function to render services with visual distinction
+  const renderServiceItems = (booking: StaffBooking) => {
+    const hasServices = booking.services && booking.services.length > 0
+    const hasCombos = booking.combos && booking.combos.length > 0
+    const hasEquipments = booking.equipments && booking.equipments.length > 0
+    
+    if (!hasServices && !hasCombos && !hasEquipments) {
+      return <span className="text-gray-500 text-sm">Chưa có dịch vụ</span>
+    }
+    
+    return (
+      <div className="space-y-1">
+        {hasServices && (
+          <div className="flex flex-wrap gap-1">
+            {booking.services!.map((service, index) => (
+              <Badge key={`service-${index}`} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                {service.name}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {hasCombos && (
+          <div className="flex flex-wrap gap-1">
+            {booking.combos!.map((combo, index) => (
+              <Badge key={`combo-${index}`} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                {combo.name} (Combo)
+              </Badge>
+            ))}
+          </div>
+        )}
+        {hasEquipments && (
+          <div className="flex flex-wrap gap-1">
+            {booking.equipments!.map((equipment, index) => (
+              <Badge key={`equipment-${index}`} variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                {equipment.name} (Thiết bị)
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   const getTotalAmount = (booking: StaffBooking): number => {
@@ -404,11 +465,26 @@ export default function StaffDashboard() {
   const handleAcceptBooking = async (bookingId: number) => {
     try {
       await staffAPI.acceptBooking(bookingId)
-      await refreshData() // Refresh to get updated data
-      alert('Đã chấp nhận đơn hàng!')
+      // Refresh data after accepting
+      await loadAllData()
     } catch (error) {
-      console.error('Error accepting booking:', error)
+      console.error("Error accepting booking:", error)
       alert('Có lỗi xảy ra khi chấp nhận đơn hàng')
+    }
+  }
+
+  const handleCallCustomer = (booking: StaffBooking) => {
+    const phoneNumber = getCustomerPhone(booking)
+    if (phoneNumber && phoneNumber !== 'Chưa có SĐT') {
+      // Remove any non-digit characters and format for tel: protocol
+      const cleanPhone = phoneNumber.replace(/\D/g, '')
+      if (cleanPhone) {
+        window.open(`tel:${cleanPhone}`, '_self')
+      } else {
+        alert('Số điện thoại không hợp lệ')
+      }
+    } else {
+      alert('Khách hàng chưa có số điện thoại')
     }
   }
 
@@ -421,8 +497,48 @@ export default function StaffDashboard() {
     return matchesStatus && matchesSearch
   })
 
+  const isPastShift = (dateString: string, endTime: string) => {
+    const shiftEndDateTime = new Date(`${dateString}T${endTime}`)
+    return shiftEndDateTime < new Date()
+  }
+
+  const isCurrentShift = (dateString: string, startTime: string, endTime: string) => {
+    const now = new Date()
+    const shiftStartDateTime = new Date(`${dateString}T${startTime}`)
+    const shiftEndDateTime = new Date(`${dateString}T${endTime}`)
+    return now >= shiftStartDateTime && now <= shiftEndDateTime
+  }
+
+  const isFutureShift = (dateString: string, startTime: string) => {
+    const now = new Date()
+    const shiftStartDateTime = new Date(`${dateString}T${startTime}`)
+    return shiftStartDateTime > now
+  }
+
+  // Function to get the appropriate status for a shift based on current time
+  const getShiftStatus = (shift: StaffShift) => {
+    if (isCurrentShift(shift.shiftDate, shift.startTime, shift.endTime)) {
+      return 'IN_PROGRESS'
+    }
+    return shift.status
+  }
+
   const filteredMyShifts = myShifts.filter(shift => {
-    return shiftStatusFilter === "all" || shift.status === shiftStatusFilter
+    // Status filter
+    const matchesStatus = shiftStatusFilter === "all" || shift.status === shiftStatusFilter
+    
+    // Date filter
+    let matchesDate = true
+    if (shiftDateFilter === "today") {
+      matchesDate = isToday(shift.shiftDate)
+    } else if (shiftDateFilter === "thisWeek") {
+      matchesDate = isThisWeek(shift.shiftDate)
+    } else if (shiftDateFilter === "upcoming") {
+      matchesDate = !isPastShift(shift.shiftDate, shift.endTime)
+    }
+    
+    // Always show shifts (both past and future) - visual distinction handled in rendering
+    return matchesStatus && matchesDate
   })
 
   // Get available shifts that staff can register for
@@ -456,7 +572,7 @@ export default function StaffDashboard() {
   const getShiftStatusBadge = (status: StaffShift['status']) => {
     switch (status) {
       case "REGISTERED":
-        return <Badge className="bg-yellow-100 text-yellow-800">Đã đăng ký</Badge>
+        return <Badge className="bg-yellow-100 text-yellow-800">Được đăng ký</Badge>
       case "APPROVED":
         return <Badge className="bg-blue-100 text-blue-800">Đã duyệt</Badge>
       case "IN_PROGRESS":
@@ -581,7 +697,6 @@ export default function StaffDashboard() {
                         <TableHead>Khách hàng</TableHead>
                         <TableHead>Dịch vụ</TableHead>
                         <TableHead>Ngày đặt</TableHead>
-                        <TableHead>Ngày checkin</TableHead>
                         <TableHead>Trạng thái</TableHead>
                         <TableHead>Thao tác</TableHead>
                       </TableRow>
@@ -596,9 +711,12 @@ export default function StaffDashboard() {
                               <p className="text-sm text-gray-600">{getCustomerPhone(booking)}</p>
                             </div>
                           </TableCell>
-                          <TableCell>{getServiceNames(booking)}</TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              {renderServiceItems(booking)}
+                            </div>
+                          </TableCell>
                           <TableCell>{formatDate(booking.bookingDate)}</TableCell>
-                          <TableCell>{formatDate(booking.checkInDate)}</TableCell>
                           <TableCell>{getBookingStatusBadge(booking.status)}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -622,7 +740,13 @@ export default function StaffDashboard() {
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
                               )}
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleCallCustomer(booking)}
+                                className="text-green-600 hover:text-green-700"
+                                title={`Gọi ${getCustomerPhone(booking)}`}
+                              >
                                 <Phone className="w-4 h-4" />
                               </Button>
                             </div>
@@ -636,7 +760,7 @@ export default function StaffDashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Thống kê đơn hàng</CardTitle>
@@ -656,23 +780,6 @@ export default function StaffDashboard() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ghi chú nhanh</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea 
-                    placeholder="Ghi chú về đơn hàng, khách hàng..." 
-                    rows={4}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                  <Button className="w-full mt-3" onClick={() => setNotes("")}>
-                    Lưu ghi chú
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
@@ -684,18 +791,31 @@ export default function StaffDashboard() {
                     <CardTitle>Ca trực của tôi</CardTitle>
                     <CardDescription>Các ca trực đã đăng ký</CardDescription>
                   </div>
-                  <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Trạng thái" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất cả</SelectItem>
-                      <SelectItem value="REGISTERED">Đã đăng ký</SelectItem>
-                      <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-                      <SelectItem value="IN_PROGRESS">Đang trực</SelectItem>
-                      <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-3">
+                    <Select value={shiftDateFilter} onValueChange={setShiftDateFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Thời gian" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="today">Hôm nay</SelectItem>
+                        <SelectItem value="thisWeek">Tuần này</SelectItem>
+                        <SelectItem value="upcoming">Sắp tới</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={shiftStatusFilter} onValueChange={setShiftStatusFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả</SelectItem>
+                        <SelectItem value="REGISTERED">Đã đăng ký</SelectItem>
+                        <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                        <SelectItem value="IN_PROGRESS">Đang trực</SelectItem>
+                        <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -706,25 +826,89 @@ export default function StaffDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {filteredMyShifts.map((shift) => (
-                      <div key={shift.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {new Date(shift.shiftDate).toLocaleDateString('vi-VN')}
+                    {filteredMyShifts.map((shift) => {
+                      const isPast = isPastShift(shift.shiftDate, shift.endTime)
+                      const isCurrent = isCurrentShift(shift.shiftDate, shift.startTime, shift.endTime)
+                      const isFuture = isFutureShift(shift.shiftDate, shift.startTime)
+                      const currentStatus = getShiftStatus(shift)
+                      
+                      // Determine background styling
+                      let backgroundClass = ''
+                      if (isPast) {
+                        backgroundClass = 'bg-gray-50 border-gray-200 opacity-60'
+                      } else if (isCurrent) {
+                        backgroundClass = 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                      } else if (isFuture) {
+                        backgroundClass = 'bg-green-50 border-green-200 hover:bg-green-100'
+                      } else {
+                        backgroundClass = 'hover:bg-gray-50 border-gray-300'
+                      }
+                      
+                      return (
+                        <div 
+                          key={shift.id} 
+                          className={`border rounded-lg p-4 transition-colors relative ${backgroundClass}`}
+                        >
+                          {isPast && (
+                            <div className="absolute top-2 right-2">
+                              <Badge variant="secondary" className="text-xs bg-gray-200 text-gray-500">
+                                Đã qua
+                              </Badge>
+                            </div>
+                          )}
+                          {isCurrent && (
+                            <div className="absolute top-2 right-2">
+                              <Badge className="text-xs bg-blue-600 text-white">
+                                Đang trực
+                              </Badge>
+                            </div>
+                          )}
+                          {isFuture && (
+                            <div className="absolute top-2 right-2">
+                              <Badge className="text-xs bg-green-600 text-white">
+                                Sắp tới
+                              </Badge>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <p className={`font-medium ${
+                                isPast ? 'text-gray-500' : 
+                                isCurrent ? 'text-blue-900' :
+                                isFuture ? 'text-green-900' : 'text-gray-900'
+                              }`}>
+                                {new Date(shift.shiftDate).toLocaleDateString('vi-VN')}
+                                {isPast && <span className="ml-2 text-xs text-gray-400">(Đã qua)</span>}
+                                {isCurrent && <span className="ml-2 text-xs text-blue-600">(Đang trực)</span>}
+                              </p>
+                              <p className={`text-sm ${
+                                isPast ? 'text-gray-400' : 
+                                isCurrent ? 'text-blue-700' :
+                                isFuture ? 'text-green-700' : 'text-gray-600'
+                              }`}>
+                                {formatTimeSlot(shift.startTime, shift.endTime)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className={`text-sm ${
+                              isPast ? 'text-gray-400' : 
+                              isCurrent ? 'text-blue-600' :
+                              isFuture ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              {shift.location || ''}
                             </p>
-                            <p className="text-sm text-gray-600">
-                              {formatTimeSlot(shift.startTime, shift.endTime)}
+                            <p className={`text-sm font-medium ${
+                              isPast ? 'text-gray-400' : 
+                              isCurrent ? 'text-blue-700' :
+                              isFuture ? 'text-green-700' : 'text-blue-600'
+                            }`}>
+                              {shift.role || 'Nhân viên'}
                             </p>
                           </div>
-                          {getShiftStatusBadge(shift.status)}
                         </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-sm text-gray-600">{shift.location || ''}</p>
-                          <p className="text-sm font-medium text-blue-600">{shift.role || 'Nhân viên'}</p>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>

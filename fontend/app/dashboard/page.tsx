@@ -120,21 +120,21 @@ export default function DashboardPage() {
         // Gắn token vào axios
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-        // Fetch orders
-        console.log("📡 Đang gọi API lấy đơn hàng...");
+        // Fetch bookings
+        console.log("📡 Đang gọi API lấy bookings...");
 
-        const ordersRes = await axios.get("http://localhost:8080/apis/orders/my-orders", {
+        const bookingsRes = await axios.get(`http://localhost:8080/apis/v1/bookings/customer/${parsedUser.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        console.log("✅ Orders response:", ordersRes.data);
+        console.log("✅ Bookings response:", bookingsRes.data);
 
-        if (Array.isArray(ordersRes.data)) {
-          setPendingOrders(ordersRes.data);
+        if (Array.isArray(bookingsRes.data)) {
+          setPendingOrders(bookingsRes.data);
         } else {
-          console.warn("⚠️ API trả về không phải mảng:", ordersRes.data);
+          console.warn("⚠️ API trả về không phải mảng:", bookingsRes.data);
           setPendingOrders([]);
         }
       } catch (error) {
@@ -376,25 +376,93 @@ export default function DashboardPage() {
     return null; // Redirect handled in useEffect
   }
 
+  const formatToVNTime = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
+  // Helper functions for booking data
+  const getBookingServices = (booking: any) => {
+    const services = [];
+    if (booking.services && booking.services.length > 0) {
+      services.push(...booking.services.map((s: any) => s.name));
+    }
+    if (booking.combos && booking.combos.length > 0) {
+      services.push(...booking.combos.map((c: any) => `${c.name} (Combo)`));
+    }
+    return services.length > 0 ? services.join(', ') : 'Chưa có dịch vụ';
+  };
+
+  const getBookingDates = (booking: any) => {
+    if (booking.checkInDate && booking.checkOutDate) {
+      return {
+        checkInDate: booking.checkInDate,
+        checkOutDate: booking.checkOutDate
+      };
+    }
+    
+    // Fallback to service dates
+    const serviceWithDates = booking.services?.find((service: any) => 
+      service.checkInDate && service.checkOutDate
+    );
+    
+    if (serviceWithDates) {
+      return {
+        checkInDate: serviceWithDates.checkInDate,
+        checkOutDate: serviceWithDates.checkOutDate
+      };
+    }
+
+    // Fallback to combo dates
+    const comboWithDates = booking.combos?.find((combo: any) => 
+      combo.checkInDate && combo.checkOutDate
+    );
+    
+    if (comboWithDates) {
+      return {
+        checkInDate: comboWithDates.checkInDate,
+        checkOutDate: comboWithDates.checkOutDate
+      };
+    }
+
+    return { checkInDate: null, checkOutDate: null };
+  };
+
+  const getBookingPeople = (booking: any) => {
+    if (booking.numberOfPeople) return booking.numberOfPeople;
+    
+    const serviceWithPeople = booking.services?.find((service: any) => service.numberOfPeople);
+    if (serviceWithPeople) return serviceWithPeople.numberOfPeople;
+    
+    const comboWithPeople = booking.combos?.find((combo: any) => combo.numberOfPeople);
+    if (comboWithPeople) return comboWithPeople.numberOfPeople;
+    
+    return 0;
+  };
+
+  const getBookingStatus = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return <Badge className="bg-yellow-100 text-yellow-800">Chờ xử lý</Badge>;
+      case 'CONFIRMED':
+        return <Badge className="bg-blue-100 text-blue-800">Đã xác nhận</Badge>;
+      case 'IN_PROGRESS':
+        return <Badge className="bg-purple-100 text-purple-800">Đang thực hiện</Badge>;
+      case 'COMPLETED':
+        return <Badge className="bg-green-100 text-green-800">Hoàn thành</Badge>;
+      case 'CANCELLED':
+        return <Badge className="bg-red-100 text-red-800">Đã hủy</Badge>;
+      default:
+        return <Badge variant="secondary">Không xác định</Badge>;
+    }
+  };
+
   const iconMap: { [key: string]: any } = {
     Calendar,
     Package,
     Users,
-    ShoppingCart,
-    TrendingUp,
-    Star,
   };
-
-  function formatToVNTime(isoString: string) {
-    return new Date(isoString).toLocaleString("vi-VN", {
-      timeZone: "Asia/Ho_Chi_Minh",
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  }
 
 
 
@@ -457,52 +525,61 @@ export default function DashboardPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>ID</TableHead>
-                          <TableHead>Mã đơn hàng</TableHead>
-                          <TableHead>Khách hàng</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Ngày khởi hành</TableHead>
-                          <TableHead>Giá đơn</TableHead>
-                          <TableHead>Số điện thoại</TableHead>
+                          <TableHead>Dịch vụ</TableHead>
+                          <TableHead>Ngày Check-in</TableHead>
+                          <TableHead>Ngày Check-out</TableHead>
                           <TableHead>Số người</TableHead>
+                          <TableHead>Tổng tiền</TableHead>
+                          <TableHead>Trạng thái</TableHead>
                           <TableHead>Thao tác</TableHead>
                         </TableRow>
                       </TableHeader>
 
                       <TableBody>
                         {pendingOrders && pendingOrders.length > 0 ? (
-                          pendingOrders.map((order, idx) => (
-                            <TableRow key={idx} className="hover:bg-gray-50">
-                              <TableCell className="font-medium">{order.id}</TableCell>
-                              <TableCell className="font-medium">{order.orderCode}</TableCell>
-                              <TableCell className="font-medium">{order.customerName}</TableCell>
-                              <TableCell className="font-medium">{order.email}</TableCell>
-                              <TableCell className="font-medium">
-                                {formatToVNTime(order.bookingDate)}
-                              </TableCell>
-                              <TableCell className="font-medium text-green-600">
-                                {order.totalPrice
-                                  ? order.totalPrice.toLocaleString() + " đ"
-                                  : "-"}
-                              </TableCell>
-                              <TableCell className="font-medium">{order.phone}</TableCell>
-                              <TableCell className="font-medium">{order.people}</TableCell>
-                              <TableCell>
-                                <Button size="sm" onClick={() => {
-                                  setSelectedOrder(order);
-                                  setOpen(true);
-                                }}>
-                                  📋 Chọn thêm món ăn
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                          pendingOrders.map((booking, idx) => {
+                            const dates = getBookingDates(booking);
+                            return (
+                              <TableRow key={idx} className="hover:bg-gray-50">
+                                <TableCell className="font-medium">{booking.id}</TableCell>
+                                <TableCell className="font-medium">
+                                  <div className="max-w-xs">
+                                    <p className="text-sm truncate" title={getBookingServices(booking)}>
+                                      {getBookingServices(booking)}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {dates.checkInDate ? formatToVNTime(dates.checkInDate) : "-"}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {dates.checkOutDate ? formatToVNTime(dates.checkOutDate) : "-"}
+                                </TableCell>
+                                <TableCell className="font-medium">{getBookingPeople(booking) || "-"}</TableCell>
+                                <TableCell className="font-medium text-green-600">
+                                  {booking.totalPrice
+                                    ? booking.totalPrice.toLocaleString() + " đ"
+                                    : "-"}
+                                </TableCell>
+                                <TableCell>{getBookingStatus(booking.status)}</TableCell>
+                                <TableCell>
+                                  <Button size="sm" onClick={() => {
+                                    setSelectedOrder(booking);
+                                    setOpen(true);
+                                  }}>
+                                    📋 Chọn thêm món ăn
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
                         ) : (
                           <TableRow>
                             <TableCell
-                              colSpan={9}
+                              colSpan={8}
                               className="text-center text-gray-500 py-6 italic"
                             >
-                              Bạn chưa có đơn hàng nào
+                              Bạn chưa có booking nào
                             </TableCell>
                           </TableRow>
                         )}

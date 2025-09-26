@@ -132,20 +132,72 @@ export interface UserResponse {
   address: string
   userId: number
 }
-function getCheckInDate(booking: BookingDetail & { services?: any[] }) {
-  if (booking.tripDate) return booking.tripDate
-  if (booking.services && booking.services.length > 0) {
-    return booking.services[0].checkInDate
+function getBookingDates(booking: BookingDetail & { services?: any[]; combos?: any[] }) {
+  // Priority 1: Use booking-level dates if available
+  if (booking.checkInDate && booking.checkOutDate) {
+    return {
+      checkInDate: booking.checkInDate,
+      checkOutDate: booking.checkOutDate
+    };
   }
-  return null
+
+  // Priority 2: Find first service with dates
+  const serviceWithDates = booking.services?.find((service: any) =>
+    service.checkInDate && service.checkOutDate
+  );
+
+  if (serviceWithDates) {
+    return {
+      checkInDate: serviceWithDates.checkInDate,
+      checkOutDate: serviceWithDates.checkOutDate
+    };
+  }
+
+  // Priority 3: Find first combo with dates
+  const comboWithDates = booking.combos?.find((combo: any) =>
+    combo.checkInDate && combo.checkOutDate
+  );
+
+  if (comboWithDates) {
+    return {
+      checkInDate: comboWithDates.checkInDate,
+      checkOutDate: comboWithDates.checkOutDate
+    };
+  }
+
+  // Fallback: Return null if no dates found
+  return {
+    checkInDate: null,
+    checkOutDate: null
+  };
 }
 
-function getCheckOutDate(booking: BookingDetail & { services?: any[] }) {
-  if (booking.tripDate) return booking.tripDate // hoặc booking.checkOutDate nếu có field riêng
-  if (booking.services && booking.services.length > 0) {
-    return booking.services[0].checkOutDate
+function getNumberOfPeople(booking: BookingDetail & { services?: any[]; combos?: any[] }) {
+  // Priority 1: Use booking-level numberOfPeople if available
+  if (booking.people) {
+    return booking.people;
   }
-  return null
+
+  // Priority 2: Find first service with numberOfPeople
+  const serviceWithPeople = booking.services?.find((service: any) =>
+    service.numberOfPeople
+  );
+
+  if (serviceWithPeople) {
+    return serviceWithPeople.numberOfPeople;
+  }
+
+  // Priority 3: Find first combo with numberOfPeople
+  const comboWithPeople = booking.combos?.find((combo: any) =>
+    combo.numberOfPeople
+  );
+
+  if (comboWithPeople) {
+    return comboWithPeople.numberOfPeople;
+  }
+
+  // Fallback: Return null if no numberOfPeople found
+  return null;
 }
 
 export default function AdminBookingDetailPage() {
@@ -256,21 +308,39 @@ export default function AdminBookingDetailPage() {
         specialRequests: data.note || "",
         internalNotes: data.internalNotes || "",
         location: data.services?.[0]?.name || "Đang cập nhật",
-        duration:
-          (data.checkInDate && data.checkOutDate
-            ? `${Math.ceil(
+        duration: (() => {
+          // Priority 1: Use booking-level dates if available
+          if (data.checkInDate && data.checkOutDate) {
+            return `${Math.ceil(
               (new Date(data.checkOutDate).getTime() -
                 new Date(data.checkInDate).getTime()) /
               (1000 * 60 * 60 * 24)
-            )} ngày`
-            : data.services?.[0]
-              ? `${Math.ceil(
-                (new Date(data.services[0].checkOutDate).getTime() -
-                  new Date(data.services[0].checkInDate).getTime()) /
-                (1000 * 60 * 60 * 24)
-              )} ngày`
-              : ""),
+            )} ngày`;
+          }
 
+          // Priority 2: Find item with largest numberOfPeople from services and combos
+          const allItems = [
+            ...(data.services || []),
+            ...(data.combos || [])
+          ];
+
+          if (allItems.length > 0) {
+            // Find item with largest numberOfPeople
+            const itemWithMostPeople = allItems.reduce((max, current) => {
+              return (current.numberOfPeople || 0) > (max.numberOfPeople || 0) ? current : max;
+            });
+
+            if (itemWithMostPeople.checkInDate && itemWithMostPeople.checkOutDate) {
+              return `${Math.ceil(
+                (new Date(itemWithMostPeople.checkOutDate).getTime() -
+                  new Date(itemWithMostPeople.checkInDate).getTime()) /
+                (1000 * 60 * 60 * 24)
+              )} ngày`;
+            }
+          }
+
+          return "";
+        })(),
         autoConfirm: true,
         adminNotes: "",
 
@@ -706,14 +776,24 @@ export default function AdminBookingDetailPage() {
     }).format(amount)
   }
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("vi-VN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+  const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    
+    // Format time (HH:mm)
+    const timeString = date.toLocaleTimeString("vi-VN", {
       hour: "2-digit",
       minute: "2-digit",
-    })
+      hour12: false
+    });
+    
+    // Format date (dd/MM/yyyy) with leading zeros
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const dateString2 = `${day}/${month}/${year}`;
+    
+    return `${timeString} ${dateString2}`;
   }
 
   if (loading) {
@@ -799,13 +879,13 @@ export default function AdminBookingDetailPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
-                      <div className="flex items-center gap-3">
+                      {/* <div className="flex items-center gap-3">
                         <MapPin className="w-5 h-5 text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-600">Địa điểm</p>
                           <p className="font-medium">{booking.location}</p>
                         </div>
-                      </div>
+                      </div> */}
                       <div className="flex items-center gap-3">
                         <Clock className="w-5 h-5 text-gray-400" />
                         <div>
@@ -818,11 +898,7 @@ export default function AdminBookingDetailPage() {
                         <div>
                           <p className="text-sm text-gray-600">Ngày Checkin</p>
                           <p className="font-medium">
-                            {booking.checkInDate
-                              ? formatDateTime(booking.checkInDate)
-                              : booking.services && booking.services.length > 0
-                                ? formatDateTime(booking.services[0].checkInDate)
-                                : "—"}
+                            {formatDateTime(getBookingDates(booking).checkInDate) || "—"}
                           </p>
                         </div>
                       </div>
@@ -830,7 +906,7 @@ export default function AdminBookingDetailPage() {
                         <Users className="w-5 h-5 text-gray-400" />
                         <div>
                           <p className="text-sm text-gray-600">Số người</p>
-                          <p className="font-medium">{booking.people} người</p>
+                          <p className="font-medium">{getNumberOfPeople(booking) || "—"} người</p>
                         </div>
                       </div>
                     </div>
@@ -849,7 +925,7 @@ export default function AdminBookingDetailPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Package className="w-5 h-5 text-green-600" />
-                      Dịch vụ & Thiết bị
+                      Lịch sử đặt
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1207,21 +1283,21 @@ export default function AdminBookingDetailPage() {
                     </div>
                   ))}
 
-                  {booking?.checkInDate && (
+                  {getBookingDates(booking).checkInDate && (
                     <div className="flex items-start gap-4">
                       <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
                       <div className="flex-1">
                         <p className="font-medium">Khách đã Check-In</p>
-                        <p className="text-sm text-gray-500">{formatDateTime(booking.checkInDate)}</p>
+                        <p className="text-sm text-gray-500">{formatDateTime(getBookingDates(booking).checkInDate)}</p>
                       </div>
                     </div>
                   )}
-                  {booking?.checkOutDate && (
+                  {getBookingDates(booking).checkOutDate && (
                     <div className="flex items-start gap-4">
                       <div className="w-2 h-2 bg-purple-600 rounded-full mt-2"></div>
                       <div className="flex-1">
                         <p className="font-medium">Khách đã Check-Out</p>
-                        <p className="text-sm text-gray-500">{formatDateTime(booking.checkOutDate)}</p>
+                        <p className="text-sm text-gray-500">{formatDateTime(getBookingDates(booking).checkOutDate)}</p>
                       </div>
                     </div>
                   )}
