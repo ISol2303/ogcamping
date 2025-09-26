@@ -16,7 +16,7 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <!-- Current backend IP (update when changing AppConfig._backendHost) -->
-        <domain includeSubdomains="true">192.168.56.1</domain>
+        <domain includeSubdomains="true">192.168.0.246</domain>
         
         <!-- Common development domains -->
         <domain includeSubdomains="true">localhost</domain>

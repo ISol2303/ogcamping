@@ -407,7 +407,7 @@ export default function ServicesPage() {
                       <TableHead>Giá</TableHead>
                       <TableHead>Sức chứa</TableHead>
                       <TableHead>Đánh giá</TableHead>
-                      <TableHead>Trạng thái</TableHead>
+                      {/* <TableHead>Trạng thái</TableHead> */}
                       <TableHead>Thao tác</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -458,7 +458,7 @@ export default function ServicesPage() {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell>{getStatusBadge(service.active)}</TableCell>
+                          {/* <TableCell>{getStatusBadge(service.active)}</TableCell> */}
                           <TableCell>
                             <div className="flex gap-1">
                               <Button
@@ -475,14 +475,14 @@ export default function ServicesPage() {
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button
+                              {/* <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleDelete(service.id)}
                               >
                                 <Trash2 className="w-4 h-4" />
-                              </Button>
+                              </Button> */}
                             </div>
                           </TableCell>
                         </TableRow>

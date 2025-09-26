@@ -119,7 +119,7 @@ export default function PaymentFailurePage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Thanh toán không thành công</h1>
           <p className="text-xl text-gray-600 mb-2">Đã xảy ra lỗi trong quá trình thanh toán</p>
           <p className="text-gray-600">
-            Đơn hàng <span className="font-semibold text-red-600">#{orderNumber}</span> chưa được xử lý
+            Đơn hàng chưa được xử lý
           </p>
         </div>
 
@@ -159,58 +159,7 @@ export default function PaymentFailurePage() {
             </Card>
 
             {/* Order Details */}
-            <Card className="border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <XCircle className="w-5 h-5 text-red-600" />
-                  Đơn hàng chưa được xử lý
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {orderItems.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg opacity-75">
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 flex-shrink-0">
-                      <Image
-                        src={item.image || "/placeholder.svg"}
-                        alt={item.name}
-                        fill
-                        className="object-cover grayscale"
-                      />
-                      {item.quantity > 1 && (
-                        <Badge className="absolute -top-2 -right-2 bg-gray-500 hover:bg-gray-600 text-white border-0 text-xs w-6 h-6 rounded-full flex items-center justify-center p-0">
-                          {item.quantity}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-700">{item.name}</h4>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {item.type === "service" ? "Dịch vụ" : "Thiết bị"} • Số lượng: {item.quantity}
-                      </p>
-                      <p className="font-semibold text-gray-600">{formatPrice(item.price * item.quantity)}</p>
-                    </div>
-                  </div>
-                ))}
-
-                <Separator />
-
-                <div className="space-y-2 opacity-75">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tạm tính</span>
-                    <span className="font-medium">{formatPrice(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Phí vận chuyển</span>
-                    <span className="text-green-600 font-medium">Miễn phí</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Tổng cộng</span>
-                    <span className="text-red-600">{formatPrice(total)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
           </div>
 
           {/* Actions & Support */}

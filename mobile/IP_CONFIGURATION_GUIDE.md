@@ -13,7 +13,7 @@ Edit the file: `lib/core/config/app_config.dart`
 ```dart
 class AppConfig {
   // 🔧 CONFIGURATION: Change this IP address to match your backend server
-  static const String _backendHost = '192.168.56.1';  // ← Change this line
+  static const String _backendHost = '192.168.0.246';  // ← Change this line
   static const String _backendPort = '8080';
   
   // ... rest of the file

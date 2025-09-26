@@ -390,7 +390,7 @@ export default function ServiceDetailPage() {
               </Button>
             </Link>
 
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            {/* <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 bg-transparent">
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -412,7 +412,7 @@ export default function ServiceDetailPage() {
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
-            </AlertDialog>
+            </AlertDialog> */}
           </div>
         </div>
       </header>

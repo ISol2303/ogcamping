@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 /// To change the backend IP address, simply update the [_backendHost] constant.
 class AppConfig {
   // 🔧 CONFIGURATION: Change this IP address to match your backend server
-  static const String _backendHost = '192.168.56.1';
+  static const String _backendHost = '192.168.0.246';
   static const String _backendPort = '8080';
   
   // Alternative common IPs for development:

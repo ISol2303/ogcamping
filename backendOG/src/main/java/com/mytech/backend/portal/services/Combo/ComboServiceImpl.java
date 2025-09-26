@@ -27,7 +27,7 @@ public class ComboServiceImpl implements ComboService {
     private final ComboRepository comboRepository;
     private final ServiceRepository serviceRepository;
 
-    private final String uploadDir = "C:/Users/Admin/OneDrive/Desktop/ogcamping/backendOG/uploads/combos"; // thư mục lưu ảnh
+    private final String uploadDir = "D:/ogcamping/backendOG/uploads/combos"; // thư mục lưu ảnh
 
     @Override
     public ComboResponseDTO createCombo(ComboRequestDTO request, MultipartFile imageFile) {

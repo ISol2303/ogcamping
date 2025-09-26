@@ -112,7 +112,7 @@ class Review {
 
   /// Trả về URL đầy đủ cho media (thêm baseUrl nếu BE trả về relative path)
   static String buildFullMediaUrl(String path,
-      {String baseUrl = 'http://192.168.56.1:8080'}) {
+      {String baseUrl = 'http://192.168.0.2468080'}) {
     if (path.isEmpty) return '';
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     if (baseUrl.endsWith('/') && path.startsWith('/')) {
@@ -122,12 +122,12 @@ class Review {
   }
 
   /// Danh sách URL ảnh đầy đủ
-  List<String> getFullImageUrls({String baseUrl = 'http://192.168.56.1:8080'}) {
+  List<String> getFullImageUrls({String baseUrl = 'http://192.168.0.246:8080'}) {
     return images.map((p) => buildFullMediaUrl(p, baseUrl: baseUrl)).toList();
   }
 
   /// Danh sách URL video đầy đủ
-  List<String> getFullVideoUrls({String baseUrl = 'http://192.168.56.1:8080'}) {
+  List<String> getFullVideoUrls({String baseUrl = 'http://192.168.0.246:8080'}) {
     return videos.map((p) => buildFullMediaUrl(p, baseUrl: baseUrl)).toList();
   }
 }

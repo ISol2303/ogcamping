@@ -141,7 +141,7 @@ public class SecurityConfig {
         config.addAllowedOrigin("http://localhost:3000"); // domain ReactJS
         config.addAllowedOrigin("http://localhost:*"); // Flutter web (any port)
         config.addAllowedOrigin("http://127.0.0.1:*"); // Alternative localhost
-        config.addAllowedOrigin("http://192.168.56.1:*"); // Mobile device IP
+        config.addAllowedOrigin("http://192.168.0.246:*"); // Mobile device IP
         config.addAllowedOriginPattern("http://localhost:*");
         config.addAllowedOriginPattern("http://192.168.*:*");
         config.addAllowedHeader("*");
